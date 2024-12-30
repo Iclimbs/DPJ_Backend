@@ -47,10 +47,10 @@ app.use(
 app.use('/public/', express.static(path.join(__dirname, 'public')));
 app.use("/api/v1/", require("./routes/routes"));
 
-app.listen(process.env.Port, async () => {
+app.listen(8080, async () => {
   try {
     await connection;
-    console.log(`Server is Up & Running At Port ${process.env.Port}`);
+    console.log(`Server is Up & Running At Port 8080`);
   } catch (error) {
     console.log(error);
   }
