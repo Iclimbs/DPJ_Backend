@@ -29,6 +29,24 @@ EventRouter.post("/add", upload.single("banner"), async (req, res) => {
   const { title, description, eventType, category, startDate, endDate, startTime, endTime, tickets, country, state, city } = req.body;
   const startDateTime = new Date(`${startDate}T${startTime}`);
   const endDateTime = new Date(`${endDate}T${endTime}`);
+
+  // Parse tickets if it exists
+  let parsedTickets = [];
+  if (tickets) {
+    try {
+      parsedTickets = JSON.parse(tickets);
+      if (!Array.isArray(parsedTickets)) {
+        return res.json({ status: "error", message: "Parsed tickets is not an array" })
+        // throw new Error("Parsed tickets is not an array");
+      }
+    } catch (err) {
+      return res.json({
+        status: "error",
+        message: "Invalid tickets format. Tickets must be a JSON array.",
+      });
+    }
+  }
+
   const collaboration = new EventModel({
     address: req.body?.address,
     link: req.body?.link,
@@ -51,15 +69,15 @@ EventRouter.post("/add", upload.single("banner"), async (req, res) => {
   });
   try {
     const eventDetails = await collaboration.save();
-    if (tickets) {
-      const ticketData = tickets.map((ticket) => {
-        return {
-          eventId: eventDetails._id,
-          createdBy: decoded._id,
-          price: ticket.price,
-          name: ticket.name,
-        }
-      });
+
+    if (parsedTickets.length > 0) {
+      const ticketData = parsedTickets.map((ticket) => ({
+        eventId: eventDetails._id,
+        createdBy: decoded._id,
+        price: ticket.price,
+        name: ticket.name,
+      }));
+ 
       await TicketModel.insertMany(ticketData);
     }
     res.json({
@@ -196,7 +214,7 @@ EventRouter.get("/lists/available", ArtistAuthentication, async (req, res) => {
   try {
     const list = await EventModel.aggregate([
       {
-        $match: { type: "Event"}
+        $match: { type: "Event" }
       },
       {
         $lookup: {
