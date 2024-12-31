@@ -206,7 +206,7 @@ EventRouter.get("/lists", ArtistAuthentication, async (req, res) => {
       res.json({ status: "success", data: list })
     }
   } catch (error) {
-    res.json({ status: "error", message: `Unable To Find Collaboration Events ${error.message}` })
+    res.json({ status: "error", message: `Unable To Find Events Lists ${error.message}` })
   }
 });
 
@@ -236,18 +236,19 @@ EventRouter.get("/lists/:id", ArtistAuthentication, async (req, res) => {
       res.json({ status: "success", data: list })
     }
   } catch (error) {
-    res.json({ status: "error", message: `Unable To Find Collaboration Events ${error.message}` })
+    res.json({ status: "error", message: `Unable To Find Events Details ${error.message}` })
   }
 });
 
 // Get List of Events which User Can Book
-EventRouter.get("/lists/available", ArtistAuthentication, async (req, res) => {
+EventRouter.get("/active/list", ArtistAuthentication, async (req, res) => {  
   try {
     const list = await EventModel.aggregate([
       {
-        $match: { type: "Event" }
-      },
-      {
+        $match: {
+          type: "Event"
+        }
+      }, {
         $lookup: {
           from: 'tickets',
           localField: '_id',
@@ -264,7 +265,7 @@ EventRouter.get("/lists/available", ArtistAuthentication, async (req, res) => {
       res.json({ status: "success", data: list })
     }
   } catch (error) {
-    res.json({ status: "error", message: `Unable To Find Collaboration Events ${error.message}` })
+    res.json({ status: "error", message: `Unable To Find Available Events ${error.message}` })
   }
 });
 

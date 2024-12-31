@@ -178,8 +178,6 @@ PostRouter.post("/add/comment/:id", ArtistAuthentication, async (req, res) => {
     const { id } = req.params;
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
-    console.log("testing comment", req.body);
-
     const { description } = req.body;
     const comment = new CommentModel({
         commentedBy: decoded._id,
