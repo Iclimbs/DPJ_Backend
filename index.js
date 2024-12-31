@@ -50,7 +50,7 @@ app.use("/api/v1/", require("./routes/routes"));
 app.listen(process.env.Port, async () => {
   try {
     await connection;
-    console.log(`Server is Up & Running At Port 8080`);
+    console.log(`Server is Up & Running At Port ${process.env.Port}`);
   } catch (error) {
     console.log(error);
   }

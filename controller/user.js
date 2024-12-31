@@ -59,6 +59,7 @@ const { UserModel } = require("../model/user.model");
 const { transporter } = require("../service/transporter");
 const { UserAuthentication } = require("../middleware/Authentication");
 const { DocumentModel } = require("../model/document.model");
+const mongoose = require("mongoose");
 const UserRouter = express.Router();
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -450,7 +451,22 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
       });
     } else {
       const decoded = jwt.verify(token, "Authentication");
-      const user = await UserModel.find({ _id: decoded._id });
+      console.log("decoed Id ", decoded._id);
+
+      const user = await UserModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
+          }
+        }, {
+          $lookup: {
+            from: 'wallets',
+            localField: '_id',
+            foreignField: 'userId',
+            as: 'walletdetails'
+          }
+        }
+      ]);
       return res.json({
         status: "success",
         message: "Getting User Details",
