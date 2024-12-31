@@ -1,11 +1,12 @@
 const mongoose = require("mongoose")
+const { ObjectId } = mongoose.Schema.Types;
 const walletSchema = mongoose.Schema({
     balance: {
         type: Number,
         required: true,
     },
     userId: {
-        type: String,
+        type: ObjectId,
         required: true
     }
 })

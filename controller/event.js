@@ -7,6 +7,8 @@ const { EventModel } = require("../model/event.model");
 const { ArtistAuthentication, ProfessionalAuthentication } = require("../middleware/Authentication");
 const { CollabModel } = require("../model/collaboration.model");
 const { TicketModel } = require("../model/ticket.model");
+const mongoose = require('mongoose');
+
 const EventRouter = express.Router();
 const uploadPath = path.join(__dirname, "../public/events");
 
@@ -77,7 +79,7 @@ EventRouter.post("/add", upload.single("banner"), async (req, res) => {
         price: ticket.price,
         name: ticket.name,
       }));
- 
+
       await TicketModel.insertMany(ticketData);
     }
     res.json({
@@ -198,6 +200,35 @@ EventRouter.get("/lists", ArtistAuthentication, async (req, res) => {
       }
     ]);
 
+    if (list.length == 0) {
+      res.json({ status: "error", message: "No Event List Found" })
+    } else {
+      res.json({ status: "success", data: list })
+    }
+  } catch (error) {
+    res.json({ status: "error", message: `Unable To Find Collaboration Events ${error.message}` })
+  }
+});
+
+EventRouter.get("/lists/:id", ArtistAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const list = await EventModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id), // Convert id to ObjectId using 'new'
+          type: "Event"
+        }
+      }, {
+        $lookup: {
+          from: 'tickets',
+          localField: '_id',
+          foreignField: 'eventId',
+          as: 'tickets'
+        }
+      }
+    ]);
+
     // const list = await EventModel.find({ createdBy: decoded._id, type: "Event" })
     if (list.length == 0) {
       res.json({ status: "error", message: "No Event List Found" })
@@ -236,6 +267,30 @@ EventRouter.get("/lists/available", ArtistAuthentication, async (req, res) => {
     res.json({ status: "error", message: `Unable To Find Collaboration Events ${error.message}` })
   }
 });
+
+EventRouter.post("/ticket/booking/:id", ArtistAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const { eventId, message } = req.body;
+  const collaboration = new CollabModel({
+    eventId: eventId,
+    message: message,
+    createdBy: decoded._id,
+  });
+  try {
+    await collaboration.save();
+    res.json({
+      status: "success",
+      message: `Collaboration Request Sent Successfully`,
+    });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Send Collaboration Request ${error.message}`,
+    });
+  }
+}
+);
 
 
 
