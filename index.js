@@ -47,7 +47,7 @@ app.use(
 app.use('/public/', express.static(path.join(__dirname, 'public')));
 app.use("/api/v1/", require("./routes/routes"));
 
-app.listen(8080, async () => {
+app.listen(process.env.Port, async () => {
   try {
     await connection;
     console.log(`Server is Up & Running At Port 8080`);
