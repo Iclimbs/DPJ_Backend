@@ -22,6 +22,10 @@ const bookedTicketSchema = mongoose.Schema({
         type: Number,
         required: true
     },
+    quantity: {
+        type: Number,
+        required: true
+    },
     trasactionId: {
         type: ObjectId,
         required: true

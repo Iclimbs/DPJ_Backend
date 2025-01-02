@@ -314,9 +314,10 @@ EventRouter.post("/ticket/booking/:id", [ArtistAuthentication, WalletChecker], a
       const ticketData = tickets.map((ticket) => ({
         eventId: id,
         bookedBy: decoded._id,
-        ticketId: ticket.ticketId,
+        ticketId: ticket._id,
         price: ticket.price,
         name: ticket.name,
+        quantity: ticket.quantity,
         trasactionId: transactionData._id
       }));
 
