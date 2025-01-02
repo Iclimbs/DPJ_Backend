@@ -5,7 +5,6 @@ const fs = require('fs');
 const jwt = require("jsonwebtoken");
 const { EventModel } = require("../model/event.model");
 const { ArtistAuthentication, ProfessionalAuthentication } = require("../middleware/Authentication");
-const { CollabModel } = require("../model/collaboration.model");
 const { TicketModel } = require("../model/ticket.model");
 const mongoose = require('mongoose');
 const { WalletChecker } = require("../middleware/WalletChecker");
@@ -26,6 +25,10 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
+// Api's For Event
+
+// Api To Add New Event
 
 EventRouter.post("/add", upload.single("banner"), async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
@@ -98,6 +101,7 @@ EventRouter.post("/add", upload.single("banner"), async (req, res) => {
 }
 );
 
+// Api To Edit Event Details
 
 EventRouter.patch("/edit/basic/:id", ArtistAuthentication, upload.single("banner"), async (req, res) => {
   const { id } = req.params;
@@ -158,6 +162,8 @@ EventRouter.patch("/edit/basic/:id", ArtistAuthentication, upload.single("banner
 }
 );
 
+// Api To Add New Tickets In An Event
+
 EventRouter.post("/add/tickets/:id", ArtistAuthentication, async (req, res) => {
   const { id } = req.params;
   const token = req.headers.authorization.split(" ")[1];
@@ -183,7 +189,8 @@ EventRouter.post("/add/tickets/:id", ArtistAuthentication, async (req, res) => {
 }
 );
 
-// Get List of Events Created By User
+// Get List of Events Created By Profiessional User
+
 EventRouter.get("/lists", ArtistAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
@@ -212,6 +219,8 @@ EventRouter.get("/lists", ArtistAuthentication, async (req, res) => {
     res.json({ status: "error", message: `Unable To Find Events Lists ${error.message}` })
   }
 });
+
+// Get Detail of an Particular Events
 
 EventRouter.get("/lists/:id", ArtistAuthentication, async (req, res) => {
   const { id } = req.params;
@@ -243,7 +252,8 @@ EventRouter.get("/lists/:id", ArtistAuthentication, async (req, res) => {
   }
 });
 
-// Get List of Events which User Can Book
+// Get List of Events which are Active
+
 EventRouter.get("/active/list", ArtistAuthentication, async (req, res) => {
   try {
     const list = await EventModel.aggregate([
@@ -272,81 +282,6 @@ EventRouter.get("/active/list", ArtistAuthentication, async (req, res) => {
   }
 });
 
-EventRouter.post("/ticket/booking/:id", [ArtistAuthentication, WalletChecker], async (req, res) => {
- 
- console.log("req.body",req.body.tickets);
- 
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
-  const { id } = req.params;
-  const { amount, tickets } = req.body;
-
-  let parsedTickets = [];
-  // if (tickets) {
-  //   try {
-  //     parsedTickets = JSON.parse(tickets);
-  //     if (!Array.isArray(parsedTickets)) {
-  //       return res.json({ status: "error", message: "Parsed tickets is not an array" })
-  //     }
-  //   } catch (err) {
-  //     return res.json({
-  //       status: "error",
-  //       message: "Invalid tickets format. Tickets must be a JSON array.",
-  //     });
-  //   }
-  // }
-
-
-  // if (parsedTickets.length > 0) {
-    try {
-
-      const transaction = new TransactionModel({
-        amount: amount,
-        type: "Debit",
-        userId: decoded._id,
-        method: "Wallet",
-        eventId: id,
-      });
-
-      const transactionData = await transaction.save();
-
-      // Adding Booked Ticket Data
-      const ticketData = tickets.map((ticket) => ({
-        eventId: id,
-        bookedBy: decoded._id,
-        ticketId: ticket._id,
-        price: ticket.price,
-        name: ticket.name,
-        quantity: ticket.quantity,
-        trasactionId: transactionData._id
-      }));
-
-      console.log(ticketData);
-      
-
-      await BookedTicketModel.insertMany(ticketData);
-
-      res.json({
-        status: "success",
-        message: `Collaboration Request Sent Successfully`,
-      });
-
-    } catch (error) {
-      res.json({
-        status: "error",
-        message: `Failed To Send Collaboration Request ${error.message}`,
-      });
-    }
-
-  // } else {
-  //   res.json({
-  //     status: "error",
-  //     message: `Failed To Book Tickets`,
-  //   });
-  // }
-
-}
-);
 
 
 
