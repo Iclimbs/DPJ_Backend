@@ -18,23 +18,23 @@ TicketRouter.post("/booking/:id", [ArtistAuthentication, WalletChecker], async (
     const { id } = req.params;
     const { amount, tickets } = req.body;
 
-    let parsedTickets = [];
-    if (tickets) {
-        try {
-            parsedTickets = JSON.parse(tickets);
-            if (!Array.isArray(parsedTickets)) {
-                return res.json({ status: "error", message: "Parsed tickets is not an array" })
-            }
-        } catch (err) {
-            return res.json({
-                status: "error",
-                message: "Invalid tickets format. Tickets must be a JSON array.",
-            });
-        }
-    }
+    // let parsedTickets = [];
+    // if (tickets) {
+    //     try {
+    //         parsedTickets = JSON.parse(tickets);
+    //         if (!Array.isArray(parsedTickets)) {
+    //             return res.json({ status: "error", message: "Parsed tickets is not an array" })
+    //         }
+    //     } catch (err) {
+    //         return res.json({
+    //             status: "error",
+    //             message: "Invalid tickets format. Tickets must be a JSON array.",
+    //         });
+    //     }
+    // }
 
 
-    if (parsedTickets.length > 0) {
+    // if (parsedTickets.length > 0) {
         try {
 
             const transaction = new TransactionModel({
@@ -71,12 +71,12 @@ TicketRouter.post("/booking/:id", [ArtistAuthentication, WalletChecker], async (
                 message: `Failed To Purchase Ticket For Event ${error.message}`,
             });
         }
-    } else {
-        res.json({
-            status: "error",
-            message: `Failed To Book Tickets`,
-        });
-    }
+    // } else {
+    //     res.json({
+    //         status: "error",
+    //         message: `Failed To Book Tickets`,
+    //     });
+    // }
 
 }
 );
