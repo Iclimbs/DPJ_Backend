@@ -56,7 +56,7 @@ CollabRouter.post("/add", upload.single("banner"), ArtistAuthentication, async (
   } catch (error) {
     res.json({
       status: "error",
-      message: `Failed To Add New Event ${error.message}`,
+      message: `Failed To Create New Collaboration ${error.message}`,
     });
   }
 }
@@ -85,7 +85,7 @@ CollabRouter.post("/add/collaborators/:id", ArtistAuthentication, async (req, re
   } catch (error) {
     res.json({
       status: "error",
-      message: `Failed To Add New Event ${error.message}`,
+      message: `Failed To Add New Collaboration Event ${error.message}`,
     });
   }
 }
@@ -142,11 +142,11 @@ CollabRouter.patch("/edit/basic/:id", ArtistAuthentication, upload.single("banne
       new: true, // Return the updated document
     });
 
-    res.json({ status: "success", message: `Event Successfully Updatec` });
+    res.json({ status: "success", message: `Collaboration Successfully Updated` });
   } catch (error) {
     res.json({
       status: "error",
-      message: `Failed To Edit Event Details ${error.message}`,
+      message: `Failed To update Collaboration Details ${error.message}`,
     });
   }
 }
@@ -160,11 +160,11 @@ CollabRouter.post("/edit/collaborators/:id", ArtistAuthentication, async (req, r
   const fileName = req.file.filename;
   try {
     const details = await EventModel.find({ eventId: id });
-    res.json({ status: "success", message: `Event Successfully Updated` });
+    res.json({ status: "success", message: `Collaborators List Successfully Updated` });
   } catch (error) {
     res.json({
       status: "error",
-      message: `Failed To Add New Event ${error.message}`,
+      message: `Failed To Update Colalborators List ${error.message}`,
     });
   }
 }

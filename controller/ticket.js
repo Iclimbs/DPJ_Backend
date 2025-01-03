@@ -157,4 +157,61 @@ TicketRouter.get("/booked/event/list/:id", ArtistAuthentication, async (req, res
     }
 });
 
+TicketRouter.get("/booked/events/details", ArtistAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+
+    try {
+        const list = await BookedTicketModel.aggregate([
+            {
+                $match: {
+                    bookedBy: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
+                }
+            },
+            {
+                $lookup: {
+                    from: 'events',
+                    localField: 'eventId',
+                    foreignField: '_id',
+                    as: 'eventdetails'
+                }
+            },
+            {
+                $unwind: '$eventdetails'
+            },
+            {
+                $group: {
+                    _id: '$eventdetails._id',
+                    event: { $first: '$eventdetails' },
+                    tickets: {
+                        $push: {
+                            ticketId: '$_id',
+                            price: '$price',
+                            name: '$name',
+                            bookedAt: '$createdAt'
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    event: 1,
+                    tickets: 1
+                }
+            }
+        ]);
+
+        if (list.length === 0) {
+            res.json({ status: "error", message: "No Booked Events Found" });
+        } else {
+            res.json({ status: "success", data: list });
+        }
+    } catch (error) {
+        console.error(`Error finding booked events: ${error.message}`);
+        res.json({ status: "error", message: `Unable To Find Booked Events ${error.message}` });
+    }
+});
+
+
 module.exports = { TicketRouter }
