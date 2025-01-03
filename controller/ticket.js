@@ -188,6 +188,7 @@ TicketRouter.get("/booked/events/details", ArtistAuthentication, async (req, res
                             ticketId: '$_id',
                             price: '$price',
                             name: '$name',
+                            quantity: '$quantity',
                             bookedAt: '$createdAt'
                         }
                     }
