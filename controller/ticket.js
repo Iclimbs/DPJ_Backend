@@ -116,17 +116,6 @@ TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) =>
                     ]
                 }
             }
-            // {
-            //     $project: {
-            //         'bookedBy': 1,
-            //         'ticketId': 1,
-            //         'price': 1,
-            //         'name': 1,
-            //         'quantity': 1,
-            //         'trasactionId': 1,
-            //         'eventdetails': 1
-            //     }
-            // }
         ]);
         if (list.length == 0) {
             res.json({ status: "error", message: "No Booked Ticket List Found" })
@@ -139,7 +128,6 @@ TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) =>
 });
 
 // Get List of Booked Tickets In an Event
-
 TicketRouter.get("/booked/event/list/:id", ArtistAuthentication, async (req, res) => {
     const { id } = req.params;
 
