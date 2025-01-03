@@ -8,18 +8,38 @@ const jobschema = mongoose.Schema({
         enum: ['WFH', 'WFO', 'HYBRID'],
         default: 'WFO'
     },
+    address: {
+        type: String,
+        required: true
+    },
+    location: {
+        type: String,
+        required: true
+    },
+    benefits: {
+        type: String,
+        required: true
+    },
+    keyResponsibilities: {   // Save Key Responsibilities of the Job
+        type: String,
+        required: true
+    },
+    // Save Location of the Job
     description: { // Save Detailed Description of Job & basic detail about the job
         type: String,
         required: true
     },
     position: { // Save Job Postition Details Like :- Senior, Mid-level, Fresher
         type: String,
-        required: true
     },
     education: { // Save Minimum Qualification Needed To Apply For the Job
         type: String,
         required: true
     },
+    companyOverview: {
+        type: String,
+        required: true
+    },// Save Overview of the Job
     experience: { // Save Minimum Number of Experience a person should have to apply for the Job
         type: String,
         required: true
