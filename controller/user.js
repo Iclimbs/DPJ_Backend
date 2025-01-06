@@ -46,33 +46,28 @@
  */
 
 require("dotenv").config();
+// Basic Required Modules
+const mongoose = require("mongoose");
+const crypt = require("crypto");
 const ejs = require("ejs");
 const jwt = require("jsonwebtoken");
 const path = require("node:path");
-const crypt = require("crypto");
-const multer = require("multer");
-const fs = require('fs');
-const uploadPath = path.join(__dirname, "../public/profile");
 const express = require("express");
-const { oauth2client } = require("../service/googleConfig");
-const { UserModel } = require("../model/user.model");
-const { transporter } = require("../service/transporter");
-const { UserAuthentication } = require("../middleware/Authentication");
-const { DocumentModel } = require("../model/document.model");
-const mongoose = require("mongoose");
-const { uploadMiddleWare } = require("../middleware/FileUpload");
-const UserRouter = express.Router();
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    let uniqueSuffix = Date.now();
-    cb(null, uniqueSuffix + file.originalname);
-  },
-});
 
-const upload = multer({ storage: storage });
+// Required Modules For Google Login
+const { oauth2client } = require("../service/googleConfig");
+
+// Required Modules For Sending Email
+const { transporter } = require("../service/transporter");
+
+// Required Models 
+const { UserModel, DocumentModel } = require("../model/ModelExport");
+
+// Required Middleware For File Upload & User Authentication 
+const { UserAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
+
+
+const UserRouter = express.Router();
 
 const hash = {
   sha256: (data) => {
@@ -233,7 +228,6 @@ UserRouter.post("/login/admin", async (req, res) => {
 // User Registration Step 1 Basic Detail's Registration
 
 UserRouter.post("/register", async (req, res) => {
-  try {
     const { name, email, password, accountType } = req.body;
     const userExists = await UserModel.find({ email });
     if (userExists.length >= 1) {
@@ -260,16 +254,10 @@ UserRouter.post("/register", async (req, res) => {
       } catch (error) {
         res.json({
           status: "error",
-          message: `Failed To Register User ${error.message}`,
+          message: `Failed To Register New User, Error :- ${error.message}`,
         });
       }
     }
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Error Found in User Registration ${error}`,
-    });
-  }
 });
 
 // Forgot Password Step 1 Sending Otp in Email
@@ -452,8 +440,6 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
       });
     } else {
       const decoded = jwt.verify(token, "Authentication");
-      console.log("decoed Id ", decoded._id);
-
       const user = await UserModel.aggregate([
         {
           $match: {
@@ -491,7 +477,7 @@ UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: 'profile', maxCo
 
   try {
     const updatedUser = await UserModel.findOne({ _id: decoded._id });
-    
+
     let addressdata = {};
     addressdata.country = req.body?.country || updatedUser?.address?.country;
     addressdata.state = req.body?.state || updatedUser?.address?.state;
@@ -548,49 +534,48 @@ UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: 'profile', maxCo
 
 // Step 1 Uploading Documents For Account Verifications :-
 
-UserRouter.post("/documentupload", upload.single("document"), UserAuthentication, async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  const { accountType, documentType } = req.body;
-  const profile = req.files['profile'][0];
-  const banner = req.files['banner'][0];
-  const decoded = jwt.verify(token, "Authentication");
-  const user = await UserModel.find({ _id: decoded._id });
-  try {
-    user[0].profile = profile;
-    user[0].banner = banner;
-    await user[0].save();
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Error Found while trying to upload Documents ${error.message}`,
-    });
-  }
+// UserRouter.post("/documentupload", upload.single("document"), UserAuthentication, async (req, res) => {
+//   const token = req.headers.authorization.split(" ")[1];
+//   const { accountType, documentType } = req.body;
+//   const profile = req.files['profile'][0];
+//   const banner = req.files['banner'][0];
+//   const decoded = jwt.verify(token, "Authentication");
+//   const user = await UserModel.find({ _id: decoded._id });
+//   try {
+//     user[0].profile = profile;
+//     user[0].banner = banner;
+//     await user[0].save();
+//   } catch (error) {
+//     res.json({
+//       status: "error",
+//       message: `Error Found while trying to upload Documents ${error.message}`,
+//     });
+//   }
 
-  const documentDetails = new DocumentModel({
-    documentType: documentType,
-    document: fileName,
-    userId: decoded._id,
-  });
+//   const documentDetails = new DocumentModel({
+//     documentType: documentType,
+//     document: fileName,
+//     userId: decoded._id,
+//   });
 
-  try {
-    await documentDetails.save();
-    return res.json({
-      status: "success",
-      message:
-        "Documents Successfully Uploaded Kindly Wait Till we verify the documents.",
-    });
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Error Found while trying to upload Documents ${error.message}`,
-    });
-  }
-}
-);
+//   try {
+//     await documentDetails.save();
+//     return res.json({
+//       status: "success",
+//       message:
+//         "Documents Successfully Uploaded Kindly Wait Till we verify the documents.",
+//     });
+//   } catch (error) {
+//     res.json({
+//       status: "error",
+//       message: `Error Found while trying to upload Documents ${error.message}`,
+//     });
+//   }
+// }
+// );
 
 
-// Get List of All The Artists From Server 
-
+// Get List of All The Artists From Server It Will Be Based On Email & Category
 UserRouter.get("/find/artist", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
@@ -636,20 +621,20 @@ UserRouter.get("/listall/artist", UserAuthentication, async (req, res) => {
 UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: 'profile', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), UserAuthentication, async (req, res) => {
 
   const token = req.headers.authorization.split(" ")[1];
-  const { gender, country, state, city, dob, category, } = req.body;
+  const decoded = jwt.verify(token, "Authentication");
+  const { gender, country, state, city, dob, category } = req.body;
 
   if (!req?.files?.profile) {
     return res.json({ status: "error", error: "please upload a Profile Image" })
   }
 
-  if (!req?.files.banner) {
+  if (!req?.files?.banner) {
     return res.json({ status: "error", error: "please upload a Banner Image" })
 
   }
 
-  const decoded = jwt.verify(token, "Authentication");
-  const user = await UserModel.findOne({ _id: decoded._id });
   try {
+    const user = await UserModel.findOne({ _id: decoded._id });    
     user.gender = gender;
     user.dob = dob;
     user.category = category;

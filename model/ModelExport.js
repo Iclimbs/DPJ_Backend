@@ -1,0 +1,15 @@
+const { BookedTicketModel } = require('./bookedticket.model');
+const { BookMarkModel } = require('./bookmark.model');
+const { CollabModel } = require('./collaboration.model');
+const { CommentModel } = require('./comment.model');
+const { DocumentModel } = require('./document.model');
+const { EventModel } = require('./event.model');
+const { JobModel } = require('./job.model');
+const { JobAppliedModel } = require('./jobapplied.model');
+const { LikeModel } = require('./like.model');
+const { PostModel } = require('./post.model');
+const { TicketModel } = require('./ticket.model');
+const { TransactionModel } = require('./transaction.model');
+const { UserModel } = require('./user.model');
+const { WalletModel } = require('./wallet.model');
+module.exports = { BookedTicketModel,BookMarkModel,BookMarkModel,CollabModel,CollabModel,CommentModel,CommentModel,DocumentModel,DocumentModel,EventModel,EventModel,JobModel,JobModel,JobAppliedModel,JobAppliedModel,LikeModel,LikeModel,PostModel,PostModel,TicketModel,TicketModel,TransactionModel,TransactionModel,UserModel,UserModel,WalletModel,WalletModel }
