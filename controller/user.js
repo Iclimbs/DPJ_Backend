@@ -60,6 +60,7 @@ const { transporter } = require("../service/transporter");
 const { UserAuthentication } = require("../middleware/Authentication");
 const { DocumentModel } = require("../model/document.model");
 const mongoose = require("mongoose");
+const { uploadMiddleWare } = require("../middleware/FileUpload");
 const UserRouter = express.Router();
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -642,17 +643,27 @@ UserRouter.get("/listall/artist", UserAuthentication, async (req, res) => {
 
 // Add Basic Profile Details 
 
-UserRouter.post("/basicdetails/update", upload.fields([{ name: 'profile', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), UserAuthentication, async (req, res) => {
+UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: 'profile', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), UserAuthentication, async (req, res) => {
+
   const token = req.headers.authorization.split(" ")[1];
   const { gender, country, state, city, dob, category, } = req.body;
-  const profile = req.files['profile'][0];
-  const banner = req.files['banner'][0];
+
+  if (!req?.files?.profile) {
+    return res.json({ status: "error", error: "please upload a Profile Image" })
+  }
+
+  if (!req?.files.banner) {
+    return res.json({ status: "error", error: "please upload a Banner Image" })
+    
+  }
+
   const decoded = jwt.verify(token, "Authentication");
   const user = await UserModel.findOne({ _id: decoded._id });
   try {
     user.gender = gender;
     user.dob = dob;
     user.category = category;
+
     if (!user.address) {
       user.address = {}; // Initialize address if it doesn't exist
     }
@@ -661,8 +672,13 @@ UserRouter.post("/basicdetails/update", upload.fields([{ name: 'profile', maxCou
     user.address.country = country || user.address.country;
     user.address.state = state || user.address.state;
     user.address.city = city || user.address.city;
-    user.profile = profile.filename;
-    user.banner = banner.filename;
+
+    if (!!req?.files.profile) {
+      user.profile = req.files.profile[0].location;
+    }
+    if (!!req?.files.banner) {
+      user.banner = req.files.banner[0].location;
+    }
     await user.save();
     res.json({
       status: "success",
@@ -730,5 +746,7 @@ UserRouter.get("/register/google", async (req, res) => {
     });
   }
 });
+
+
 
 module.exports = { UserRouter };
