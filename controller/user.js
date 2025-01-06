@@ -484,69 +484,59 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
 
 // Updating User Detail's in the Database.
 
-UserRouter.patch("/me/update", upload.fields([{ name: 'profile', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), UserAuthentication, async (req, res) => {
-  const profile = req.files['profile'][0];
-  const banner = req.files['banner'][0];
+UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: 'profile', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), UserAuthentication, async (req, res) => {
+
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
 
   try {
     const updatedUser = await UserModel.findOne({ _id: decoded._id });
+    
+    let addressdata = {};
+    addressdata.country = req.body?.country || updatedUser?.address?.country;
+    addressdata.state = req.body?.state || updatedUser?.address?.state;
+    addressdata.city = req.body?.city || updatedUser?.address?.city;
+    addressdata.location = req.body?.location || updatedUser?.address?.location;
 
-    updatedUser.name = req.body?.name;
-    updatedUser.phoneno = req.body?.phoneno;
-    updatedUser.dob = req.body?.dob;
-    updatedUser.category = req.body?.category;
-    updatedUser.gender = req.body?.gender;
+    let sociallinks = {};
+    sociallinks.facebook = req.body?.facebook || updatedUser?.sociallinks?.facebook;
+    sociallinks.linkdein = req.body?.linkdein || updatedUser?.sociallinks?.linkdein;
+    sociallinks.twitter = req.body?.twitter || updatedUser?.sociallinks?.twitter;
+    sociallinks.instagram = req.body?.instagram || updatedUser?.sociallinks?.instagram;
 
-    if (!updatedUser.address) {
-      updatedUser.address = {}; // Initialize address if it doesn't exist
+    let profile;
+    if (!!req?.files.profile) {
+      profile = req.files.profile[0]?.location || updatedUser?.profile;
     }
-    updatedUser.address.country = req.body?.country || updatedUser.address.country;
-    updatedUser.address.state = req.body?.state || updatedUser.address.state;
-    updatedUser.address.city = req.body?.city || updatedUser.address.city;
-    updatedUser.address.address = req.body?.address || updatedUser.address.address;
-
-    if (!updatedUser.sociallinks) {
-      updatedUser.sociallinks = {}; // Initialize sociallinks if it doesn't exist
+    let banner;
+    if (!!req?.files.banner) {
+      banner = req.files.banner[0]?.location || updatedUser?.banner;;
     }
-    updatedUser.sociallinks.facebook = req.body?.facebook || updatedUser.sociallinks.facebook;
-    updatedUser.sociallinks.linkdein = req.body?.linkdein || updatedUser.sociallinks.linkdein;
-    updatedUser.sociallinks.twitter = req.body?.twitter || updatedUser.sociallinks.twitter;
-    updatedUser.sociallinks.instagram = req.body?.instagram || updatedUser.sociallinks.instagram;
 
-    // Removing Profile Images
-    fs.unlink(`${uploadPath}/${updatedUser.banner}`, (err) => {
-      if (err) {
-        console.error('Error deleting old file:', err);
-      } else {
-        console.log('Old file deleted successfully');
-      }
-    });
-
-    // Removing Banner Images
-    fs.unlink(`${uploadPath}/${updatedUser.profile}`, (err) => {
-      if (err) {
-        console.error('Error deleting old file:', err);
-      } else {
-        console.log('Old file deleted successfully');
-      }
-    });
-
-
-
-    updatedUser.profile = profile.filename;
-    updatedUser.banner = banner.filename;
+    let skills;
 
     if (updatedUser?.accountType === "artist") {
-      updatedUser.skills = req.body?.skills;
+      skills = req.body?.skills || updatedUser?.skills;
     }
 
+    let companycategory;
     if (updatedUser?.accountType === "professional") {
-      updatedUser.companycategory = req.body?.companycategory;
+      companycategory = req.body?.companycategory || updatedUser?.companycategory;
     }
 
-    await updatedUser.save()
+    const updatedData = {
+      ...req.body, // Update other fields if provided
+      banner: banner, // Use the new image if uploaded
+      profile: profile,
+      address: addressdata,
+      sociallinks: sociallinks,
+      skills: skills,
+      companycategory: companycategory
+    };
+
+    const updatedItem = await UserModel.findByIdAndUpdate(decoded._id, updatedData, {
+      new: true, // Return the updated document
+    });
     return res.json({ status: "success", message: "User Details Updated" });
   } catch (error) {
     res.json({
@@ -654,7 +644,7 @@ UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: 'profil
 
   if (!req?.files.banner) {
     return res.json({ status: "error", error: "please upload a Banner Image" })
-    
+
   }
 
   const decoded = jwt.verify(token, "Authentication");

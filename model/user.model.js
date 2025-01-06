@@ -11,7 +11,7 @@ const addressSchema = new Schema({
   city: {
     type: String
   },
-  address: {
+  location: {
     type: String
   }
 })
