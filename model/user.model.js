@@ -42,6 +42,9 @@ const userschema = mongoose.Schema({
     type: Boolean,
     default: false
   },
+  description: {
+    type: String
+  },
   // Basic Details Common for all Account Types
   name: {
     type: String,
