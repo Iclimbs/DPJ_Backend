@@ -1,3 +1,4 @@
+const { name } = require("ejs");
 const mongoose = require("mongoose");
 const objectId = mongoose.Schema.Types.ObjectId;
 const commentschema = mongoose.Schema({
@@ -5,7 +6,23 @@ const commentschema = mongoose.Schema({
         type: objectId,
         required: true
     },
-    description:{
+    name: {
+        type: String,
+        required: true
+    },
+    profile:{
+        type: String,
+        required:true
+    },
+    accountType: {
+        type: String,
+        required: true
+    },
+    email: {
+        type: String,
+        required: true
+    },
+    description: {
         type: String,
         required: true
     },

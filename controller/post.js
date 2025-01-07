@@ -25,7 +25,9 @@ PostRouter.post("/add", uploadMiddleWare.single("media"), ArtistAuthentication, 
         media: req.file.location,
         description: description,
         createdBy: decoded._id,
-        mediaType: req.file.mimetype.split("/")[0]
+        mediaType: req.file.mimetype.split("/")[0],
+        isVideo: req.file.mimetype.split("/")[0] == "video" ? true : false,
+
     });
     try {
         await post.save();
@@ -73,7 +75,7 @@ PostRouter.get("/listall", ArtistAuthentication, async (req, res) => {
 PostRouter.get("/details/:id", async (req, res) => {
     const { id } = req.params;
     try {
-        const post = await PostModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } },{ $lookup: { from: 'comments', localField: '_id', foreignField: 'postId', as: 'comments' } }])
+        const post = await PostModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }, { $lookup: { from: 'comments', localField: '_id', foreignField: 'postId', as: 'comments' } }])
         if (post.length == 0) {
             res.json({
                 status: "error",
@@ -96,7 +98,7 @@ PostRouter.get("/details/:id", async (req, res) => {
 
 // Api To Edit Detail's Of A Particular Post Created By User
 
-PostRouter.post("/edit/:id", uploadMiddleWare.single("media"), async (req, res) => {
+PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), async (req, res) => {
     const { id } = req.params;
     try {
         const post = await PostModel.find({ _id: id });
@@ -106,16 +108,13 @@ PostRouter.post("/edit/:id", uploadMiddleWare.single("media"), async (req, res) 
                 message: "No Post Created By User",
             });
         } else {
-            fs.unlink(`${uploadPath}/${post[0].media}`, (err) => {
-                if (err) {
-                    console.error('Error deleting old file:', err);
-                } else {
-                    console.log('Old file deleted successfully');
-                }
-            });
-            post[0].description = req.body.description;
-            post[0].media = req.file.filename;
-            await post[0].save();
+            const updatedPost = {
+                ...req.body, description: req.body?.description || post[0].description, media: req.file?.location || post[0].media, mimetype: req.file?.mimetype.split("/")[0] || post[0].mimetype, isVideo: req.file?.mimetype.split("/")[0] == "video" ? true : false || post[0].isVideo,
+            };
+
+            const newpost = await PostModel.findByIdAndUpdate(id, updatedPost, {
+                new: true, // Return the updated document
+            });            
             res.json({
                 status: "success",
                 data: "Post Updated Successfully",
