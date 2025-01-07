@@ -113,22 +113,48 @@ CollabRouter.post("/add/collaborators/:id", ArtistAuthentication, async (req, re
   const { id } = req.params;
   const { collaborators } = req.body;
   let addCollaborators = [];
-  for (let index = 0; index < collaborators.length; index++) {
-    addCollaborators.push({
-      userId: collaborators[index]._id,
-      email: collaborators[index].email,
-      name: collaborators[index].name,
-      amount: collaborators[index].amount,
-      eventId: id,
-    });
-  }
+  let alreadypresent = [];
   try {
-    const result = await CollabModel.insertMany(addCollaborators);
-    res.json({
-      status: "success",
-      message:
-        "Successfully Sent Collaboration Request To Other User",
-    });
+
+    const collab = await CollabModel.aggregate([{ $match: { eventId: new mongoose.Types.ObjectId(id) } }]);
+    if (collab.length > 0) {
+      for (let index = 0; index < collaborators.length; index++) {
+        const foundObject = collab.find(obj => obj.email === (collaborators[index].email));
+        const exists = !!foundObject;
+        if (exists) {
+          alreadypresent.push(collaborators[index].name);
+        }
+        addCollaborators.push({
+          userId: collaborators[index]._id,
+          email: collaborators[index].email,
+          name: collaborators[index].name,
+          amount: collaborators[index].amount,
+          eventId: id,
+        });
+      }
+
+    } else {
+      for (let index = 0; index < collaborators.length; index++) {
+        addCollaborators.push({
+          userId: collaborators[index]._id,
+          email: collaborators[index].email,
+          name: collaborators[index].name,
+          amount: collaborators[index].amount,
+          eventId: id,
+        });
+      }
+    }
+    if (alreadypresent.length > 0) {
+      return res.json({ status: "error", message: `Some Collaborators Already Present In This Event ${alreadypresent}` });
+    } else {
+      const result = await CollabModel.insertMany(addCollaborators);
+      res.json({
+        status: "success",
+        message:
+          "Successfully Sent Collaboration Request To Other User",
+      });
+
+    }
   } catch (error) {
     res.json({
       status: "error",
