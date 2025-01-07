@@ -245,8 +245,6 @@ CollabRouter.get("/request/list", ArtistAuthentication, async (req, res) => {
 // Get All Collaborator List Whom Request Sent For Collaboration
 CollabRouter.get("/list/artists/:id", ArtistAuthentication, async (req, res) => {
   const { id } = req.params
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
   try {
     const list = await CollabModel.find({ eventId: id })
     if (list.length == 0) {
