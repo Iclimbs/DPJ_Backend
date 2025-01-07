@@ -100,6 +100,8 @@ PostRouter.get("/details/:id", async (req, res) => {
 
 PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), async (req, res) => {
     const { id } = req.params;
+    console.log(req.file);
+
     try {
         const post = await PostModel.find({ _id: id });
         if (post.length == 0) {
@@ -108,16 +110,25 @@ PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), async (req, res)
                 message: "No Post Created By User",
             });
         } else {
+            let isVideovalue;
+            if (req.file) {
+                isVideovalue = req.file?.mimetype.split("/")[0] == "video" ? true : false
+            }else{
+                isVideovalue = post[0].isVideo;
+            }
+            console.log("isvideo value ",isVideovalue);
+            
             const updatedPost = {
-                ...req.body, description: req.body?.description || post[0].description, media: req.file?.location || post[0].media, mimetype: req.file?.mimetype.split("/")[0] || post[0].mimetype, isVideo: req.file?.mimetype.split("/")[0] == "video" ? true : false || post[0].isVideo,
-            };
+                ...req.body, description: req.body?.description || post[0].description, media: req.file?.location || post[0].media, mediaType: req.file?.mimetype.split("/")[0] || post[0].mimetype, isVideo: isVideovalue
+            }
+console.log("updated post ",updatedPost);
 
             const newpost = await PostModel.findByIdAndUpdate(id, updatedPost, {
                 new: true, // Return the updated document
-            });            
+            });
             res.json({
                 status: "success",
-                data: "Post Updated Successfully",
+                message: "Post Updated Successfully",
             });
         }
     } catch (error) {
@@ -191,17 +202,19 @@ PostRouter.post("/add/comment/:id", ArtistAuthentication, async (req, res) => {
 // Api To Edit A particular Comment
 
 PostRouter.patch("/edit/comment/:id", async (req, res) => {
+
     const { id } = req.params;
-    const { description } = req.body;
-    const comment = await CommentModel.findOne({ _id: id,comm });
-    if (comment.length == 0) {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    const commentDetails = await CommentModel.find({ _id: id, commentedBy: decoded._id });
+    if (commentDetails.length == 0) {
         res.json({
             status: "error",
             message: "No Comment Found",
         });
     } else {
-        comment.description = description;
-        await comment.save();
+        const updatedData = { ...req.body, description: req.body?.description || comment[0].description };
+        const updatedComment = await CommentModel.findByIdAndUpdate(id, updatedData, { new: true });
         res.json({
             status: "success",
             message: `Comment Updated Successfully`,
