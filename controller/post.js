@@ -7,6 +7,7 @@ const { PostModel, CommentModel, BookMarkModel } = require("../model/ModelExport
 
 // Basic Middleware Imports
 const { ArtistAuthentication, AdminAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
+const { default: mongoose } = require("mongoose");
 
 const PostRouter = express.Router();
 
@@ -72,13 +73,8 @@ PostRouter.get("/listall", ArtistAuthentication, async (req, res) => {
 PostRouter.get("/details/:id", async (req, res) => {
     const { id } = req.params;
     try {
-        const post = await PostModel.findOne({ _id: id });
-        const comment = await CommentModel.find({ postId: id });
-        const result = {
-            post: post,
-            comment: comment
-        }
-        if (result.length == 0) {
+        const post = await PostModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } },{ $lookup: { from: 'comments', localField: '_id', foreignField: 'postId', as: 'comments' } }])
+        if (post.length == 0) {
             res.json({
                 status: "error",
                 message: "No Post Created By User",
@@ -86,7 +82,7 @@ PostRouter.get("/details/:id", async (req, res) => {
         } else {
             res.json({
                 status: "success",
-                data: result
+                data: post
             });
         }
     } catch (error) {

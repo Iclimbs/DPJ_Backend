@@ -129,6 +129,7 @@ CollabRouter.post("/add/collaborators/:id", ArtistAuthentication, async (req, re
           email: collaborators[index].email,
           name: collaborators[index].name,
           amount: collaborators[index].amount,
+          profile: collaborators[index].profile,
           eventId: id,
         });
       }
@@ -140,6 +141,7 @@ CollabRouter.post("/add/collaborators/:id", ArtistAuthentication, async (req, re
           email: collaborators[index].email,
           name: collaborators[index].name,
           amount: collaborators[index].amount,
+          profile: collaborators[index].profile,
           eventId: id,
         });
       }
