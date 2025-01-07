@@ -100,7 +100,6 @@ PostRouter.get("/details/:id", async (req, res) => {
 
 PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), async (req, res) => {
     const { id } = req.params;
-    console.log(req.file);
 
     try {
         const post = await PostModel.find({ _id: id });
@@ -113,16 +112,14 @@ PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), async (req, res)
             let isVideovalue;
             if (req.file) {
                 isVideovalue = req.file?.mimetype.split("/")[0] == "video" ? true : false
-            }else{
+            } else {
                 isVideovalue = post[0].isVideo;
             }
-            console.log("isvideo value ",isVideovalue);
-            
+            console.log("isvideo value ", isVideovalue);
+
             const updatedPost = {
                 ...req.body, description: req.body?.description || post[0].description, media: req.file?.location || post[0].media, mediaType: req.file?.mimetype.split("/")[0] || post[0].mimetype, isVideo: isVideovalue
             }
-console.log("updated post ",updatedPost);
-
             const newpost = await PostModel.findByIdAndUpdate(id, updatedPost, {
                 new: true, // Return the updated document
             });
@@ -228,7 +225,7 @@ PostRouter.patch("/edit/comment/:id", async (req, res) => {
 PostRouter.get("/list/comments/:id", async (req, res) => {
     const { id } = req.params;
     try {
-        const comment = await CommentModel.find({ postId: id })
+        const comment = await CommentModel.aggregate([{ $match: { postId: new mongoose.Types.ObjectId(id) } }]);
         if (comment.length == 0) {
             res.json({
                 status: "error",
@@ -305,29 +302,28 @@ PostRouter.get("/listall/bookmark", async (req, res) => {
         const bookmark = await BookMarkModel.aggregate(
             [
                 {
-                    $match:
-                    /**
-                     * query: The query in MQL.
-                     */
-                    {
-                        bookmarkedBy: "6752a004efaca432a3075c9c"
-                    }
+                    $match: { bookmarkedBy: new mongoose.Types.ObjectId(decoded._id) }
                 },
                 {
                     $lookup: {
                         from: "posts",
                         localField: "postId",
                         foreignField: "_id",
-                        as: "result"
+                        as: "post"
                     }
                 }
             ])
-        res.json({
-            status: "success",
-            data: bookmark,
-        });
-
-
+        if (bookmark.length == 0) {
+            res.json({
+                status: "error",
+                message: "No Bookmark Found",
+            });
+        } else {
+            res.json({
+                status: "success",
+                data: bookmark,
+            });
+        }
     } catch (error) {
         res.json({
             status: "error",
