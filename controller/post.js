@@ -168,6 +168,10 @@ PostRouter.post("/add/comment/:id", ArtistAuthentication, async (req, res) => {
         commentedBy: decoded._id,
         description: description,
         postId: id,
+        name: decoded.name,
+        profile: decoded.profile,
+        accountType: decoded.accountType,
+        email: decoded.email,
     });
     try {
         await comment.save();
@@ -186,10 +190,10 @@ PostRouter.post("/add/comment/:id", ArtistAuthentication, async (req, res) => {
 
 // Api To Edit A particular Comment
 
-PostRouter.post("/edit/comment/:id", async (req, res) => {
+PostRouter.patch("/edit/comment/:id", async (req, res) => {
     const { id } = req.params;
     const { description } = req.body;
-    const comment = await CommentModel.findOne({ _id: id });
+    const comment = await CommentModel.findOne({ _id: id,comm });
     if (comment.length == 0) {
         res.json({
             status: "error",

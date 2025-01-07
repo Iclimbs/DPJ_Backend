@@ -233,7 +233,7 @@ CollabRouter.get("/request/list", ArtistAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
-    const list = await CollabModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(decoded._id), status: "Pending" } }, { $lookup: { from: 'events', localField: 'eventId', foreignField: '_id', as: 'event' } }])
+    const list = await CollabModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(decoded._id)} }, { $lookup: { from: 'events', localField: 'eventId', foreignField: '_id', as: 'event' } }])
     if (list.length == 0) {
       res.json({ status: "error", message: "No Collaboration Request Found" })
     } else {
