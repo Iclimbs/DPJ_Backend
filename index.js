@@ -5,8 +5,11 @@ const path = require("node:path");
 const swaggerjsdoc = require("swagger-jsdoc");
 const swaggerui = require("swagger-ui-express");
 const connection = require("./connection/connection");
+const bodyParser = require('body-parser')
 const app = express();
 
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.json());
 app.use(cors());
 const options = {

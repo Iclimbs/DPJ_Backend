@@ -7,6 +7,7 @@ const { EventModel, CollabModel } = require("../model/ModelExport");
 
 // Basic MiddleWare Imports
 const { ArtistAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
+const { default: mongoose } = require("mongoose");
 
 const CollabRouter = express.Router();
 
@@ -49,35 +50,6 @@ CollabRouter.post("/add", uploadMiddleWare.single("banner"), ArtistAuthenticatio
     res.json({
       status: "error",
       message: `Failed To Create New Collaboration ${error.message}`,
-    });
-  }
-}
-);
-
-CollabRouter.post("/add/collaborators/:id", ArtistAuthentication, async (req, res) => {
-  const { id } = req.params;
-  const { collaborators } = req.body;
-  let addCollaborators = [];
-  for (let index = 0; index < collaborators.length; index++) {
-    addCollaborators.push({
-      userId: collaborators[index]._id,
-      email: collaborators[index].email,
-      name: collaborators[index].name,
-      amount: collaborators[index].amount,
-      eventId: id,
-    });
-  }
-  try {
-    const result = await CollabModel.insertMany(addCollaborators);
-    res.json({
-      status: "success",
-      message:
-        "Successfully Sent Collaboration Request To Other User",
-    });
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Failed To Sent Collaboration Request To Other User Message :- ${error.message}`,
     });
   }
 }
@@ -137,6 +109,63 @@ CollabRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ArtistA
 }
 );
 
+CollabRouter.post("/add/collaborators/:id", ArtistAuthentication, async (req, res) => {
+  const { id } = req.params;
+  const { collaborators } = req.body;
+  let addCollaborators = [];
+  for (let index = 0; index < collaborators.length; index++) {
+    addCollaborators.push({
+      userId: collaborators[index]._id,
+      email: collaborators[index].email,
+      name: collaborators[index].name,
+      amount: collaborators[index].amount,
+      eventId: id,
+    });
+  }
+  try {
+    const result = await CollabModel.insertMany(addCollaborators);
+    res.json({
+      status: "success",
+      message:
+        "Successfully Sent Collaboration Request To Other User",
+    });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Sent Collaboration Request To Other User Message :- ${error.message}`,
+    });
+  }
+}
+);
+
+// Counter Offer For Collaborators
+CollabRouter.patch("/edit/collaborators/amount/:id", ArtistAuthentication, async (req, res) => {
+  const { id } = req.params;
+  const { amount } = req.body;
+  try {
+    const result = await CollabModel.findOne({ _id: id });
+    if (result.status == "Accepted") {
+      return res.json({ status: "error", message: "Collaborator Already Accepted The Request" });
+    } else {
+      result.amount = amount;
+      result.status = "Pending";
+      await result.save();
+      res.json({
+        status: "success",
+        message:
+          "Successfully Sent Collaboration Request To Other User",
+      });
+    }
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Update Collaborator Amount Message :- ${error.message}`,
+    });
+  }
+}
+);
+
+// Currently Not In Use
 CollabRouter.post("/edit/collaborators/:id", ArtistAuthentication, async (req, res) => {
   const { id } = req.params;
   const token = req.headers.authorization.split(" ")[1];
@@ -176,7 +205,7 @@ CollabRouter.get("/request/list", ArtistAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
-    const list = await CollabModel.find({ userId: decoded._id })
+    const list = await CollabModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(decoded._id), status: "Pending" } }, { $lookup: { from: 'events', localField: 'eventId', foreignField: '_id', as: 'event' } }])
     if (list.length == 0) {
       res.json({ status: "error", message: "No Collaboration Request Found" })
     } else {

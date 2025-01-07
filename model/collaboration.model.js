@@ -1,10 +1,22 @@
 const mongoose = require("mongoose")
 const objectId = mongoose.Schema.Types.ObjectId
 const CollabSchema = mongoose.Schema({
-    userId: objectId,
-    email: String,
-    name: String,
-    amount: Number,
+    userId: {
+        type: objectId,
+        required: true
+    },
+    email: {
+        type: String,
+        required: true
+    },
+    name: {
+        type: String,
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: true
+    },
     status: {
         type: String,
         enum: ["Pending", "Accepted", "Rejected"],
