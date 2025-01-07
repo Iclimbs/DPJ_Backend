@@ -1,6 +1,7 @@
 const mongoose = require("mongoose")
+const objectId = mongoose.Schema.Types.ObjectId
 const CollabSchema = mongoose.Schema({
-    userId: String,
+    userId: objectId,
     email: String,
     name: String,
     amount: Number,
@@ -9,7 +10,7 @@ const CollabSchema = mongoose.Schema({
         enum: ["Pending", "Accepted", "Rejected"],
         default: "Pending"
     },
-    eventId: { type: String, required: true },
+    eventId: { type: objectId, required: true },
     CreatedAt: { type: Date, default: Date.now } // Save The Time When the following Job was created 
 })
 const CollabModel = mongoose.model("Collab", CollabSchema)

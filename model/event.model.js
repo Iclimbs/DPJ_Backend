@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const { ObjectId } = mongoose.Schema.Types;
 const eventschema = mongoose.Schema({
     address: String,
     title: {
@@ -42,7 +43,7 @@ const eventschema = mongoose.Schema({
         required: true
     },
     createdBy: {
-        type: String,
+        type: ObjectId,
         required: true
     },
     link: String,

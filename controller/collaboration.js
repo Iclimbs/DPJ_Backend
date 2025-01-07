@@ -1,37 +1,29 @@
+// Basic Required Modules
 const express = require("express");
-const multer = require("multer");
-const path = require("node:path");
-const fs = require('fs');
 const jwt = require("jsonwebtoken");
-const { EventModel } = require("../model/event.model");
-const { ArtistAuthentication } = require("../middleware/Authentication");
-const { CollabModel } = require("../model/collaboration.model");
+
+// Basic Model Imports
+const { EventModel, CollabModel } = require("../model/ModelExport");
+
+// Basic MiddleWare Imports
+const { ArtistAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
+
 const CollabRouter = express.Router();
-const uploadPath = path.join(__dirname, "../public/collaborations");
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    let uniqueSuffix = Date.now();
-    cb(null, uniqueSuffix + file.originalname);
-  },
-});
-
-const upload = multer({ storage: storage });
-
-CollabRouter.post("/add", upload.single("banner"), ArtistAuthentication, async (req, res) => {
+CollabRouter.post("/add", uploadMiddleWare.single("banner"), ArtistAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  const fileName = req.file.filename;
+  if (!req?.file) {
+    res.json({ status: "error", message: `Please Upload Banner Image` });
+  }
+
   const { title, description, address, eventType, category, startDate, endDate, startTime, endTime, country, state, city } = req.body;
   const startDateTime = new Date(`${startDate}T${startTime}`);
   const endDateTime = new Date(`${endDate}T${endTime}`);
   const collaboration = new EventModel({
     address: address,
     title: title,
-    banner: fileName,
+    banner: req.file.location,
     description: description,
     category: category,
     startDateTime: startDateTime,
@@ -80,34 +72,27 @@ CollabRouter.post("/add/collaborators/:id", ArtistAuthentication, async (req, re
     res.json({
       status: "success",
       message:
-        "Successfully Added Collaborators in The Following Collaboration Event",
+        "Successfully Sent Collaboration Request To Other User",
     });
   } catch (error) {
     res.json({
       status: "error",
-      message: `Failed To Add New Collaboration Event ${error.message}`,
+      message: `Failed To Sent Collaboration Request To Other User Message :- ${error.message}`,
     });
   }
 }
 );
 
-CollabRouter.patch("/edit/basic/:id", ArtistAuthentication, upload.single("banner"), async (req, res) => {
+CollabRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ArtistAuthentication, async (req, res) => {
   const { id } = req.params;
-  const fileName = req.file?.filename;
+  let location;
+  if (req.file) {
+    location = req.file?.location;
+  }
   try {
     const details = await EventModel.find({ _id: id });
     if (!details) {
       return res.json({ status: "error", message: 'No Event found' });
-    }
-
-    if (req.file && details[0].banner) {
-      fs.unlink(`${uploadPath}/${details[0].banner}`, (err) => {
-        if (err) {
-          console.error('Error deleting old file:', err);
-        } else {
-          console.log('Old file deleted successfully');
-        }
-      });
     }
 
     let startDateTime = new Date(`${details[0].startDate}T${details[0].startTime}`);
@@ -133,7 +118,7 @@ CollabRouter.patch("/edit/basic/:id", ArtistAuthentication, upload.single("banne
 
     const updatedData = {
       ...req.body, // Update other fields if provided
-      banner: req.file ? fileName : details[0].banner, // Use the new image if uploaded
+      banner: req.file ? location : details[0].banner, // Use the new image if uploaded
       startDateTime: startDateTime,
       endDateTime: endDateTime
     };
