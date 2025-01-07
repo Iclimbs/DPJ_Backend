@@ -502,7 +502,7 @@ UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: 'profile', maxCo
     let skills;
 
     if (updatedUser?.accountType === "artist") {
-      skills = req.body?.skills || updatedUser?.skills;
+      skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
     }
 
     let companycategory;
