@@ -1,40 +1,30 @@
+// Basic Required Modules
 const express = require("express");
-const multer = require("multer");
-const path = require("node:path");
-const fs = require('fs');
 const jwt = require("jsonwebtoken");
-const { ArtistAuthentication } = require("../middleware/Authentication");
-const { PostModel } = require("../model/post.model");
-const { CommentModel } = require("../model/comment.model");
-const { AdminAuthentication } = require("../middleware/Authorization");
-const { BookMarkModel } = require("../model/bookmark.model");
+
+// Basic Model Imports
+const { PostModel, CommentModel, BookMarkModel } = require("../model/ModelExport");
+
+// Basic Middleware Imports
+const { ArtistAuthentication, AdminAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
+
 const PostRouter = express.Router();
-const uploadPath = path.join(__dirname, "../public/post");
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadPath);
-    },
-    filename: function (req, file, cb) {
-        let uniqueSuffix = Date.now();
-        cb(null, uniqueSuffix + file.originalname);
-    },
-});
-
-const upload = multer({ storage: storage });
 
 // Api's For Post 
 
 // Api To Add New Post
-PostRouter.post("/add", upload.single("media"), ArtistAuthentication, async (req, res) => {
+PostRouter.post("/add", uploadMiddleWare.single("media"), ArtistAuthentication, async (req, res) => {
+    if (!req?.file) {
+        res.json({ status: "error", message: `Please Upload Image Or Video For Post` });
+    }
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
-    const fileName = req.file.filename;
-    const { description, } = req.body;
+    const { description } = req.body;
     const post = new PostModel({
-        media: fileName,
+        media: req.file.location,
         description: description,
         createdBy: decoded._id,
+        mediaType: req.file.mimetype.split("/")[0]
     });
     try {
         await post.save();
@@ -110,7 +100,7 @@ PostRouter.get("/details/:id", async (req, res) => {
 
 // Api To Edit Detail's Of A Particular Post Created By User
 
-PostRouter.post("/edit/:id", upload.single("media"), async (req, res) => {
+PostRouter.post("/edit/:id", uploadMiddleWare.single("media"), async (req, res) => {
     const { id } = req.params;
     try {
         const post = await PostModel.find({ _id: id });

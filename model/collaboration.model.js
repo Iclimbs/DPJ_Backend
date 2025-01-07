@@ -5,6 +5,10 @@ const CollabSchema = mongoose.Schema({
         type: objectId,
         required: true
     },
+    profile: {
+        type: String,
+        required: true
+    },
     email: {
         type: String,
         required: true
