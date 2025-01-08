@@ -344,20 +344,13 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
     const decoded = jwt.verify(token, "Authentication");
     try {
         const result = await PostModel.aggregate([{ $lookup: { from: "comments", localField: "_id", foreignField: "postId", as: "comments" } }, {
-            $lookup: {
-                from: "users", localField: "createdBy", foreignField: "_id", as: "userdetails", pipeline: [
-                    {
-                        $project: {
-                            _id: 1,
-                            name: 1,
-                            email:1,
-                            category: 1,
-                            profile: 1,
-                        }
-                    }
-                ]
-            }
-        }, { $lookup: { from: "bookmarks", localField: "_id", foreignField: "postId", as: "bookmarks" } }, { $addFields: { bookmark: { $in: [new mongoose.Types.ObjectId(decoded._id), "$bookmarks.bookmarkedBy"] } } }, { $sort: { CreatedAt: -1 } }]);
+            $lookup: { from: "users", localField: "createdBy", foreignField: "_id", as: "userdetails", pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }] }
+        },
+        {
+            $lookup: { from: "bookmarks", localField: "_id", foreignField: "postId", as: "bookmarks" }
+        }, {
+            $addFields: { bookmark: { $in: [new mongoose.Types.ObjectId(decoded._id), "$bookmarks.bookmarkedBy"] } }
+        }, { $sort: { CreatedAt: -1 } }]);
         if (result.length == 0) {
             res.json({
                 status: "error",
