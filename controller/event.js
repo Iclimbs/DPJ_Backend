@@ -14,8 +14,7 @@ const EventRouter = express.Router();
 // Api's For Event
 
 // Api To Add New Event
-EventRouter.post("/add", uploadMiddleWare.single("banner"), ArtistAuthentication, async (req, res) => {
-
+EventRouter.post("/add", uploadMiddleWare.single("banner"),  async (req, res) => {
   if (!req?.file) {
     res.json({ status: "error", message: `Please Upload Banner Image` });
   }
@@ -100,10 +99,10 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), ArtistAuthentication
 
 // Api To Edit Event Details
 
-EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ArtistAuthentication, async (req, res) => {
+EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"),  async (req, res) => {
   const { id } = req.params;
   try {
-    const details = await EventModel.aggregate([{ $match: { _id: new mongoose.type.ObjectId(id) } }])
+    const details = await EventModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
     if (!details) {
       return res.json({ status: "error", message: 'No Event found' });
     }
@@ -150,7 +149,7 @@ EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ArtistAu
 
 // Api To Add New Tickets In An Event
 
-EventRouter.post("/add/tickets/:id", ArtistAuthentication, async (req, res) => {
+EventRouter.post("/add/tickets/:id",  async (req, res) => {
   const { id } = req.params;
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
@@ -182,14 +181,14 @@ EventRouter.post("/add/tickets/:id", ArtistAuthentication, async (req, res) => {
 
 // Get List of Events Created By Profiessional User
 
-EventRouter.get("/lists", ArtistAuthentication, async (req, res) => {
+EventRouter.get("/lists",  async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
 
     const list = await EventModel.aggregate([
       {
-        $match: { createdBy: decoded._id, type: "Event" }
+        $match: { createdBy: new mongoose.Types.ObjectId(decoded._id), type: "Event" }
       },
       {
         $lookup: {
@@ -216,7 +215,7 @@ EventRouter.get("/lists", ArtistAuthentication, async (req, res) => {
 
 // Get Detail of an Particular Events
 
-EventRouter.get("/lists/:id", ArtistAuthentication, async (req, res) => {
+EventRouter.get("/lists/:id",  async (req, res) => {
   const { id } = req.params;
   try {
     const list = await EventModel.aggregate([
@@ -248,7 +247,7 @@ EventRouter.get("/lists/:id", ArtistAuthentication, async (req, res) => {
 
 // Get List of Events which are Active
 
-EventRouter.get("/active/list", ArtistAuthentication, async (req, res) => {
+EventRouter.get("/active/list",  async (req, res) => {
   try {
     const dateObj = new Date();
     // Creating Date
