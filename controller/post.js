@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const { PostModel, CommentModel, BookMarkModel } = require("../model/ModelExport");
 
 // Basic Middleware Imports
-const { ArtistAuthentication, AdminAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
+const { ArtistAuthentication, AdminAuthentication, uploadMiddleWare, UserAuthentication } = require("../middleware/MiddlewareExport");
 const { default: mongoose } = require("mongoose");
 
 const PostRouter = express.Router();
@@ -14,7 +14,7 @@ const PostRouter = express.Router();
 // Api's For Post 
 
 // Api To Add New Post
-PostRouter.post("/add", uploadMiddleWare.single("media"), ArtistAuthentication, async (req, res) => {
+PostRouter.post("/add", uploadMiddleWare.single("media"), UserAuthentication, async (req, res) => {
     if (!req?.file) {
         res.json({ status: "error", message: `Please Upload Image Or Video For Post` });
     }
@@ -45,11 +45,11 @@ PostRouter.post("/add", uploadMiddleWare.single("media"), ArtistAuthentication, 
 );
 
 // Api To Get All Post List Created By User
-PostRouter.get("/listall", ArtistAuthentication, async (req, res) => {
+PostRouter.get("/listall", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     try {
-        const result = await PostModel.find({ createdBy: decoded._id });
+        const result = await PostModel.find({ createdBy: decoded._id }).sort({ createdAt: -1 });
         if (result.length == 0) {
             res.json({
                 status: "error",
@@ -72,7 +72,7 @@ PostRouter.get("/listall", ArtistAuthentication, async (req, res) => {
 
 // Api To Get All Detail Of A Particular Post Created By User
 
-PostRouter.get("/details/:id", async (req, res) => {
+PostRouter.get("/details/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params;
     try {
         const post = await PostModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }, { $lookup: { from: 'comments', localField: '_id', foreignField: 'postId', as: 'comments' } }])
@@ -98,11 +98,13 @@ PostRouter.get("/details/:id", async (req, res) => {
 
 // Api To Edit Detail's Of A Particular Post Created By User
 
-PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), async (req, res) => {
+PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), UserAuthentication, async (req, res) => {
     const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
 
     try {
-        const post = await PostModel.find({ _id: id });
+        const post = await PostModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }]);
         if (post.length == 0) {
             res.json({
                 status: "error",
@@ -115,7 +117,6 @@ PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), async (req, res)
             } else {
                 isVideovalue = post[0].isVideo;
             }
-            console.log("isvideo value ", isVideovalue);
 
             const updatedPost = {
                 ...req.body, description: req.body?.description || post[0].description, media: req.file?.location || post[0].media, mediaType: req.file?.mimetype.split("/")[0] || post[0].mimetype, isVideo: isVideovalue
@@ -167,7 +168,7 @@ PostRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
 
 // Api To Add New Comment In a Particular Post
 
-PostRouter.post("/add/comment/:id", ArtistAuthentication, async (req, res) => {
+PostRouter.post("/add/comment/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params;
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
@@ -198,12 +199,12 @@ PostRouter.post("/add/comment/:id", ArtistAuthentication, async (req, res) => {
 
 // Api To Edit A particular Comment
 
-PostRouter.patch("/edit/comment/:id", async (req, res) => {
+PostRouter.patch("/edit/comment/:id",UserAuthentication, async (req, res) => {
 
     const { id } = req.params;
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
-    const commentDetails = await CommentModel.find({ _id: id, commentedBy: decoded._id });
+    const commentDetails = await CommentModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), commentedBy: new mongoose.Types.ObjectId(decoded._id) } }]);
     if (commentDetails.length == 0) {
         res.json({
             status: "error",
@@ -222,7 +223,7 @@ PostRouter.patch("/edit/comment/:id", async (req, res) => {
 
 // Api To Get List Of All Comment in An Post
 
-PostRouter.get("/list/comments/:id", async (req, res) => {
+PostRouter.get("/list/comments/:id",UserAuthentication, async (req, res) => {
     const { id } = req.params;
     try {
         const comment = await CommentModel.aggregate([{ $match: { postId: new mongoose.Types.ObjectId(id) } }]);
@@ -252,7 +253,7 @@ PostRouter.get("/list/comments/:id", async (req, res) => {
 
 // Api To Add OR Remove Bookmark
 
-PostRouter.post("/add/bookmark/:id", async (req, res) => {
+PostRouter.post("/add/bookmark/:id",UserAuthentication, async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     const token = req.headers.authorization.split(" ")[1];
@@ -295,7 +296,7 @@ PostRouter.post("/add/bookmark/:id", async (req, res) => {
 
 // Api To Get List Of All Bookmark List Of A Particular User
 
-PostRouter.get("/listall/bookmark", async (req, res) => {
+PostRouter.get("/listall/bookmark",UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     try {
@@ -311,6 +312,9 @@ PostRouter.get("/listall/bookmark", async (req, res) => {
                         foreignField: "_id",
                         as: "post"
                     }
+                },
+                {
+                    $sort: { createdAt: -1 }
                 }
             ])
         if (bookmark.length == 0) {
@@ -334,8 +338,29 @@ PostRouter.get("/listall/bookmark", async (req, res) => {
 );
 
 
-// Api's For Like
+// Api's For Live Post Feed
+PostRouter.get("/listall/live",UserAuthentication, async (req, res) => {
+    try {
+        const result = await PostModel.aggregate([{$lookup:{    from:"comments", localField:"", foreignField:"" ,as:"comments" }},{$sort: { createdAt: -1 }}]);
+        if (result.length == 0) {
+            res.json({
+                status: "error",
+                message: "No Live Post Found",
+            });
+        } else {
+            res.json({
+                status: "success",
+                data: result,
+            });
+        }
+    } catch (error) {
+        res.json({
+            status: "error",
+            message: `Failed To Get Post Detail's ${error.message}`,
+        });
+    }
 
+})
 
 
 
