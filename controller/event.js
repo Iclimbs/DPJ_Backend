@@ -1,40 +1,30 @@
+// Basic Required Modules
 const express = require("express");
-const multer = require("multer");
-const path = require("node:path");
-const fs = require('fs');
-const jwt = require("jsonwebtoken");
-const { EventModel } = require("../model/event.model");
-const { ArtistAuthentication, ProfessionalAuthentication } = require("../middleware/Authentication");
-const { TicketModel } = require("../model/ticket.model");
 const mongoose = require('mongoose');
-const { WalletChecker } = require("../middleware/WalletChecker");
-const { BookedTicketModel } = require("../model/bookedticket.model");
-const { TransactionModel } = require("../model/transaction.model");
+const jwt = require("jsonwebtoken");
+
+// Basic Model Imports
+const { EventModel, TicketModel } = require("../model/ModelExport");
+
+// Basic MiddleWare Imports
+const { ArtistAuthentication, ProfessionalAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
 
 const EventRouter = express.Router();
-const uploadPath = path.join(__dirname, "../public/events");
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    let uniqueSuffix = Date.now();
-    cb(null, uniqueSuffix + file.originalname);
-  },
-});
-
-const upload = multer({ storage: storage });
 
 // Api's For Event
 
 // Api To Add New Event
+EventRouter.post("/add", uploadMiddleWare.single("banner"), ProfessionalAuthentication, async (req, res) => {
 
-EventRouter.post("/add", upload.single("banner"), async (req, res) => {
+  if (!req?.file) {
+    res.json({ status: "error", message: `Please Upload Banner Image` });
+  }
+
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  const fileName = req.file.filename;
+
   const { title, description, eventType, category, startDate, endDate, startTime, endTime, tickets, country, state, city } = req.body;
+
   const startDateTime = new Date(`${startDate}T${startTime}`);
   const endDateTime = new Date(`${endDate}T${endTime}`);
 
@@ -55,26 +45,34 @@ EventRouter.post("/add", upload.single("banner"), async (req, res) => {
     }
   }
 
+  let address;
+
+  if (req.body?.eventType === "Physical") {
+    address = {};
+    address.country = req.body?.country;
+    address.state = req.body?.state;
+    address.city = req.body?.city;
+    address.location = req.body?.location;
+  }
+
   const collaboration = new EventModel({
-    address: req.body?.address,
-    link: req.body?.link,
-    title: title,
-    banner: fileName,
-    eventType: eventType,
-    description: description,
+    address: address || null,
+    banner: req?.file?.location,
     category: category,
-    type: "Event",
     createdBy: decoded._id,
-    startDateTime: startDateTime,
+    description: description,
+    eventType: eventType,
     endDateTime: endDateTime,
-    startTime: startTime,
-    startDate: startDate,
     endTime: endTime,
     endDate: endDate,
-    country: country,
-    state: state,
-    city: city
+    link: req.body?.link || null,
+    startDateTime: startDateTime,
+    startTime: startTime,
+    startDate: startDate,
+    title: title,
+    type: "Event",
   });
+
   try {
     const eventDetails = await collaboration.save();
 
@@ -85,7 +83,6 @@ EventRouter.post("/add", upload.single("banner"), async (req, res) => {
         price: ticket.price,
         name: ticket.name,
       }));
-
       await TicketModel.insertMany(ticketData);
     }
     res.json({
@@ -103,23 +100,12 @@ EventRouter.post("/add", upload.single("banner"), async (req, res) => {
 
 // Api To Edit Event Details
 
-EventRouter.patch("/edit/basic/:id", ArtistAuthentication, upload.single("banner"), async (req, res) => {
+EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ProfessionalAuthentication, async (req, res) => {
   const { id } = req.params;
-  const fileName = req.file?.filename;
   try {
-    const details = await EventModel.find({ _id: id });
+    const details = await EventModel.aggregate([{ $match: { _id: new mongoose.type.ObjectId(id) } }])
     if (!details) {
       return res.json({ status: "error", message: 'No Event found' });
-    }
-
-    if (req.file && details[0].banner) {
-      fs.unlink(`${uploadPath}/${details[0].banner}`, (err) => {
-        if (err) {
-          console.error('Error deleting old file:', err);
-        } else {
-          console.log('Old file deleted successfully');
-        }
-      });
     }
 
     let startDateTime = new Date(`${details[0].startDate}T${details[0].startTime}`);
@@ -143,7 +129,7 @@ EventRouter.patch("/edit/basic/:id", ArtistAuthentication, upload.single("banner
 
     const updatedData = {
       ...req.body, // Update other fields if provided
-      banner: req.file ? fileName : details[0].banner, // Use the new image if uploaded
+      banner: req.file ? req.file?.location : details[0].banner, // Use the new image if uploaded
       startDateTime: startDateTime,
       endDateTime: endDateTime
     };
@@ -164,12 +150,17 @@ EventRouter.patch("/edit/basic/:id", ArtistAuthentication, upload.single("banner
 
 // Api To Add New Tickets In An Event
 
-EventRouter.post("/add/tickets/:id", ArtistAuthentication, async (req, res) => {
+EventRouter.post("/add/tickets/:id", ProfessionalAuthentication, async (req, res) => {
   const { id } = req.params;
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   const { tickets } = req.body;
   try {
+    // Check if the event exists & is created by the user
+    const event = await EventModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }]);
+    if (event.length === 0) {
+      return res.json({ status: "error", message: "Event Not Found Or You Don't have required Permissions." });
+    }
     const ticketData = tickets.map((ticket) => {
       return {
         eventId: id,
@@ -191,7 +182,7 @@ EventRouter.post("/add/tickets/:id", ArtistAuthentication, async (req, res) => {
 
 // Get List of Events Created By Profiessional User
 
-EventRouter.get("/lists", ArtistAuthentication, async (req, res) => {
+EventRouter.get("/lists", ProfessionalAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
@@ -207,6 +198,9 @@ EventRouter.get("/lists", ArtistAuthentication, async (req, res) => {
           foreignField: 'eventId',
           as: 'tickets'
         }
+      },
+      { 
+        $sort: { createdAt: -1 } // Sort by createdAt field in descending order
       }
     ]);
 
@@ -256,10 +250,18 @@ EventRouter.get("/lists/:id", ArtistAuthentication, async (req, res) => {
 
 EventRouter.get("/active/list", ArtistAuthentication, async (req, res) => {
   try {
+    const dateObj = new Date();
+    // Creating Date
+    const month = (dateObj.getUTCMonth() + 1) < 10 ? String(dateObj.getUTCMonth() + 1).padStart(2, '0') : dateObj.getUTCMonth() + 1 // months from 1-12
+    const day = dateObj.getUTCDate() < 10 ? String(dateObj.getUTCDate()).padStart(2, '0') : dateObj.getUTCDate()
+    const year = dateObj.getUTCFullYear();
+    const currentDate = year + "-" + month + "-" + day;
+
     const list = await EventModel.aggregate([
       {
         $match: {
-          type: "Event"
+          type: "Event",
+          endDate: { $gte: currentDate }
         }
       }, {
         $lookup: {
@@ -268,12 +270,14 @@ EventRouter.get("/active/list", ArtistAuthentication, async (req, res) => {
           foreignField: 'eventId',
           as: 'tickets'
         }
+      },
+      { 
+        $sort: { createdAt: -1 } // Sort by createdAt field in descending order
       }
     ]);
 
-    // const list = await EventModel.find({ createdBy: decoded._id, type: "Event" })
     if (list.length == 0) {
-      res.json({ status: "error", message: "No Event List Found" })
+      res.json({ status: "error", message: "No Active Event List Found" })
     } else {
       res.json({ status: "success", data: list })
     }

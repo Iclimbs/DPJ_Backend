@@ -1,7 +1,21 @@
 const mongoose = require("mongoose")
 const { ObjectId } = mongoose.Schema.Types;
+const { Schema } = mongoose;
+const addressSchema = new Schema({
+    country: {
+        type: String,
+    },
+    state: {
+        type: String,
+    },
+    city: {
+        type: String,
+    },
+    location: {
+        type: String,
+    }
+})
 const eventschema = mongoose.Schema({
-    address: String,
     title: {
         type: String,
         required: true
@@ -47,9 +61,7 @@ const eventschema = mongoose.Schema({
         required: true
     },
     link: String,
-    country:String,
-    state:String,
-    city:String,
+    address: addressSchema,
     type: {
         type: String,
         required: true,
