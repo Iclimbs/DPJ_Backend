@@ -49,7 +49,7 @@ PostRouter.get("/listall", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     try {
-        const result = await PostModel.aggregate([{ $match: { createdBy: new mongoose.Types.ObjectId(decoded._id) } },{$lookup : {from:"comments",localField:"_id", foreignField:"postId", as:"comments"}  },{$sort : {createdAt : -1}}]);
+        const result = await PostModel.aggregate([{ $match: { createdBy: new mongoose.Types.ObjectId(decoded._id) } }, { $lookup: { from: "comments", localField: "_id", foreignField: "postId", as: "comments" } }, { $sort: { CreatedAt: -1 } }]);
         if (result.length == 0) {
             res.json({
                 status: "error",
@@ -142,7 +142,7 @@ PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), UserAuthenticati
 
 PostRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
     try {
-        const result = await PostModel.find({}).sort({ createdAt: -1 });
+        const result = await PostModel.find({}).sort({ CreatedAt: -1 });
         if (result.length == 0) {
             res.json({
                 status: "error",
@@ -314,7 +314,7 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
                     }
                 },
                 {
-                    $sort: { createdAt: -1 }
+                    $sort: { CreatedAt: -1 }
                 }
             ])
         if (bookmark.length == 0) {
@@ -342,10 +342,22 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
 PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
-    console.log(decoded._id);
-
     try {
-        const result = await PostModel.aggregate([{ $lookup: { from: "comments", localField: "_id", foreignField: "postId", as: "comments" } }, { $lookup: { from: "bookmarks", localField: "_id", foreignField: "postId", as: "bookmarks" } }, { $addFields: { bookmark: { $in: [new mongoose.Types.ObjectId(decoded._id), "$bookmarks.bookmarkedBy"] } } }, { $sort: { createdAt: -1 } }]);
+        const result = await PostModel.aggregate([{ $lookup: { from: "comments", localField: "_id", foreignField: "postId", as: "comments" } }, {
+            $lookup: {
+                from: "users", localField: "createdBy", foreignField: "_id", as: "userdetails", pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            name: 1,
+                            email:1,
+                            category: 1,
+                            profile: 1,
+                        }
+                    }
+                ]
+            }
+        }, { $lookup: { from: "bookmarks", localField: "_id", foreignField: "postId", as: "bookmarks" } }, { $addFields: { bookmark: { $in: [new mongoose.Types.ObjectId(decoded._id), "$bookmarks.bookmarkedBy"] } } }, { $sort: { CreatedAt: -1 } }]);
         if (result.length == 0) {
             res.json({
                 status: "error",

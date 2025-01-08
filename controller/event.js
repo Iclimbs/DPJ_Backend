@@ -200,7 +200,7 @@ EventRouter.get("/lists", ProfessionalAuthentication, async (req, res) => {
         }
       },
       { 
-        $sort: { createdAt: -1 } // Sort by createdAt field in descending order
+        $sort: { CreatedAt: -1 } // Sort by CreatedAt field in descending order
       }
     ]);
 
@@ -272,7 +272,7 @@ EventRouter.get("/active/list", ArtistAuthentication, async (req, res) => {
         }
       },
       { 
-        $sort: { createdAt: -1 } // Sort by createdAt field in descending order
+        $sort: { CreatedAt: -1 } // Sort by CreatedAt field in descending order
       }
     ]);
 
