@@ -49,7 +49,7 @@ PostRouter.get("/listall", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     try {
-        const result = await PostModel.find({ createdBy: decoded._id }).sort({ createdAt: -1 });
+        const result = await PostModel.aggregate([{ $match: { createdBy: new mongoose.Types.ObjectId(decoded._id) } },{$lookup : {from:"comments",localField:"_id", foreignField:"postId", as:"comments"}  },{$sort : {createdAt : -1}}]);
         if (result.length == 0) {
             res.json({
                 status: "error",
@@ -199,7 +199,7 @@ PostRouter.post("/add/comment/:id", UserAuthentication, async (req, res) => {
 
 // Api To Edit A particular Comment
 
-PostRouter.patch("/edit/comment/:id",UserAuthentication, async (req, res) => {
+PostRouter.patch("/edit/comment/:id", UserAuthentication, async (req, res) => {
 
     const { id } = req.params;
     const token = req.headers.authorization.split(" ")[1];
@@ -223,7 +223,7 @@ PostRouter.patch("/edit/comment/:id",UserAuthentication, async (req, res) => {
 
 // Api To Get List Of All Comment in An Post
 
-PostRouter.get("/list/comments/:id",UserAuthentication, async (req, res) => {
+PostRouter.get("/list/comments/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params;
     try {
         const comment = await CommentModel.aggregate([{ $match: { postId: new mongoose.Types.ObjectId(id) } }]);
@@ -253,7 +253,7 @@ PostRouter.get("/list/comments/:id",UserAuthentication, async (req, res) => {
 
 // Api To Add OR Remove Bookmark
 
-PostRouter.post("/add/bookmark/:id",UserAuthentication, async (req, res) => {
+PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     const token = req.headers.authorization.split(" ")[1];
@@ -296,7 +296,7 @@ PostRouter.post("/add/bookmark/:id",UserAuthentication, async (req, res) => {
 
 // Api To Get List Of All Bookmark List Of A Particular User
 
-PostRouter.get("/listall/bookmark",UserAuthentication, async (req, res) => {
+PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     try {
@@ -339,9 +339,13 @@ PostRouter.get("/listall/bookmark",UserAuthentication, async (req, res) => {
 
 
 // Api's For Live Post Feed
-PostRouter.get("/listall/live",UserAuthentication, async (req, res) => {
+PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    console.log(decoded._id);
+
     try {
-        const result = await PostModel.aggregate([{$lookup:{    from:"comments", localField:"", foreignField:"" ,as:"comments" }},{$sort: { createdAt: -1 }}]);
+        const result = await PostModel.aggregate([{ $lookup: { from: "comments", localField: "_id", foreignField: "postId", as: "comments" } }, { $lookup: { from: "bookmarks", localField: "_id", foreignField: "postId", as: "bookmarks" } }, { $addFields: { bookmark: { $in: [new mongoose.Types.ObjectId(decoded._id), "$bookmarks.bookmarkedBy"] } } }, { $sort: { createdAt: -1 } }]);
         if (result.length == 0) {
             res.json({
                 status: "error",
