@@ -14,7 +14,7 @@ const EventRouter = express.Router();
 // Api's For Event
 
 // Api To Add New Event
-EventRouter.post("/add", uploadMiddleWare.single("banner"), ProfessionalAuthentication, async (req, res) => {
+EventRouter.post("/add", uploadMiddleWare.single("banner"), ArtistAuthentication, async (req, res) => {
 
   if (!req?.file) {
     res.json({ status: "error", message: `Please Upload Banner Image` });
@@ -29,21 +29,21 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), ProfessionalAuthenti
   const endDateTime = new Date(`${endDate}T${endTime}`);
 
   // Parse tickets if it exists
-  let parsedTickets = [];
-  if (tickets) {
-    try {
-      parsedTickets = JSON.parse(tickets);
-      if (!Array.isArray(parsedTickets)) {
-        return res.json({ status: "error", message: "Parsed tickets is not an array" })
-        // throw new Error("Parsed tickets is not an array");
-      }
-    } catch (err) {
-      return res.json({
-        status: "error",
-        message: "Invalid tickets format. Tickets must be a JSON array.",
-      });
-    }
-  }
+  // let parsedTickets = [];
+  // if (tickets) {
+  //   try {
+  //     parsedTickets = JSON.parse(tickets);
+  //     if (!Array.isArray(parsedTickets)) {
+  //       return res.json({ status: "error", message: "Parsed tickets is not an array" })
+  //       // throw new Error("Parsed tickets is not an array");
+  //     }
+  //   } catch (err) {
+  //     return res.json({
+  //       status: "error",
+  //       message: "Invalid tickets format. Tickets must be a JSON array.",
+  //     });
+  //   }
+  // }
 
   let address;
 
@@ -76,15 +76,15 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), ProfessionalAuthenti
   try {
     const eventDetails = await collaboration.save();
 
-    if (parsedTickets.length > 0) {
-      const ticketData = parsedTickets.map((ticket) => ({
+    // if (parsedTickets.length > 0) {
+      const ticketData = tickets.map((ticket) => ({
         eventId: eventDetails._id,
         createdBy: decoded._id,
         price: ticket.price,
         name: ticket.name,
       }));
       await TicketModel.insertMany(ticketData);
-    }
+    // }
     res.json({
       status: "success",
       message: `Event Created Successfully`,
@@ -100,7 +100,7 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), ProfessionalAuthenti
 
 // Api To Edit Event Details
 
-EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ProfessionalAuthentication, async (req, res) => {
+EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ArtistAuthentication, async (req, res) => {
   const { id } = req.params;
   try {
     const details = await EventModel.aggregate([{ $match: { _id: new mongoose.type.ObjectId(id) } }])
@@ -150,7 +150,7 @@ EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), Professi
 
 // Api To Add New Tickets In An Event
 
-EventRouter.post("/add/tickets/:id", ProfessionalAuthentication, async (req, res) => {
+EventRouter.post("/add/tickets/:id", ArtistAuthentication, async (req, res) => {
   const { id } = req.params;
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
@@ -182,7 +182,7 @@ EventRouter.post("/add/tickets/:id", ProfessionalAuthentication, async (req, res
 
 // Get List of Events Created By Profiessional User
 
-EventRouter.get("/lists", ProfessionalAuthentication, async (req, res) => {
+EventRouter.get("/lists", ArtistAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {

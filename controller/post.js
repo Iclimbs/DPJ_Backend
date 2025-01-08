@@ -211,7 +211,7 @@ PostRouter.patch("/edit/comment/:id", UserAuthentication, async (req, res) => {
             message: "No Comment Found",
         });
     } else {
-        const updatedData = { ...req.body, description: req.body?.description || comment[0].description };
+        const updatedData = { ...req.body, description: req.body?.description || commentDetails[0].description };
         const updatedComment = await CommentModel.findByIdAndUpdate(id, updatedData, { new: true });
         res.json({
             status: "success",
@@ -365,7 +365,7 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
     } catch (error) {
         res.json({
             status: "error",
-            message: `Failed To Get Post Detail's ${error.message}`,
+            message: `Failed To Get Live Post Feed's ${error.message}`,
         });
     }
 
