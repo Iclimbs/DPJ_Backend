@@ -77,13 +77,13 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), async (req, res) => 
     const eventDetails = await collaboration.save();
 
     if (parsedTickets.length > 0) {
-    const ticketData = parsedTickets.map((ticket) => ({
-      eventId: eventDetails._id,
-      createdBy: decoded._id,
-      price: ticket.price,
-      name: ticket.name,
-    }));
-    await TicketModel.insertMany(ticketData);
+      const ticketData = parsedTickets.map((ticket) => ({
+        eventId: eventDetails._id,
+        createdBy: decoded._id,
+        price: ticket.price,
+        name: ticket.name,
+      }));
+      await TicketModel.insertMany(ticketData);
     }
     res.json({
       status: "success",
@@ -102,11 +102,39 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), async (req, res) => 
 
 EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), async (req, res) => {
   const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
   try {
     const details = await EventModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
     if (!details) {
       return res.json({ status: "error", message: 'No Event found' });
     }
+
+    console.log(typeof (req.body.tickets));
+
+    // Parse tickets if it exists
+    let parsedTickets = [];
+    if (req.body.tickets) {
+      if (typeof (req.body.tickets) == 'object') {
+        parsedTickets = req.body.tickets;
+      } else {
+        try {
+          parsedTickets = JSON.parse(req.body.tickets);
+          if (!Array.isArray(parsedTickets)) {
+            return res.json({ status: "error", message: "Parsed tickets is not an array" })
+            // throw new Error("Parsed tickets is not an array");
+          }
+        } catch (err) {
+          return res.json({
+            status: "error",
+            message: "Invalid tickets format. Tickets must be a JSON array.",
+          });
+        }
+      }
+    }
+
+
+
 
     let startDateTime = new Date(`${details[0].startDate}T${details[0].startTime}`);
     let endDateTime = new Date(`${details[0].endDate}T${details[0].endTime}`);
@@ -127,23 +155,49 @@ EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), async (r
       endDateTime = new Date(`${details[0].endDate}T${req.body.endTime}`);
     }
 
+    let eventType = req.body?.eventType || details[0].eventType;
+    let addressdata = {};
+    let link;
+
+    if (eventType === "Physical") {
+      addressdata.country = req.body?.country || details[0].address?.country;
+      addressdata.state = req.body?.state || details[0].address?.state;
+      addressdata.city = req.body?.city || details[0].address?.city;
+      addressdata.location = req.body?.location || details[0].address?.location;
+      link = null;
+    } else if (eventType === "Virtual") {
+      link = req.body?.link || details[0].link;
+      addressdata = null;
+    }
+
+
     const updatedData = {
       ...req.body, // Update other fields if provided
       banner: req.file ? req.file?.location : details[0].banner, // Use the new image if uploaded
       startDateTime: startDateTime,
-      endDateTime: endDateTime
+      endDateTime: endDateTime,
+      address: addressdata,
+      link: link,
     };
     delete updatedData.tickets;  // or delete person["age"];
 
-    console.log("updated data",updatedData);
-    
+    const updatedItem = await EventModel.findByIdAndUpdate(id, updatedData, {
+      new: true, // Return the updated document
+    });
 
 
-    // const updatedItem = await EventModel.findByIdAndUpdate(id, updatedData, {
-    //   new: true, // Return the updated document
-    // });
+    if (parsedTickets.length > 0) {
+      const ticketData = parsedTickets.map((ticket) => ({
+        eventId: id,
+        createdBy: decoded._id,
+        price: ticket.price,
+        name: ticket.name,
+      }));
+      await TicketModel.insertMany(ticketData);
+    }
 
-    res.json({ status: "success", message: `Event Successfully Updatec` });
+
+    res.json({ status: "success", message: `Event Successfully Updated` });
   } catch (error) {
     res.json({
       status: "error",
