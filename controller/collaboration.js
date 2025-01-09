@@ -97,14 +97,14 @@ CollabRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ArtistA
       endDateTime = new Date(`${details[0].endDate}T${req.body.endTime}`);
     }
     let eventType = req.body?.eventType || details[0].eventType;
-    let addressdata;
+    let addressdata = {};
     let link;
 
     if (eventType === "Physical") {
-      addressdata.country = req.body?.country || details[0].address.country;
-      addressdata.state = req.body?.state || details[0].address.state;
-      addressdata.city = req.body?.city || details[0].address.city;
-      addressdata.location = req.body?.location || details[0].address.location;
+      addressdata.country = req.body?.country || details[0].address?.country;
+      addressdata.state = req.body?.state || details[0].address?.state;
+      addressdata.city = req.body?.city || details[0].address?.city;
+      addressdata.location = req.body?.location || details[0].address?.location;
       link = null;
     }else if (eventType === "Virtual") {
       link = req.body?.link || details[0].link;
