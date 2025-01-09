@@ -14,7 +14,7 @@ const EventRouter = express.Router();
 // Api's For Event
 
 // Api To Add New Event
-EventRouter.post("/add", uploadMiddleWare.single("banner"),  async (req, res) => {
+EventRouter.post("/add", uploadMiddleWare.single("banner"), async (req, res) => {
   if (!req?.file) {
     res.json({ status: "error", message: `Please Upload Banner Image` });
   }
@@ -76,13 +76,13 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"),  async (req, res) =>
     const eventDetails = await collaboration.save();
 
     // if (parsedTickets.length > 0) {
-      const ticketData = tickets.map((ticket) => ({
-        eventId: eventDetails._id,
-        createdBy: decoded._id,
-        price: ticket.price,
-        name: ticket.name,
-      }));
-      await TicketModel.insertMany(ticketData);
+    const ticketData = tickets.map((ticket) => ({
+      eventId: eventDetails._id,
+      createdBy: decoded._id,
+      price: ticket.price,
+      name: ticket.name,
+    }));
+    await TicketModel.insertMany(ticketData);
     // }
     res.json({
       status: "success",
@@ -99,7 +99,7 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"),  async (req, res) =>
 
 // Api To Edit Event Details
 
-EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"),  async (req, res) => {
+EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), async (req, res) => {
   const { id } = req.params;
   try {
     const details = await EventModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
@@ -149,7 +149,7 @@ EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"),  async (
 
 // Api To Add New Tickets In An Event
 
-EventRouter.post("/add/tickets/:id",  async (req, res) => {
+EventRouter.post("/add/tickets/:id", async (req, res) => {
   const { id } = req.params;
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
@@ -181,7 +181,7 @@ EventRouter.post("/add/tickets/:id",  async (req, res) => {
 
 // Get List of Events Created By Profiessional User
 
-EventRouter.get("/lists",  async (req, res) => {
+EventRouter.get("/lists", async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
@@ -198,7 +198,7 @@ EventRouter.get("/lists",  async (req, res) => {
           as: 'tickets'
         }
       },
-      { 
+      {
         $sort: { CreatedAt: -1 } // Sort by CreatedAt field in descending order
       }
     ]);
@@ -215,7 +215,7 @@ EventRouter.get("/lists",  async (req, res) => {
 
 // Get Detail of an Particular Events
 
-EventRouter.get("/lists/:id",  async (req, res) => {
+EventRouter.get("/lists/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const list = await EventModel.aggregate([
@@ -245,9 +245,57 @@ EventRouter.get("/lists/:id",  async (req, res) => {
   }
 });
 
+EventRouter.get("/detail/:id", async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  console.log(decoded._id);
+  console.log(req.params.id);
+  
+  
+  try {
+    const list = await EventModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+          createdBy: new mongoose.Types.ObjectId(decoded._id),
+          type: "Event"
+        }
+      },
+      {
+        $lookup: {
+          from: 'tickets',
+          localField: '_id',
+          foreignField: 'eventId',
+          as: 'tickets'
+        }
+      },
+      {
+        $lookup: {
+          from: 'tickets',
+          localField: '_id',
+          foreignField: 'eventId',
+          as: 'tickets'
+        }
+      },
+      {
+        $sort: { CreatedAt: -1 } // Sort by CreatedAt field in descending order
+      }
+    ]);
+
+    if (list.length == 0) {
+      res.json({ status: "error", message: "No Event List Found" })
+    } else {
+      res.json({ status: "success", data: list })
+    }
+  } catch (error) {
+    res.json({ status: "error", message: `Unable To Find Events Lists ${error.message}` })
+  }
+});
+
 // Get List of Events which are Active
 
-EventRouter.get("/active/list",  async (req, res) => {
+EventRouter.get("/active/list", async (req, res) => {
   try {
     const dateObj = new Date();
     // Creating Date
@@ -270,7 +318,7 @@ EventRouter.get("/active/list",  async (req, res) => {
           as: 'tickets'
         }
       },
-      { 
+      {
         $sort: { CreatedAt: -1 } // Sort by CreatedAt field in descending order
       }
     ]);

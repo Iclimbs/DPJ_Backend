@@ -258,8 +258,10 @@ PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
     const { status } = req.body;
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
+    
     try {
         const bookmark = await BookMarkModel.find({ postId: id })
+        
         if (bookmark.length == 0) {
             if (status == true) {
                 const bookmark = new BookMarkModel({
@@ -278,6 +280,7 @@ PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
                 const bookmark = await BookMarkModel.deleteOne({
                     postId: id,
                 });
+
                 res.json({
                     status: "success",
                     message: `Bookmark Successfully Removed`,
@@ -310,6 +313,19 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
                         from: "posts",
                         localField: "postId",
                         foreignField: "_id",
+                        pipeline: [
+                            {
+                                $lookup: {
+                                    from: "users",
+                                    localField: "createdBy",
+                                    foreignField: "_id",
+                                    as: "userdetails",
+                                    pipeline: [
+                                        { $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }
+                                    ]
+                                }
+                            }
+                        ],
                         as: "post"
                     }
                 },
