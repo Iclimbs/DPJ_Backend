@@ -7,36 +7,38 @@ const mongoose = require('mongoose');
 const { TicketModel, TransactionModel, BookedTicketModel, EventModel } = require("../model/ModelExport");
 
 // Importing Required Middleware
-const { ArtistAuthentication, WalletChecker, AdminAuthentication } = require("../middleware/MiddlewareExport");
-const e = require("express");
+const { ArtistAuthentication, WalletChecker, AdminAuthentication, UserAuthentication } = require("../middleware/MiddlewareExport");
 
 const TicketRouter = express.Router();
 
 // Api For Tickets
 
+
 // Api To Book Tickets In An Event
-TicketRouter.post("/booking/:id", [ArtistAuthentication, WalletChecker], async (req, res) => {
+TicketRouter.post("/booking/:id", [UserAuthentication, WalletChecker], async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     const { id } = req.params;
     const { amount, tickets } = req.body;
 
     let parsedTickets = [];
-    if (tickets) {
-        try {
-            parsedTickets = JSON.parse(tickets);
-            if (!Array.isArray(parsedTickets)) {
-                return res.json({ status: "error", message: "Parsed tickets is not an array" })
+    if (typeof (tickets) == 'object') {
+        parsedTickets = tickets
+    } else {
+        if (tickets) {
+            try {
+                parsedTickets = JSON.parse(tickets);
+                if (!Array.isArray(parsedTickets)) {
+                    return res.json({ status: "error", message: "Parsed tickets is not an array" })
+                }
+            } catch (err) {
+                return res.json({
+                    status: "error",
+                    message: "Invalid tickets format. Tickets must be a JSON array.",
+                });
             }
-        } catch (err) {
-            return res.json({
-                status: "error",
-                message: "Invalid tickets format. Tickets must be a JSON array.",
-            });
         }
     }
-
-
     if (parsedTickets.length > 0) {
         try {
 
@@ -83,6 +85,7 @@ TicketRouter.post("/booking/:id", [ArtistAuthentication, WalletChecker], async (
 
 }
 );
+
 
 // Get List of Different Tickets Booked Tickets By User in all the Events
 TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) => {
@@ -137,15 +140,15 @@ TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) =>
 // Get List of All the tickets booked in a particular Event Only Seen By Admin & Professional Who has created the Event     
 TicketRouter.get("/booked/event/:id", ArtistAuthentication, async (req, res) => {
     const { id } = req.params;
-    const token= req.headers.authorization.split(" ")[1];
-    const decoded   = jwt.verify(token, "Authentication");
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
     try {
         const me = await EventModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }])
 
         if (me.length == 0 && decoded.accountType !== "admin") {
             res.json({ status: "error", message: "No Event Found Or You Don't have Required Permission" });
         }
-        
+
         const list = await BookedTicketModel.aggregate([
             {
                 $match: {
@@ -180,62 +183,62 @@ TicketRouter.get("/booked/event/:id", ArtistAuthentication, async (req, res) => 
     }
 });
 
-TicketRouter.get("/booked/events/details", ArtistAuthentication, async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
+// TicketRouter.get("/booked/events/details", ArtistAuthentication, async (req, res) => {
+//     const token = req.headers.authorization.split(" ")[1];
+//     const decoded = jwt.verify(token, "Authentication");
 
-    try {
-        const list = await BookedTicketModel.aggregate([
-            {
-                $match: {
-                    bookedBy: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
-                }
-            },
-            {
-                $lookup: {
-                    from: 'events',
-                    localField: 'eventId',
-                    foreignField: '_id',
-                    as: 'eventdetails'
-                }
-            },
-            {
-                $unwind: '$eventdetails'
-            },
-            {
-                $group: {
-                    _id: '$eventdetails._id',
-                    event: { $first: '$eventdetails' },
-                    tickets: {
-                        $push: {
-                            ticketId: '$_id',
-                            price: '$price',
-                            name: '$name',
-                            quantity: '$quantity',
-                            bookedAt: '$createdAt'
-                        }
-                    }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    event: 1,
-                    tickets: 1
-                }
-            }
-        ]);
+//     try {
+//         const list = await BookedTicketModel.aggregate([
+//             {
+//                 $match: {
+//                     bookedBy: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
+//                 }
+//             },
+//             {
+//                 $lookup: {
+//                     from: 'events',
+//                     localField: 'eventId',
+//                     foreignField: '_id',
+//                     as: 'eventdetails'
+//                 }
+//             },
+//             {
+//                 $unwind: '$eventdetails'
+//             },
+//             {
+//                 $group: {
+//                     _id: '$eventdetails._id',
+//                     event: { $first: '$eventdetails' },
+//                     tickets: {
+//                         $push: {
+//                             ticketId: '$_id',
+//                             price: '$price',
+//                             name: '$name',
+//                             quantity: '$quantity',
+//                             bookedAt: '$createdAt'
+//                         }
+//                     }
+//                 }
+//             },
+//             {
+//                 $project: {
+//                     _id: 0,
+//                     event: 1,
+//                     tickets: 1
+//                 }
+//             }
+//         ]);
 
-        if (list.length === 0) {
-            res.json({ status: "error", message: "No Booked Events Found" });
-        } else {
-            res.json({ status: "success", data: list });
-        }
-    } catch (error) {
-        console.error(`Error finding booked events: ${error.message}`);
-        res.json({ status: "error", message: `Unable To Find Booked Events ${error.message}` });
-    }
-});
+//         if (list.length === 0) {
+//             res.json({ status: "error", message: "No Booked Events Found" });
+//         } else {
+//             res.json({ status: "success", data: list });
+//         }
+//     } catch (error) {
+//         console.error(`Error finding booked events: ${error.message}`);
+//         res.json({ status: "error", message: `Unable To Find Booked Events ${error.message}` });
+//     }
+// });
 
 
 module.exports = { TicketRouter }

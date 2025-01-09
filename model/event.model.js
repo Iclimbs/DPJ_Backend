@@ -71,6 +71,7 @@ const eventschema = mongoose.Schema({
     eventType: {
         type: String,
         required: true,
+        default: "Physical",
         enum: ["Physical", "Virtual"]
     },
     CreatedAt: { type: Date, default: Date.now } // Save The Time When the following Job was created 

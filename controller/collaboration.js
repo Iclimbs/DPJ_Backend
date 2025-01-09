@@ -18,27 +18,37 @@ CollabRouter.post("/add", uploadMiddleWare.single("banner"), ArtistAuthenticatio
     res.json({ status: "error", message: `Please Upload Banner Image` });
   }
 
-  const { title, description, address, eventType, category, startDate, endDate, startTime, endTime, country, state, city } = req.body;
+  const { title, description, category, startDate, endDate, startTime, endTime } = req.body;
   const startDateTime = new Date(`${startDate}T${startTime}`);
   const endDateTime = new Date(`${endDate}T${endTime}`);
+
+  let address;
+
+  if (req.body?.eventType === "Physical") {
+    address = {};
+    address.country = req.body?.country;
+    address.state = req.body?.state;
+    address.city = req.body?.city;
+    address.location = req.body?.location;
+  }
+
+
   const collaboration = new EventModel({
-    address: address,
-    title: title,
-    banner: req.file.location,
-    description: description,
-    category: category,
-    startDateTime: startDateTime,
-    endDateTime: endDateTime,
-    eventType: eventType,
-    type: "Collaboration",
+    address: address || null,
+    banner: req.file?.location,
     createdBy: decoded._id,
-    startTime: startTime,
-    startDate: startDate,
+    category: category,
+    description: description,
+    eventType: req.body?.eventType,
     endTime: endTime,
     endDate: endDate,
-    country: country,
-    state: state,
-    city: city
+    endDateTime: endDateTime,
+    link: req.body?.link || null,
+    startTime: startTime,
+    startDate: startDate,
+    startDateTime: startDateTime,
+    title: title,
+    type: "Collaboration",
   });
   try {
     savedDocument = await collaboration.save();
@@ -85,14 +95,30 @@ CollabRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ArtistA
 
     if (req.body.endTime) {
       endDateTime = new Date(`${details[0].endDate}T${req.body.endTime}`);
-
     }
+    let eventType = req.body?.eventType || details[0].eventType;
+    let addressdata;
+    let link;
+
+    if (eventType === "Physical") {
+      addressdata.country = req.body?.country || details[0].address.country;
+      addressdata.state = req.body?.state || details[0].address.state;
+      addressdata.city = req.body?.city || details[0].address.city;
+      addressdata.location = req.body?.location || details[0].address.location;
+      link = null;
+    }else if (eventType === "Virtual") {
+      link = req.body?.link || details[0].link;
+      addressdata = null;
+    }
+
 
     const updatedData = {
       ...req.body, // Update other fields if provided
       banner: req.file ? location : details[0].banner, // Use the new image if uploaded
       startDateTime: startDateTime,
-      endDateTime: endDateTime
+      endDateTime: endDateTime,
+      address: addressdata,
+      link: link,
     };
 
     const updatedItem = await EventModel.findByIdAndUpdate(id, updatedData, {
@@ -233,7 +259,7 @@ CollabRouter.get("/request/list", ArtistAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
-    const list = await CollabModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(decoded._id)} }, { $lookup: { from: 'events', localField: 'eventId', foreignField: '_id', as: 'event' } }])
+    const list = await CollabModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(decoded._id) } }, { $lookup: { from: 'events', localField: 'eventId', foreignField: '_id', as: 'event' } }])
     if (list.length == 0) {
       res.json({ status: "error", message: "No Collaboration Request Found" })
     } else {

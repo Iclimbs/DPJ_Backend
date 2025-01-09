@@ -23,7 +23,7 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), async (req, res) => 
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
 
-  const { title, description, eventType, category, startDate, endDate, startTime, endTime, tickets, country, state, city } = req.body;
+  const { title, description, eventType, category, startDate, endDate, startTime, endTime, tickets, } = req.body;
 
   const startDateTime = new Date(`${startDate}T${startTime}`);
   const endDateTime = new Date(`${endDate}T${endTime}`);
@@ -133,10 +133,15 @@ EventRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), async (r
       startDateTime: startDateTime,
       endDateTime: endDateTime
     };
+    delete updatedData.tickets;  // or delete person["age"];
 
-    const updatedItem = await EventModel.findByIdAndUpdate(id, updatedData, {
-      new: true, // Return the updated document
-    });
+    console.log("updated data",updatedData);
+    
+
+
+    // const updatedItem = await EventModel.findByIdAndUpdate(id, updatedData, {
+    //   new: true, // Return the updated document
+    // });
 
     res.json({ status: "success", message: `Event Successfully Updatec` });
   } catch (error) {
