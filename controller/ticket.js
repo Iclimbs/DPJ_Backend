@@ -4,10 +4,11 @@ const jwt = require("jsonwebtoken");
 const mongoose = require('mongoose');
 
 // Importing Required Models
-const { TicketModel, TransactionModel, BookedTicketModel } = require("../model/ModelExport");
+const { TicketModel, TransactionModel, BookedTicketModel, EventModel } = require("../model/ModelExport");
 
 // Importing Required Middleware
-const { ArtistAuthentication, WalletChecker } = require("../middleware/MiddlewareExport");
+const { ArtistAuthentication, WalletChecker, AdminAuthentication } = require("../middleware/MiddlewareExport");
+const e = require("express");
 
 const TicketRouter = express.Router();
 
@@ -50,7 +51,7 @@ TicketRouter.post("/booking/:id", [ArtistAuthentication, WalletChecker], async (
             const transactionData = await transaction.save();
 
             // Adding Booked Ticket Data
-            const ticketData = tickets.map((ticket) => ({
+            const ticketData = parsedTickets.map((ticket) => ({
                 eventId: id,
                 bookedBy: decoded._id,
                 ticketId: ticket._id,
@@ -115,7 +116,8 @@ TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) =>
                                 startDate: 1,
                                 endTime: 1,
                                 endDate: 1,
-                                endTime: 1
+                                endTime: 1,
+                                eventType: 1,
                             }
                         }
                     ]
@@ -132,12 +134,18 @@ TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) =>
     }
 });
 
-// Get List of All the tickets booked in a particular Event     
-TicketRouter.get("/booked/event/list/:id", ArtistAuthentication, async (req, res) => {
+// Get List of All the tickets booked in a particular Event Only Seen By Admin & Professional Who has created the Event     
+TicketRouter.get("/booked/event/:id", ArtistAuthentication, async (req, res) => {
     const { id } = req.params;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
+    const token= req.headers.authorization.split(" ")[1];
+    const decoded   = jwt.verify(token, "Authentication");
     try {
+        const me = await EventModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }])
+
+        if (me.length == 0 && decoded.accountType !== "admin") {
+            res.json({ status: "error", message: "No Event Found Or You Don't have Required Permission" });
+        }
+        
         const list = await BookedTicketModel.aggregate([
             {
                 $match: {
@@ -149,13 +157,13 @@ TicketRouter.get("/booked/event/list/:id", ArtistAuthentication, async (req, res
                     from: 'users',
                     localField: 'bookedBy',
                     foreignField: '_id',
-                    pipeline:[{
+                    pipeline: [{
                         $project: {
                             _id: 1,
                             name: 1,
                             email: 1,
-                            profile:1,
-                            category:1,
+                            profile: 1,
+                            category: 1,
                         }
                     }],
                     as: 'userdetails'
