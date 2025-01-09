@@ -251,8 +251,8 @@ EventRouter.get("/detail/:id", async (req, res) => {
   const decoded = jwt.verify(token, "Authentication");
   console.log(decoded._id);
   console.log(req.params.id);
-  
-  
+
+
   try {
     const list = await EventModel.aggregate([
       {
@@ -308,7 +308,7 @@ EventRouter.get("/active/list", async (req, res) => {
       {
         $match: {
           type: "Event",
-          endDate: { $gte: currentDate }
+          endDate: { $gte: currentDate },
         }
       }, {
         $lookup: {
@@ -318,6 +318,7 @@ EventRouter.get("/active/list", async (req, res) => {
           as: 'tickets'
         }
       },
+      { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', as: 'userdetails' } },
       {
         $sort: { CreatedAt: -1 } // Sort by CreatedAt field in descending order
       }
