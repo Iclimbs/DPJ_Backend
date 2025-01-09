@@ -45,7 +45,9 @@ TicketRouter.post("/booking/:id", [ArtistAuthentication, WalletChecker], async (
                 eventId: id,
             });
 
-            const transactionData = await transaction.save();
+            console.log("Transaction", transaction);
+            
+            // const transactionData = await transaction.save();
 
             // Adding Booked Ticket Data
             const ticketData = tickets.map((ticket) => ({
@@ -58,7 +60,10 @@ TicketRouter.post("/booking/:id", [ArtistAuthentication, WalletChecker], async (
                 trasactionId: transactionData._id
             }));
 
-            await BookedTicketModel.insertMany(ticketData);
+            console.log("Ticket Data", ticketData);
+            
+
+            // await BookedTicketModel.insertMany(ticketData);
 
             res.json({
                 status: "success",

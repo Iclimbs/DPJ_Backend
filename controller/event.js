@@ -8,6 +8,7 @@ const { EventModel, TicketModel } = require("../model/ModelExport");
 
 // Basic MiddleWare Imports
 const { ArtistAuthentication, ProfessionalAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
+const { pipeline } = require("nodemailer/lib/xoauth2");
 
 const EventRouter = express.Router();
 
@@ -249,10 +250,6 @@ EventRouter.get("/detail/:id", async (req, res) => {
   const { id } = req.params;
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  console.log(decoded._id);
-  console.log(req.params.id);
-
-
   try {
     const list = await EventModel.aggregate([
       {
@@ -264,10 +261,11 @@ EventRouter.get("/detail/:id", async (req, res) => {
       },
       {
         $lookup: {
-          from: 'tickets',
-          localField: '_id',
-          foreignField: 'eventId',
-          as: 'tickets'
+          from: 'users', localField: 'createdBy', foreignField: '_id',
+          pipeline: [
+            { $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }
+          ],
+          as: 'userdetails'
         }
       },
       {
@@ -275,6 +273,16 @@ EventRouter.get("/detail/:id", async (req, res) => {
           from: 'tickets',
           localField: '_id',
           foreignField: 'eventId',
+          pipeline: [{
+            $lookup: {
+              from: 'bookedtickets', localField: '_id', foreignField: 'ticketId', pipeline: [{
+                $lookup: {
+                  from: 'users', localField: 'bookedBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }
+                  ], as: 'userdetails'
+                }
+              }], as: 'bookedTickets'
+            }
+          }],
           as: 'tickets'
         }
       },
