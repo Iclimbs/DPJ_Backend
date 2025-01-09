@@ -77,7 +77,7 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), async (req, res) => 
     const eventDetails = await collaboration.save();
 
     if (parsedTickets.length > 0) {
-    const ticketData = tickets.map((ticket) => ({
+    const ticketData = parsedTickets.map((ticket) => ({
       eventId: eventDetails._id,
       createdBy: decoded._id,
       price: ticket.price,
