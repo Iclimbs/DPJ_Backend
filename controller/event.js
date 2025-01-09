@@ -29,21 +29,21 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), async (req, res) => 
   const endDateTime = new Date(`${endDate}T${endTime}`);
 
   // Parse tickets if it exists
-  // let parsedTickets = [];
-  // if (tickets) {
-  //   try {
-  //     parsedTickets = JSON.parse(tickets);
-  //     if (!Array.isArray(parsedTickets)) {
-  //       return res.json({ status: "error", message: "Parsed tickets is not an array" })
-  //       // throw new Error("Parsed tickets is not an array");
-  //     }
-  //   } catch (err) {
-  //     return res.json({
-  //       status: "error",
-  //       message: "Invalid tickets format. Tickets must be a JSON array.",
-  //     });
-  //   }
-  // }
+  let parsedTickets = [];
+  if (tickets) {
+    try {
+      parsedTickets = JSON.parse(tickets);
+      if (!Array.isArray(parsedTickets)) {
+        return res.json({ status: "error", message: "Parsed tickets is not an array" })
+        // throw new Error("Parsed tickets is not an array");
+      }
+    } catch (err) {
+      return res.json({
+        status: "error",
+        message: "Invalid tickets format. Tickets must be a JSON array.",
+      });
+    }
+  }
 
   let address;
 
@@ -76,7 +76,7 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), async (req, res) => 
   try {
     const eventDetails = await collaboration.save();
 
-    // if (parsedTickets.length > 0) {
+    if (parsedTickets.length > 0) {
     const ticketData = tickets.map((ticket) => ({
       eventId: eventDetails._id,
       createdBy: decoded._id,
@@ -84,7 +84,7 @@ EventRouter.post("/add", uploadMiddleWare.single("banner"), async (req, res) => 
       name: ticket.name,
     }));
     await TicketModel.insertMany(ticketData);
-    // }
+    }
     res.json({
       status: "success",
       message: `Event Created Successfully`,

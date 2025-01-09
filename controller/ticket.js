@@ -1,12 +1,15 @@
+// Importing Required Libraries
 const express = require("express");
-const { TicketModel } = require("../model/ticket.model");
-const { TransactionModel } = require("../model/transaction.model");
-const { BookedTicketModel } = require("../model/bookedticket.model");
-const { ArtistAuthentication } = require("../middleware/Authentication");
-const { WalletChecker } = require("../middleware/WalletChecker");
-const TicketRouter = express.Router();
 const jwt = require("jsonwebtoken");
 const mongoose = require('mongoose');
+
+// Importing Required Models
+const { TicketModel, TransactionModel, BookedTicketModel } = require("../model/ModelExport");
+
+// Importing Required Middleware
+const { ArtistAuthentication, WalletChecker } = require("../middleware/MiddlewareExport");
+
+const TicketRouter = express.Router();
 
 // Api For Tickets
 
@@ -35,47 +38,42 @@ TicketRouter.post("/booking/:id", [ArtistAuthentication, WalletChecker], async (
 
 
     // if (parsedTickets.length > 0) {
-        try {
+    try {
 
-            const transaction = new TransactionModel({
-                amount: amount,
-                type: "Debit",
-                userId: decoded._id,
-                method: "Wallet",
-                eventId: id,
-            });
+        const transaction = new TransactionModel({
+            amount: amount,
+            type: "Debit",
+            userId: decoded._id,
+            method: "Wallet",
+            eventId: id,
+        });
 
-            console.log("Transaction", transaction);
-            
-            // const transactionData = await transaction.save();
+        const transactionData = await transaction.save();
 
-            // Adding Booked Ticket Data
-            const ticketData = tickets.map((ticket) => ({
-                eventId: id,
-                bookedBy: decoded._id,
-                ticketId: ticket._id,
-                price: ticket.price,
-                name: ticket.name,
-                quantity: ticket.quantity,
-                trasactionId: transactionData._id
-            }));
+        // Adding Booked Ticket Data
+        const ticketData = tickets.map((ticket) => ({
+            eventId: id,
+            bookedBy: decoded._id,
+            ticketId: ticket._id,
+            price: ticket.price,
+            name: ticket.name,
+            quantity: ticket.quantity,
+            trasactionId: transactionData._id
+        }));
 
-            console.log("Ticket Data", ticketData);
-            
+        await BookedTicketModel.insertMany(ticketData);
 
-            // await BookedTicketModel.insertMany(ticketData);
+        res.json({
+            status: "success",
+            message: `Ticket Purchased Successfully`,
+        });
 
-            res.json({
-                status: "success",
-                message: `Ticket Purchased Successfully`,
-            });
-
-        } catch (error) {
-            res.json({
-                status: "error",
-                message: `Failed To Purchase Ticket For Event ${error.message}`,
-            });
-        }
+    } catch (error) {
+        res.json({
+            status: "error",
+            message: `Failed To Purchase Ticket For Event ${error.message}`,
+        });
+    }
     // } else {
     //     res.json({
     //         status: "error",
@@ -86,7 +84,7 @@ TicketRouter.post("/booking/:id", [ArtistAuthentication, WalletChecker], async (
 }
 );
 
-// Get List of Booked Tickets By User
+// Get List of Different Tickets Booked Tickets By User in all the Events
 TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
@@ -97,7 +95,8 @@ TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) =>
                 $match: {
                     bookedBy: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
                 }
-            }, {
+            },
+            {
                 $lookup: {
                     from: 'events',
                     localField: 'eventId',
@@ -108,9 +107,11 @@ TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) =>
                             $project: {
                                 _id: 1,
                                 address: 1,
+                                link: 1,
                                 banner: 1,
                                 category: 1,
                                 title: 1,
+                                description: 1,
                                 startTime: 1,
                                 startDate: 1,
                                 endTime: 1,
@@ -120,7 +121,7 @@ TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) =>
                         }
                     ]
                 }
-            }
+            },
         ]);
         if (list.length == 0) {
             res.json({ status: "error", message: "No Booked Ticket List Found" })
@@ -132,11 +133,9 @@ TicketRouter.get("/booked/event/list", ArtistAuthentication, async (req, res) =>
     }
 });
 
-// Get List of Booked Tickets In an Event
+// Get List of All the tickets booked in a particular Event By User
 TicketRouter.get("/booked/event/list/:id", ArtistAuthentication, async (req, res) => {
     const { id } = req.params;
-
-    // Get List of Booked Tickets In an Event
     try {
         const list = await BookedTicketModel.aggregate([
             {
