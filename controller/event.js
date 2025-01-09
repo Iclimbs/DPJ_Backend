@@ -318,7 +318,15 @@ EventRouter.get("/active/list", async (req, res) => {
           as: 'tickets'
         }
       },
-      { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', as: 'userdetails' } },
+      {
+        $lookup: {
+          from: 'users', localField: 'createdBy', foreignField: '_id',
+          pipeline: [
+            { $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }
+          ],
+          as: 'userdetails'
+        }
+      },
       {
         $sort: { CreatedAt: -1 } // Sort by CreatedAt field in descending order
       }
