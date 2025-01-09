@@ -184,7 +184,7 @@ TicketRouter.get("/booked/event/:id", ArtistAuthentication, async (req, res) => 
 });
 
 // Api To Book Tickets In An Event
-TicketRouter.get("/booked/events/details", ArtistAuthentication, async (req, res) => {
+TicketRouter.get("/booked/events/details", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
  
