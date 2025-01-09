@@ -258,10 +258,10 @@ PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
     const { status } = req.body;
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
-    
+
     try {
         const bookmark = await BookMarkModel.find({ postId: id })
-        
+
         if (bookmark.length == 0) {
             if (status == true) {
                 const bookmark = new BookMarkModel({
@@ -315,8 +315,8 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
                         foreignField: "_id",
                         pipeline: [
                             {
-                                $addFields: { bookmark:true } 
-                            },            
+                                $addFields: { bookmark: true }
+                            },
                             {
                                 $lookup: {
                                     from: "users",
@@ -362,14 +362,18 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     try {
-        const result = await PostModel.aggregate([{ $lookup: { from: "comments", localField: "_id", foreignField: "postId", as: "comments" } }, {
-            $lookup: { from: "users", localField: "createdBy", foreignField: "_id", as: "userdetails", pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }] }
-        },
-        {
-            $lookup: { from: "bookmarks", localField: "_id", foreignField: "postId", as: "bookmarks" }
-        }, {
-            $addFields: { bookmark: { $in: [new mongoose.Types.ObjectId(decoded._id), "$bookmarks.bookmarkedBy"] } }
-        }, { $sort: { CreatedAt: -1 } }]);
+        const result = await PostModel.aggregate([
+            { $lookup: { from: "comments", localField: "_id", foreignField: "postId", as: "comments" } },
+            {
+                $lookup: { from: "users", localField: "createdBy", foreignField: "_id", as: "userdetails", pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }] }
+            },
+            {
+                $lookup: { from: "bookmarks", localField: "_id", foreignField: "postId", as: "bookmarks" }
+            },
+            {
+                $addFields: { bookmark: { $in: [new mongoose.Types.ObjectId(decoded._id), "$bookmarks.bookmarkedBy"] } }
+            },
+            { $sort: { CreatedAt: -1 } }]);
         if (result.length == 0) {
             res.json({
                 status: "error",

@@ -1,6 +1,29 @@
 const mongoose = require("mongoose");
+const { ObjectId } = mongoose.Schema.Types;
+const { Schema } = mongoose;
+
+const addressSchema = new Schema({
+    country: {
+        type: String,
+        required: true
+    },
+    state: {
+        type: String,
+        required: true
+    },
+    city: {
+        type: String,
+        required: true
+
+    },
+    location: {
+        type: String,
+        required: true
+    }
+})
+
 const jobschema = mongoose.Schema({
-    createdBy: { type: String, required: true }, // Save The Professional ID by whom this Job was ceated
+    createdBy: { type: ObjectId, required: true }, // Save The Professional ID by whom this Job was ceated
     salary: { type: String, required: true }, // Save Salary in Range Link :- 40k - 50k
     role: { type: String, required: true }, // Save Role Link :-  Singer, Drummer 
     workType: { // Save Work Type Like WFH, WFO, HYBRID
@@ -8,20 +31,13 @@ const jobschema = mongoose.Schema({
         enum: ['WFH', 'WFO', 'HYBRID'],
         default: 'WFO'
     },
-    address: {
-        type: String,
-        required: true
-    },
-    location: {
-        type: String,
-        required: true
-    },
+    address: addressSchema,
     benefits: {
-        type: String,
+        type: [String],
         required: true
     },
     keyResponsibilities: {   // Save Key Responsibilities of the Job
-        type: String,
+        type: [String],
         required: true
     },
     // Save Location of the Job
@@ -44,16 +60,13 @@ const jobschema = mongoose.Schema({
         type: String,
         required: true
     },
-    timeDuration: { // Time Period For Which Company is hiring anyone For This Position
+    endtime: { // Time Period For Which Company is hiring anyone For This Position
         type: String,
     },
     employmentType: {
         type: String,
         required: true,
         enum: ["Full Time", "Internship"]
-    },
-    expireAt: { // Save Expiration Time Of the Job Post 
-        type: Date,
     },
     status: { // Save Current Status of The Job whether the job is currently active or in hold or has expired
         type: String,

@@ -1,30 +1,21 @@
+// Basic Required Modules
 require('dotenv').config()
-const ejs = require("ejs")
 const jwt = require('jsonwebtoken');
-const path = require("node:path");
-const crypt = require("crypto");
-const multer = require("multer");
-const uploadPath = path.join(__dirname, "../public/documents");
 const express = require("express");
-const { ProfessionalAuthentication, UserAuthentication } = require('../middleware/Authentication');
-const { JobModel } = require('../model/job.model');
-const { AdminAuthentication } = require('../middleware/Authorization');
-const JobRouter = express.Router()
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadPath);
-    },
-    filename: function (req, file, cb) {
-        let uniqueSuffix = Date.now();
-        cb(null, uniqueSuffix + file.originalname);
-    },
-});
 
-const upload = multer({ storage: storage });
+// Basic Model Imports
+const { JobModel } = require('../model/ModelExport');
+
+
+// Basic Middleware Imports
+const { ProfessionalAuthentication, UserAuthentication,AdminAuthentication } = require('../middleware/MiddlewareExport');
+
+const JobRouter = express.Router()
+
 
 // Creating A Job Post
 
-JobRouter.post("/add", ProfessionalAuthentication, async (req, res) => {
+JobRouter.post("/add", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1]
     const decoded = jwt.verify(token, 'Authentication')
     const { salary, role, workType, description, position, education, experience, timeDuration, employmentType, expireAt } = req.body;
