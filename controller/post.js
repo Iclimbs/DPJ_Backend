@@ -315,6 +315,9 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
                         foreignField: "_id",
                         pipeline: [
                             {
+                                $addFields: { bookmark:true } 
+                            },            
+                            {
                                 $lookup: {
                                     from: "users",
                                     localField: "createdBy",

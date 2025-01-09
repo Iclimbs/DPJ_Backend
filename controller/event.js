@@ -318,13 +318,6 @@ EventRouter.get("/active/list", async (req, res) => {
           type: "Event",
           endDate: { $gte: currentDate },
         }
-      }, {
-        $lookup: {
-          from: 'tickets',
-          localField: '_id',
-          foreignField: 'eventId',
-          as: 'tickets'
-        }
       },
       {
         $lookup: {
@@ -333,6 +326,14 @@ EventRouter.get("/active/list", async (req, res) => {
             { $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }
           ],
           as: 'userdetails'
+        }
+      },
+      {
+        $lookup: {
+          from: 'tickets',
+          localField: '_id',
+          foreignField: 'eventId',
+          as: 'tickets'
         }
       },
       {
