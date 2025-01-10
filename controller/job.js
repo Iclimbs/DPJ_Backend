@@ -125,6 +125,31 @@ JobRouter.patch("/disable/:id", UserAuthentication, async (req, res) => {
     }
 })
 
+// Get All Job List Which are Currently Active
+
+JobRouter.get("/listall/active", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1]
+    const decoded = jwt.verify(token, 'Authentication')
+
+    try {
+        const dateObj = new Date();
+        // Creating Date
+        const month = (dateObj.getUTCMonth() + 1) < 10 ? String(dateObj.getUTCMonth() + 1).padStart(2, '0') : dateObj.getUTCMonth() + 1 // months from 1-12
+        const day = dateObj.getUTCDate() < 10 ? String(dateObj.getUTCDate()).padStart(2, '0') : dateObj.getUTCDate()
+        const year = dateObj.getUTCFullYear();
+        const currentDate = year + "-" + month + "-" + day;
+
+        const activeJobs = await JobModel.aggregate([{ $match: { endtime: { $gte: currentDate } } }, { $sort: { CreatedAt: -1 } }])
+        if (activeJobs.length > 0) {
+            res.json({ status: "success", data: activeJobs })
+        } else {
+            res.json({ status: "error", message: `No Active Job Post Found !!` })
+        }
+    } catch (error) {
+        res.json({ status: "error", message: `Failed To Get Job List ${error.message}` })
+    }
+})
+
 
 
 // Get Job Details Only For Artists Who are not Professional & will Apply For Job
@@ -133,7 +158,7 @@ JobRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params;
     try {
         const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }, { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }], as: 'ProfessionalDetails' } }])
-        if (JobDetails.lenght !== 0) {
+        if (JobDetails.length !== 0) {
             res.json({ status: "success", data: JobDetails })
         } else {
             res.json({ status: "error", message: `No Job Post Found with this ID !! ` })
@@ -151,7 +176,7 @@ JobRouter.get("/detailone/professional/:id", UserAuthentication, async (req, res
     const decoded = jwt.verify(token, 'Authentication');
     try {
         const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }, { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', as: 'ProfessionalDetails' } }])
-        if (JobDetails.lenght !== 0) {
+        if (JobDetails.length !== 0) {
             res.json({ status: "success", data: JobDetails })
         } else {
             res.json({ status: "error", message: `No Job Post Found with this ID !! ` })
@@ -161,43 +186,15 @@ JobRouter.get("/detailone/professional/:id", UserAuthentication, async (req, res
     }
 })
 
-
-
-// Get All Job List Who Are Active For Artists
-
-JobRouter.get("/listall/active", UserAuthentication, async (req, res) => {
-    try {
-        const dateObj = new Date();
-        // Creating Date
-        const month = (dateObj.getUTCMonth() + 1) < 10 ? String(dateObj.getUTCMonth() + 1).padStart(2, '0') : dateObj.getUTCMonth() + 1 // months from 1-12
-        const day = dateObj.getUTCDate() < 10 ? String(dateObj.getUTCDate()).padStart(2, '0') : dateObj.getUTCDate()
-        const year = dateObj.getUTCFullYear();
-        const currentDate = year + "-" + month + "-" + day;
-
-        const activeJobs = await JobModel.aggregate([{ $match: { endtime: { $gte: currentDate } } }])
-        console.log("All Job List", activeJobs)
-
-        console.log("All Job List type ", typeof (activeJobs));
-
-        console.log("All Job List Length", activeJobs.lenght);
-
-
-        if (activeJobs.lenght > 0) {
-            res.json({ status: "success", data: activeJobs })
-        } else {
-            res.json({ status: "error", message: `No Job Post Found !!` })
-        }
-    } catch (error) {
-        res.json({ status: "error", message: `Failed To Get Job List ${error.message}` })
-    }
-})
+// Get All Job List Created By Professional
 
 JobRouter.get("/listall/professional", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1]
     const decoded = jwt.verify(token, 'Authentication')
     try {
-        const JobDetails = await JobModel.find({ createdBy: decoded._id })
-        if (JobDetails.lenght !== 0) {
+        const JobDetails = await JobModel.aggregate([{ $match: { createdBy: new mongoose.Types.ObjectId(decoded._id) } }, { $sort: { CreatedAt: -1 } }])
+
+        if (JobDetails.length !== 0) {
             res.json({ status: "success", data: JobDetails })
         } else {
             res.json({ status: "error", message: `No Job Post Found !!` })
@@ -212,7 +209,7 @@ JobRouter.post("/apply", UserAuthentication, async (req, res) => {
     const decoded = jwt.verify(token, 'Authentication')
     try {
         const JobDetails = await JobModel.find({ createdBy: decoded._id })
-        if (JobDetails.lenght !== 0) {
+        if (JobDetails.length !== 0) {
             res.json({ status: "success", data: JobDetails })
         } else {
             res.json({ status: "error", message: `No Job Post Found !!` })
