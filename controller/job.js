@@ -8,7 +8,7 @@ const { JobModel } = require('../model/ModelExport');
 
 
 // Basic Middleware Imports
-const { ProfessionalAuthentication, UserAuthentication,AdminAuthentication } = require('../middleware/MiddlewareExport');
+const { ProfessionalAuthentication, UserAuthentication, AdminAuthentication } = require('../middleware/MiddlewareExport');
 
 const JobRouter = express.Router()
 
@@ -18,11 +18,45 @@ const JobRouter = express.Router()
 JobRouter.post("/add", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1]
     const decoded = jwt.verify(token, 'Authentication')
-    const { salary, role, workType, description, position, education, experience, timeDuration, employmentType, expireAt } = req.body;
+    // Calculating End Date of Job || Job Will be Active For 30 Days
+    const currentDate = new Date();
+    const dateObj = new Date(currentDate.setDate(currentDate.getDate() + 30));
+    // Creating Date
+    const month = (dateObj.getUTCMonth() + 1) < 10 ? String(dateObj.getUTCMonth() + 1).padStart(2, '0') : dateObj.getUTCMonth() + 1 // months from 1-12
+    const day = dateObj.getUTCDate() < 10 ? String(dateObj.getUTCDate()).padStart(2, '0') : dateObj.getUTCDate()
+    const year = dateObj.getUTCFullYear();
+    const endDate = year + "-" + month + "-" + day;
+
+    const { salary, role, workType, description, position, education, experience, companyOverview, employmentType } = req.body;
+
+    console.log(req.body);
+    
+
+    let addressdetails = {
+        country: req.body.country,
+        state: req.body.state,
+        city: req.body.city,
+        location: req.body.location
+    }
+    let jobBenefits;
+    if (typeof (req.body.benefits) === "string") {
+        jobBenefits = JSON.parse(req.body.benefits)
+    } else {
+        jobBenefits = req.body.benefits
+    }
+    let keyResponsibilities;
+    if (typeof (req.body.keyResponsibilities) === "string") {
+        keyResponsibilities = JSON.parse(req.body.keyResponsibilities)
+    } else {
+        keyResponsibilities = req.body.keyResponsibilities
+    }
 
     const newJobPosting = new JobModel({
         createdBy: decoded._id,
-        salary, role, workType, description, position, education, experience, timeDuration, employmentType, expireAt
+        salary, role, workType, description,
+        position, education, experience, companyOverview,
+        employmentType, address: addressdetails, endtime: endDate,
+        benefits: jobBenefits, keyResponsibilities: keyResponsibilities
     })
     try {
         await newJobPosting.save();
