@@ -4,11 +4,11 @@ const jwt = require('jsonwebtoken');
 const express = require("express");
 
 // Basic Model Imports
-const { JobModel } = require('../model/ModelExport');
+const { JobModel, JobAppliedModel } = require('../model/ModelExport');
 
 
 // Basic Middleware Imports
-const { ProfessionalAuthentication, UserAuthentication, AdminAuthentication } = require('../middleware/MiddlewareExport');
+const { ProfessionalAuthentication, UserAuthentication, AdminAuthentication, uploadMiddleWare } = require('../middleware/MiddlewareExport');
 const { default: mongoose } = require('mongoose');
 
 const JobRouter = express.Router()
@@ -111,15 +111,29 @@ JobRouter.patch("/edit/:id", async (req, res) => {
 
 
 
-// Disable Job Details
+// Disable Job Details By Admin || Professional
 
 JobRouter.patch("/disable/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1]
+    const decoded = jwt.verify(token, 'Authentication')
     try {
-        const JobDetails = await JobModel.find({ _id: id })
-        JobDetails[0].status = 'Hold'
-        await JobDetails[0].save();
-        res.json({ status: "success", message: `Job Post Disabled Successfully !!` })
+        if (decoded.accountType === "admin") {
+            const JobDetails = await JobModel.find({ _id: id })
+            JobDetails[0].status = 'Hold'
+            await JobDetails[0].save();
+            res.json({ status: "success", message: `Job Post Disabled Successfully !!` })
+
+        } else if (decoded.accountType === 'professional') {
+            const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }])
+            JobDetails[0].status = 'Hold'
+            await JobDetails[0].save();
+            res.json({ status: "success", message: `Job Post Disabled Successfully !!` })
+
+        } else {
+            res.json({ status: "error", message: `You Don't have Required Permissions !!` })
+
+        }
     } catch (error) {
         res.json({ status: "error", message: `Failed To Disable Job Details ${error.message}` })
     }
@@ -150,8 +164,6 @@ JobRouter.get("/listall/active", UserAuthentication, async (req, res) => {
     }
 })
 
-
-
 // Get Job Details Only For Artists Who are not Professional & will Apply For Job
 
 JobRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
@@ -175,7 +187,7 @@ JobRouter.get("/detailone/professional/:id", UserAuthentication, async (req, res
     const token = req.headers.authorization.split(" ")[1]
     const decoded = jwt.verify(token, 'Authentication');
     try {
-        const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }, { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', as: 'ProfessionalDetails' } }])
+        const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }, { $lookup: { from: 'job_applications', localField: '_id', foreignField: 'jobId', as: 'applications' } }])
         if (JobDetails.length !== 0) {
             res.json({ status: "success", data: JobDetails })
         } else {
@@ -204,18 +216,42 @@ JobRouter.get("/listall/professional", UserAuthentication, async (req, res) => {
     }
 })
 
-JobRouter.post("/apply", UserAuthentication, async (req, res) => {
+JobRouter.post("/apply/:id", uploadMiddleWare.single('cv'), UserAuthentication, async (req, res) => {
+    const { id } = req.params;
     const token = req.headers.authorization.split(" ")[1]
     const decoded = jwt.verify(token, 'Authentication')
+    if (!req?.file) {
+        res.json({ status: "error", message: `Please Upload Your CV` });
+    }
     try {
-        const JobDetails = await JobModel.find({ createdBy: decoded._id })
-        if (JobDetails.length !== 0) {
-            res.json({ status: "success", data: JobDetails })
-        } else {
-            res.json({ status: "error", message: `No Job Post Found !!` })
+        const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }]);
+
+        if (JobDetails.length > 0) {
+            res.json({ status: "error", message: `You Cannot Apply For The Job Created By Youself !! ` })
         }
+
+        const appliedJob = await JobAppliedModel.aggregate([{ $match: { jobId: new mongoose.Types.ObjectId(id), appliedBy: new mongoose.Types.ObjectId(decoded._id) } }])
+
+        if (appliedJob.length > 0) {
+            res.json({ status: "error", message: `You Have Already Applied For This Job !!` })
+        }
+
+        const newApplication = new JobAppliedModel({
+            appliedBy: decoded._id,
+            jobId: id,
+            name: decoded.name,
+            email: decoded.email,
+            profile: decoded.profile,
+            coverLetter: req.body.coverLetter,
+            cv: req.file.location,
+        })
+
+        await newApplication.save();
+
+        res.json({ status: "success", message: `You Have Successfully Applied For This Job !! ` })
+
     } catch (error) {
-        res.json({ status: "error", message: `Failed To Get Job List ${error.message}` })
+        res.json({ status: "error", message: `Failed to apply for this job ${error.message}` })
     }
 })
 
