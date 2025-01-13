@@ -328,7 +328,7 @@ JobRouter.get("/find", UserAuthentication, async (req, res) => {
 
         res.json({ status: 'success', data: results });
     } catch (error) {
-        res.json({ status: "error", message: `Failed to apply for this job ${error.message}` })
+        res.json({ status: "error", message: `Failed to Fetch Job Detail's ${error.message}` })
     }
 })
 
