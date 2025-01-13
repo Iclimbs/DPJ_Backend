@@ -2,25 +2,34 @@ const express = require("express");
 const { json } = require("express")
 const jwt = require("jsonwebtoken");
 const { WalletModel } = require("../model/wallet.model")
-const { TransactionModel } = require("../model/transaction.model")
+const { TransactionModel } = require("../model/transaction.model");
+const { UserModel } = require("../model/user.model");
 const WalletRouter = express.Router();
 
 
+// Handling User's  Wallet Transactions
+
 const addAmountinWallet = async (props) => {
-    const { amount, userId, refNo, method } = props
+    const { amount, userId } = props
     const wallet = await WalletModel.find({ userId: userId })
-    wallet[0].balance = wallet[0].balance + amount
+    wallet[0].balance = wallet[0].balance + amount;
 
     try {
         await wallet[0].save()
+        return json({ status: 'success', message: `Successfully Added Balance in Your Wallet` })
     } catch (error) {
         return json({ status: 'error', message: `Failed To Add Balance in the Wallet ${error.message}` })
     }
+}
 
-    const transaction = new TransactionModel({ amount: amount, type: "Credit", userId: userId, refNo: refNo, method: method })
+const subAmountinWallet = async (props) => {
+    const { amount, userId } = props
+    const wallet = await WalletModel.find({ userId: userId })
+    wallet[0].balance = wallet[0].balance - amount;
 
     try {
-        await transaction.save()
+        await wallet[0].save()
+        return json({ status: 'success', message: `Successfully Deducted Balance From Your Wallet` })
     } catch (error) {
         return json({ status: 'error', message: `Failed To Add Balance in the Wallet ${error.message}` })
     }
@@ -42,6 +51,63 @@ WalletRouter.post("/create", async (req, res) => {
     }
 })
 
+// Handlint Admin's Wallet Transactions
+
+const addAmountInAdminWallet = async (props) => {
+    const { amount,userId,eventId } = props
+    try {
+        const user = await UserModel.find({ "role": "admin" });
+        if (user.length <= 0) {
+            res.json({ status: 'error', message: `Admin Not Found` })
+        }
+        const wallet = await WalletModel.find({ "userId": user[0]._id })
+        console.log("admin wallet", wallet);
+
+        wallet[0].balance = wallet[0].balance + amount
+
+        await wallet[0].save()
+
+        const transaction = new TransactionModel({
+            amount: totalAmount,
+            userId: user[0]._id,
+            type: "Credit",
+            status: "Success",
+            method: "Wallet",
+            from: userId,
+            to:user[0]._id,
+            eventId: eventId
+
+        })
+        await transaction.save()
+
+
+        return json({ status: 'success', message: `Successfully Transfered Amount to Admin Account.` })
+    } catch (error) {
+        return json({ status: 'error', message: `Failed To Transfer Amount To Admin Account ${error.message}` })
+    }
+}
+
+const subAmountInAdminWallet = async (props) => {
+    const { amount } = props
+
+    try {
+        const user = await UserModel.find({ "role": "admin" });
+        if (user.length <= 0) {
+            res.json({ status: 'error', message: `Admin Not Found` })
+        }
+
+        const wallet = await WalletModel.find({ "userId": user[0]._id })
+        console.log("admin wallet", wallet);
+
+        wallet[0].balance = wallet[0].balance - amount
+
+        await wallet[0].save()
+        return json({ status: 'success', message: `Successfully Transfered Amount From Admin Account.` })
+
+    } catch (error) {
+        return json({ status: 'error', message: `Failed To Deduct Amount From Admin Account ${error.message}` })
+    }
+}
 
 
 
@@ -52,4 +118,6 @@ WalletRouter.post("/create", async (req, res) => {
 
 
 
-module.exports = { addAmountinWallet, WalletRouter }
+
+
+module.exports = { addAmountinWallet, WalletRouter, subAmountinWallet, addAmountInAdminWallet, subAmountInAdminWallet }

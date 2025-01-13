@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const ObjectId = mongoose.Schema.Types.ObjectId;
 const transactionSchema = mongoose.Schema({
     amount: {
         type: Number,
@@ -10,15 +11,27 @@ const transactionSchema = mongoose.Schema({
         enum: ["Credit", "Debit"], // Credit Means Amount is being Added To Your Account & Debit Means Amount is being Deducted From Your Account. 
         default: "Credit"
     },
-    userId: {
+    status: {
         type: String,
+        required: true,
+        enum: ["Success", "Failed", "In Process"], // Success Means Transaction is Successful & Failed Means Transaction is Failed. 
+        default: "Success"
+    },
+    userId: {
+        type: ObjectId,
         required: true
     },
     method: String,
     refNo: String,
-    from: String,
-    to: String,
-    eventId: String,
+    from: {
+        type: ObjectId,
+    },
+    to: {
+        type: ObjectId,
+    },
+    eventId: {
+        type: ObjectId,
+    },
     CreatedAt: { type: Date, default: Date.now }, // Save The Time When the following Job was created 
 })
 

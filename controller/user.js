@@ -95,7 +95,7 @@ UserRouter.post("/login", async (req, res) => {
       });
     } else {
       if (hash.sha256(password) === userExists[0].password && userExists[0].disabled != true) {
-        if (userExists[0].accounttype !== "admin") {
+        if (userExists[0].accountType !== "admin") {
           let token = jwt.sign(
             {
               _id: userExists[0]._id,
@@ -172,57 +172,59 @@ UserRouter.post("/login", async (req, res) => {
 
 UserRouter.post("/login/admin", async (req, res) => {
   try {
-    const { phoneno, password } = req.body;
-    const userExists = await UserModel.find({ phoneno });
-    if (userExists[0].disabled === "true") {
-      res.json({
-        status: "error",
-        message: "Your Account has been Temporarily disabled",
-      });
-    }
+    const { email, password } = req.body;
+    const userExists = await UserModel.find({ email:email,verified:"true" });
     if (userExists.length === 0) {
       return res.json({
         status: "error",
-        message: "No Admin User Exists Please Contact Your Developer",
+        message: "No User Exists With This Email ID",
+        redirect: "/user/register",
       });
     } else {
-      if (
-        userExists[0].accounttype !== "admin" &&
-        userExists[0].accounttype !== "conductor" &&
-        userExists[0].accounttype !== "driver"
-      ) {
-        res.json({
-          status: "error",
-          message: "Please Leave This Site You Don't Have Required Access ",
-        });
-      } else if (hash.sha256(password) === userExists[0].password) {
-        let token = jwt.sign(
-          {
-            _id: userExists[0]._id,
-            name: userExists[0].name,
-            email: userExists[0].email,
-            accounttype: userExists[0].accounttype,
-            phoneno: userExists[0].phoneno,
-            exp: Math.floor(Date.now() / 1000) + 60 * 60,
-          },
-          "Authorization"
-        );
-        res.json({
-          status: "success",
-          message: "Login Successful",
-          token: token,
-        });
-      } else if (hash.sha256(password) != userExists[0].password) {
+      if (hash.sha256(password) === userExists[0].password && userExists[0].disabled != true) {
+        if (userExists[0].accountType === "admin") {
+          let token = jwt.sign(
+            {
+              _id: userExists[0]._id,
+              name: userExists[0].name,
+              email: userExists[0].email,
+              accountType: userExists[0].accountType,
+              profile: userExists[0].profile,
+              verified: userExists[0].verified,
+              exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+            },
+            "Authentication"
+          );
+
+          res.json({
+            status: "success",
+            message: "Login Successfully",
+            token: token,
+            type: userExists[0].accountType,
+          });
+        } else {
+          res.json({
+            status: "error",
+            message: "You Can Login Only Using Admin Credential's !! ",
+            redirect: "/",
+          });
+        }
+      } else if (hash.sha256(password) !== userExists[0].password) {
         res.json({
           status: "error",
           message: "Wrong Password Please Try Again",
         });
+      } else if (userExists[0].disabled === true) {
+        res.json({
+          status: "error",
+          message: "Your Account has been Temporarily disabled",
+        })
       }
     }
   } catch (error) {
     res.json({
       status: "error",
-      message: `Error Found in Admin Login ${error.message}`,
+      message: `Error Found in Login ${error.message}`,
     });
   }
 });
@@ -231,6 +233,12 @@ UserRouter.post("/login/admin", async (req, res) => {
 
 UserRouter.post("/register", async (req, res) => {
   const { name, email, password, accountType } = req.body;
+  if (accountType === "admin") {
+    res.json({
+      status: "error",
+      message: "You Cannot Register Using Admin Credential's",
+    })
+  }
   const userExists = await UserModel.find({ email });
   if (userExists.length >= 1) {
     res.json({

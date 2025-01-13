@@ -221,19 +221,19 @@ JobRouter.post("/apply/:id", uploadMiddleWare.single('cv'), UserAuthentication, 
     const decoded = jwt.verify(token, 'Authentication')
 
     if (!req?.file) {
-        res.json({ status: "error", message: `Please Upload Your CV` });
+         res.json({ status: "error", message: `Please Upload Your CV` });
     }
     try {
         const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }]);
 
         if (JobDetails.length > 0) {
-            res.json({ status: "error", message: `You Cannot Apply For The Job Created By Youself !! ` })
+             res.json({ status: "error", message: `You Cannot Apply For The Job Created By Youself !! ` })
         }
 
         const appliedJob = await JobAppliedModel.aggregate([{ $match: { jobId: new mongoose.Types.ObjectId(id), appliedBy: new mongoose.Types.ObjectId(decoded._id) } }])
 
         if (appliedJob.length > 0) {
-            res.json({ status: "error", message: `You Have Already Applied For This Job !!` })
+             res.json({ status: "error", message: `You Have Already Applied For This Job !!` })
         }
 
         const newApplication = new JobAppliedModel({

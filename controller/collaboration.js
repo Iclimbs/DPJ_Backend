@@ -3,11 +3,12 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 
 // Basic Model Imports
-const { EventModel, CollabModel } = require("../model/ModelExport");
+const { EventModel, CollabModel, TransactionModel } = require("../model/ModelExport");
 
 // Basic MiddleWare Imports
-const { ArtistAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
+const { ArtistAuthentication, uploadMiddleWare, WalletChecker } = require("../middleware/MiddlewareExport");
 const { default: mongoose } = require("mongoose");
+const { addAmountinWallet, addAmountInAdminWallet, subAmountinWallet } = require("./wallet");
 
 const CollabRouter = express.Router();
 
@@ -106,7 +107,7 @@ CollabRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ArtistA
       addressdata.city = req.body?.city || details[0].address?.city;
       addressdata.location = req.body?.location || details[0].address?.location;
       link = null;
-    }else if (eventType === "Virtual") {
+    } else if (eventType === "Virtual") {
       link = req.body?.link || details[0].link;
       addressdata = null;
     }
@@ -135,11 +136,18 @@ CollabRouter.patch("/edit/basic/:id", uploadMiddleWare.single("banner"), ArtistA
 }
 );
 
-CollabRouter.post("/add/collaborators/:id", ArtistAuthentication, async (req, res) => {
+CollabRouter.post("/add/collaborators/:id", [ArtistAuthentication, WalletChecker], async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
   const { id } = req.params;
-  const { collaborators } = req.body;
+  const { collaborators, amount } = req.body;
   let addCollaborators = [];
   let alreadypresent = [];
+  // Amount Deduction From Wallet Of User Who Has Created The Collaboration Event
+  let totalAmount = amount;
+  let transactionData = [];
+  // transactionData.push({ amount: totalAmount, userId: decoded._id, type: "Debit", status: "Success", method: "Wallet", from: decoded._id, to: "Admin", eventId: id });
+
   try {
 
     const collab = await CollabModel.aggregate([{ $match: { eventId: new mongoose.Types.ObjectId(id) } }]);
@@ -158,6 +166,16 @@ CollabRouter.post("/add/collaborators/:id", ArtistAuthentication, async (req, re
           profile: collaborators[index].profile,
           eventId: id,
         });
+        transactionData.push({
+          amount: collaborators[index].amount,
+          userId: collaborators[index]._id,
+          type: "Credit",
+          status: "In Process",
+          method: "Wallet",
+          from: decoded._id,
+          to: collaborators[index]._id,
+          eventId: id
+        })
       }
 
     } else {
@@ -170,12 +188,41 @@ CollabRouter.post("/add/collaborators/:id", ArtistAuthentication, async (req, re
           profile: collaborators[index].profile,
           eventId: id,
         });
+        transactionData.push({
+          amount: collaborators[index].amount,
+          userId: collaborators[index]._id,
+          type: "Credit",
+          status: "In Process",
+          method: "Wallet",
+          from: decoded._id,
+          to: collaborators[index]._id,
+          eventId: id
+        })
       }
     }
     if (alreadypresent.length > 0) {
       return res.json({ status: "error", message: `Some Collaborators Already Present In This Event ${alreadypresent}` });
     } else {
       const result = await CollabModel.insertMany(addCollaborators);
+      const adminWalletTransaction = addAmountInAdminWallet({ amount: totalAmount, userId: decoded._id, eventId: id });
+      if (adminWalletTransaction.status === "error") {
+        return res.json({ status: "error", message: `Failed To Add Amount in Admin Wallet` });
+      }
+      const userWalletTransaction = subAmountinWallet({ amount: totalAmount, userId: decoded._id });
+      if (userWalletTransaction.status === "error") {
+        return res.json({ status: "error", message: `Failed To Deduct Amount From User Wallet` });
+      }
+      transactionData.push({
+        amount:amount,
+        userId: decoded._id,
+        type: "Debit",
+        status: "Success",
+        method: "Wallet",
+        eventId: id
+      })
+
+      const transaction = await TransactionModel.insertMany(transactionData);
+
       res.json({
         status: "success",
         message:

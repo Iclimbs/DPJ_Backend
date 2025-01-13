@@ -8,6 +8,7 @@ const { TicketModel, TransactionModel, BookedTicketModel, EventModel } = require
 
 // Importing Required Middleware
 const { ArtistAuthentication, WalletChecker, AdminAuthentication, UserAuthentication } = require("../middleware/MiddlewareExport");
+const { subAmountinWallet } = require("./wallet");
 
 const TicketRouter = express.Router();
 
@@ -41,6 +42,15 @@ TicketRouter.post("/booking/:id", [UserAuthentication, WalletChecker], async (re
     }
     if (parsedTickets.length > 0) {
         try {
+
+            const walletupdate = subAmountinWallet({ amount: amount, userId: decoded._id});
+
+            if (walletupdate.status === "error") {
+                return res.json({
+                    status: "error",
+                    message: `Failed To Purchase Ticket For Event ${walletupdate.message}`,
+                });
+            }
 
             const transaction = new TransactionModel({
                 amount: amount,
@@ -187,7 +197,7 @@ TicketRouter.get("/booked/event/:id", ArtistAuthentication, async (req, res) => 
 TicketRouter.get("/booked/events/details", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
- 
+
     try {
         const list = await BookedTicketModel.aggregate([
             {
@@ -229,7 +239,7 @@ TicketRouter.get("/booked/events/details", UserAuthentication, async (req, res) 
                 }
             }
         ]);
- 
+
         if (list.length === 0) {
             res.json({ status: "error", message: "No Booked Events Found" });
         } else {
@@ -240,6 +250,6 @@ TicketRouter.get("/booked/events/details", UserAuthentication, async (req, res) 
         res.json({ status: "error", message: `Unable To Find Booked Events ${error.message}` });
     }
 });
- 
+
 
 module.exports = { TicketRouter }
