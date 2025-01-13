@@ -292,6 +292,8 @@ JobRouter.get("/listall/applied", UserAuthentication, async (req, res) => {
     }
 })
 
+// Find Job By Search
+
 JobRouter.get("/find", UserAuthentication, async (req, res) => {
     const { search } = req.query;
     const currentDate = new Date();
