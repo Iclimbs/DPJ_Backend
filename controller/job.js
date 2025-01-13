@@ -142,9 +142,6 @@ JobRouter.patch("/disable/:id", UserAuthentication, async (req, res) => {
 // Get All Job List Which are Currently Active
 
 JobRouter.get("/listall/active", UserAuthentication, async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1]
-    const decoded = jwt.verify(token, 'Authentication')
-
     try {
         const dateObj = new Date();
         // Creating Date
@@ -153,7 +150,7 @@ JobRouter.get("/listall/active", UserAuthentication, async (req, res) => {
         const year = dateObj.getUTCFullYear();
         const currentDate = year + "-" + month + "-" + day;
 
-        const activeJobs = await JobModel.aggregate([{ $match: { endtime: { $gte: currentDate } } }, { $sort: { CreatedAt: -1 } }])
+        const activeJobs = await JobModel.aggregate([{ $match: { endtime: { $gte: currentDate } } }, { $lookup: { from: "users", localField: "createdBy", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }], as: "professionaldetails" } }, { $sort: { CreatedAt: -1 } }])
         if (activeJobs.length > 0) {
             res.json({ status: "success", data: activeJobs })
         } else {
@@ -216,10 +213,13 @@ JobRouter.get("/listall/professional", UserAuthentication, async (req, res) => {
     }
 })
 
+// Apply For Job Only For Artists
+
 JobRouter.post("/apply/:id", uploadMiddleWare.single('cv'), UserAuthentication, async (req, res) => {
     const { id } = req.params;
     const token = req.headers.authorization.split(" ")[1]
     const decoded = jwt.verify(token, 'Authentication')
+
     if (!req?.file) {
         res.json({ status: "error", message: `Please Upload Your CV` });
     }
@@ -250,6 +250,22 @@ JobRouter.post("/apply/:id", uploadMiddleWare.single('cv'), UserAuthentication, 
 
         res.json({ status: "success", message: `You Have Successfully Applied For This Job !! ` })
 
+    } catch (error) {
+        res.json({ status: "error", message: `Failed to apply for this job ${error.message}` })
+    }
+})
+
+// Upload Job Application Status By Professional
+
+JobRouter.post("/application/statusUpdate/:id",UserAuthentication, async (req, res) => {
+    const { id } = req.params;    
+    try {
+        const JobDetails = await JobAppliedModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id)} }])        
+        if (JobDetails.length === 0) {
+            res.json({ status: "error", message: `No Job Application Found with this ID !! ` })
+        }
+        await JobAppliedModel.findByIdAndUpdate(id, { status: req.body?.status });
+        res.json({ status: "success", message: `You Have Successfully Updated Job Application !! ` })
     } catch (error) {
         res.json({ status: "error", message: `Failed to apply for this job ${error.message}` })
     }

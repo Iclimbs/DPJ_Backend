@@ -230,36 +230,36 @@ UserRouter.post("/login/admin", async (req, res) => {
 // User Registration Step 1 Basic Detail's Registration
 
 UserRouter.post("/register", async (req, res) => {
-    const { name, email, password, accountType } = req.body;
-    const userExists = await UserModel.find({ email });
-    if (userExists.length >= 1) {
+  const { name, email, password, accountType } = req.body;
+  const userExists = await UserModel.find({ email });
+  if (userExists.length >= 1) {
+    res.json({
+      status: "error",
+      message:
+        "User Already Exists with this Email ID. Please Try again with another Email ID",
+      redirect: "/user/login",
+    });
+  } else {
+    const user = new UserModel({
+      name,
+      email,
+      password: hash.sha256(password),
+      accountType: accountType,
+    });
+    try {
+      await user.save();
       res.json({
-        status: "error",
-        message:
-          "User Already Exists with this Email ID. Please Try again with another Email ID",
+        status: "success",
+        message: "Registration Successful",
         redirect: "/user/login",
       });
-    } else {
-      const user = new UserModel({
-        name,
-        email,
-        password: hash.sha256(password),
-        accountType: accountType,
+    } catch (error) {
+      res.json({
+        status: "error",
+        message: `Failed To Register New User, Error :- ${error.message}`,
       });
-      try {
-        await user.save();
-        res.json({
-          status: "success",
-          message: "Registration Successful",
-          redirect: "/user/login",
-        });
-      } catch (error) {
-        res.json({
-          status: "error",
-          message: `Failed To Register New User, Error :- ${error.message}`,
-        });
-      }
     }
+  }
 });
 
 // Forgot Password Step 1 Sending Otp in Email
@@ -618,6 +618,87 @@ UserRouter.get("/listall/artist", UserAuthentication, async (req, res) => {
   }
 })
 
+// Get List of All The Details of Artist From Server
+
+UserRouter.get("/detailone/artist/:id", UserAuthentication, async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+
+    const results = await UserModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
+    if (results.length === 0) {
+      return res.json({ status: 'error', message: 'No Artist found' });
+    }
+    return res.json({ status: 'success', data: results });
+  } catch (error) {
+    return res.json({ status: 'error', message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}` });
+  }
+})
+
+// 
+
+UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const { search } = req.query;
+  const regex = new RegExp(search, 'i');
+  try {
+    const results = await UserModel.find({
+      $or: [
+        { email: { $regex: regex, $ne: decoded.email } },
+        { category: { $regex: regex } },
+      ],
+      accountType: "artist", disabled: "false", verified: "true"
+    }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+
+    if (results.length === 0) {
+      return res.json({ status: 'error', message: 'No matching records found' });
+    }
+    return res.json({ status: 'success', data: results });
+  } catch (error) {
+    return res.json({ status: 'error', message: `Èrror Found While Searching For Artist ${error.message}` });
+  }
+})
+
+// Get List of All The Artists From Server User Which needs to be shown in Artist Search Page
+
+UserRouter.get("/listall/professional", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+
+    if (results.length === 0) {
+      return res.json({ status: 'error', message: 'No Artist found' });
+    }
+    return res.json({ status: 'success', data: results });
+  } catch (error) {
+    return res.json({ status: 'error', message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}` });
+  }
+})
+
+// Get List of All The Details of Artist From Server
+
+UserRouter.get("/detailone/artist/:id", UserAuthentication, async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+
+    const results = await UserModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
+    if (results.length === 0) {
+      return res.json({ status: 'error', message: 'No Artist found' });
+    }
+    return res.json({ status: 'success', data: results });
+  } catch (error) {
+    return res.json({ status: 'error', message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}` });
+  }
+})
+
+
 // Add Basic Profile Details 
 
 UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: 'profile', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), UserAuthentication, async (req, res) => {
@@ -636,7 +717,7 @@ UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: 'profil
   }
 
   try {
-    const user = await UserModel.findOne({ _id: decoded._id });    
+    const user = await UserModel.findOne({ _id: decoded._id });
     user.gender = gender;
     user.dob = dob;
     user.category = category;
