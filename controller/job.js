@@ -292,4 +292,44 @@ JobRouter.get("/listall/applied", UserAuthentication, async (req, res) => {
     }
 })
 
+JobRouter.get("/find", UserAuthentication, async (req, res) => {
+    const { search } = req.query;
+    const currentDate = new Date();
+    const dateObj = new Date(currentDate.setDate(currentDate.getDate() + 30));
+    // Creating Date
+    const month = (dateObj.getUTCMonth() + 1) < 10 ? String(dateObj.getUTCMonth() + 1).padStart(2, '0') : dateObj.getUTCMonth() + 1 // months from 1-12
+    const day = dateObj.getUTCDate() < 10 ? String(dateObj.getUTCDate()).padStart(2, '0') : dateObj.getUTCDate()
+    const year = dateObj.getUTCFullYear();
+    const date = year + "-" + month + "-" + day;
+
+    const regex = new RegExp(search, 'i');
+
+    try {
+        const results = await JobModel.aggregate([{
+            $match: {
+                $or: [
+                    { category: { $regex: regex } },
+                    { salary: { $regex: regex } },
+                    { description: { $regex: regex } },
+                    { role: { $regex: regex } },
+                    { "address.location": { $regex: regex } },
+                    { "address.state": { $regex: regex } },
+                    { "address.city": { $regex: regex } }
+                ],
+                endtime: { $gte: date }
+            }
+        }]);
+
+        if (results.length === 0) {
+            return res.json({ status: 'error', message: 'No matching records found' });
+        }
+
+        res.json({ status: 'success', data: results });
+    } catch (error) {
+        res.json({ status: "error", message: `Failed to apply for this job ${error.message}` })
+    }
+})
+
+
+
 module.exports = { JobRouter }
