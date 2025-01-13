@@ -28,7 +28,7 @@ JobRouter.post("/add", UserAuthentication, async (req, res) => {
     const year = dateObj.getUTCFullYear();
     const endDate = year + "-" + month + "-" + day;
 
-    const { salary, role, workType, description, position, education, experience, companyOverview, employmentType } = req.body;
+    const { salary, role, workType, description, education, experience, companyOverview, employmentType } = req.body;
 
     let addressdetails = {
         country: req.body.country,
@@ -52,7 +52,7 @@ JobRouter.post("/add", UserAuthentication, async (req, res) => {
     const newJobPosting = new JobModel({
         createdBy: decoded._id,
         salary, role, workType, description,
-        position, education, experience, companyOverview,
+        education, experience, companyOverview,
         employmentType, address: addressdetails, endtime: endDate,
         benefits: jobBenefits, keyResponsibilities: keyResponsibilities
     })
@@ -257,10 +257,10 @@ JobRouter.post("/apply/:id", uploadMiddleWare.single('cv'), UserAuthentication, 
 
 // Upload Job Application Status By Professional
 
-JobRouter.post("/application/statusUpdate/:id",UserAuthentication, async (req, res) => {
-    const { id } = req.params;    
+JobRouter.post("/application/statusUpdate/:id", UserAuthentication, async (req, res) => {
+    const { id } = req.params;
     try {
-        const JobDetails = await JobAppliedModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id)} }])        
+        const JobDetails = await JobAppliedModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
         if (JobDetails.length === 0) {
             res.json({ status: "error", message: `No Job Application Found with this ID !! ` })
         }
@@ -271,5 +271,25 @@ JobRouter.post("/application/statusUpdate/:id",UserAuthentication, async (req, r
     }
 })
 
+
+// List Of All The Job Application Applied By Artist
+
+JobRouter.get("/listall/applied", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, 'Authentication');
+    try {
+        const JobDetails = await JobAppliedModel.aggregate([
+            { $match: { appliedBy: new mongoose.Types.ObjectId(decoded._id) } },
+            { $lookup: { from: "jobs", localField: "jobId", foreignField: "_id", as: "jobdetails" } }
+        ]);
+        if (JobDetails.length === 0) {
+            res.json({ status: "error", message: `No Job Application Found with this ID !! ` })
+        } else {
+            res.json({ status: "success", data: JobDetails })
+        }
+    } catch (error) {
+        res.json({ status: "error", message: `Failed to apply for this job ${error.message}` })
+    }
+})
 
 module.exports = { JobRouter }

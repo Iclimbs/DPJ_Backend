@@ -45,9 +45,9 @@ const jobschema = mongoose.Schema({
         type: String,
         required: true
     },
-    position: { // Save Job Postition Details Like :- Senior, Mid-level, Fresher
-        type: String,
-    },
+    // position: { // Save Job Postition Details Like :- Senior, Mid-level, Fresher
+    //     type: String,
+    // },
     education: { // Save Minimum Qualification Needed To Apply For the Job
         type: String,
         required: true
