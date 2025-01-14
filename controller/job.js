@@ -306,20 +306,25 @@ JobRouter.get("/find", UserAuthentication, async (req, res) => {
     const regex = new RegExp(search, 'i');
 
     try {
-        const results = await JobModel.aggregate([{
-            $match: {
-                $or: [
-                    { category: { $regex: regex } },
-                    { salary: { $regex: regex } },
-                    { description: { $regex: regex } },
-                    { role: { $regex: regex } },
-                    { "address.location": { $regex: regex } },
-                    { "address.state": { $regex: regex } },
-                    { "address.city": { $regex: regex } }
-                ],
-                endtime: { $gte: date }
+        const results = await JobModel.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { category: { $regex: regex } },
+                        { salary: { $regex: regex } },
+                        { description: { $regex: regex } },
+                        { role: { $regex: regex } },
+                        { "address.location": { $regex: regex } },
+                        { "address.state": { $regex: regex } },
+                        { "address.city": { $regex: regex } }
+                    ],
+                    endtime: { $gte: date }
+                }
+            },
+            {
+                $lookup: { from: "users", localField: "createdBy", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }], as: "professionaldetails" }
             }
-        }]);
+        ]);
         if (results.length === 0) {
             return res.json({ status: 'error', message: 'No matching records found' });
         }
