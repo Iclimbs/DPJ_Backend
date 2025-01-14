@@ -327,7 +327,7 @@ CollabRouter.get("/request/upcoming", ArtistAuthentication, async (req, res) => 
   const year = dateObj.getUTCFullYear();
   const currentDate = year + "-" + month + "-" + day;
 
-  try {  
+  try {
     const list = await CollabModel.aggregate([
       {
         $match: { userId: new mongoose.Types.ObjectId(decoded._id) },
@@ -398,6 +398,21 @@ CollabRouter.get("/request/previous", ArtistAuthentication, async (req, res) => 
   }
 });
 
+// Get Collaboration Event Details
+CollabRouter.get("/request/details/:id", ArtistAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const list = await EventModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }, { $lookup: { from: 'reviews', localField: '_id', foreignField: 'eventId', as: 'eventreview' } }, { $lookup: { from: 'reviews', localField: 'createdBy', foreignField: 'userId', as: 'userreview' } }])
+
+    if (list.length == 0) {
+      res.json({ status: "error", message: "No Collaboration Request Found" })
+    } else {
+      res.json({ status: "success", data: list })
+    }
+  } catch (error) {
+    res.json({ status: "error", message: `Unable To Find Collaboration Events Requests ${error.message}` })
+  }
+});
 // Get All Collaborator List Whom Request Sent For Collaboration
 CollabRouter.get("/list/artists/:id", ArtistAuthentication, async (req, res) => {
   const { id } = req.params
