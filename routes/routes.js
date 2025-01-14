@@ -6,6 +6,7 @@ const { PostRouter } = require("../controller/post");
 const { TicketRouter } = require("../controller/ticket");
 const { UserRouter } = require("../controller/user");
 const { WalletRouter } = require("../controller/wallet");
+const { ReviewRouter } = require("../controller/review");
 
 router
     .use("/user", UserRouter)
@@ -15,6 +16,7 @@ router
     .use("/event", EventRouter)
     .use("/wallet", WalletRouter)
     .use("/tickets", TicketRouter)
+    .use("/review", ReviewRouter)
 
 
 module.exports = router;
