@@ -149,7 +149,6 @@ CollabRouter.post("/add/collaborators/:id", [ArtistAuthentication, WalletChecker
   // transactionData.push({ amount: totalAmount, userId: decoded._id, type: "Debit", status: "Success", method: "Wallet", from: decoded._id, to: "Admin", eventId: id });
 
   try {
-
     const collab = await CollabModel.aggregate([{ $match: { eventId: new mongoose.Types.ObjectId(id) } }]);
     if (collab.length > 0) {
       for (let index = 0; index < collaborators.length; index++) {

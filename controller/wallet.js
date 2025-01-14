@@ -54,9 +54,9 @@ WalletRouter.post("/create", async (req, res) => {
 // Handlint Admin's Wallet Transactions
 
 const addAmountInAdminWallet = async (props) => {
-    const { amount,userId,eventId } = props
+    const { amount, userId, eventId } = props
     try {
-        const user = await UserModel.find({ "role": "admin" });
+        const user = await UserModel.find({ "accountType": "admin" });
         if (user.length <= 0) {
             res.json({ status: 'error', message: `Admin Not Found` })
         }
@@ -74,10 +74,11 @@ const addAmountInAdminWallet = async (props) => {
             status: "Success",
             method: "Wallet",
             from: userId,
-            to:user[0]._id,
+            to: user[0]._id,
             eventId: eventId
 
         })
+        
         await transaction.save()
 
 
@@ -91,7 +92,7 @@ const subAmountInAdminWallet = async (props) => {
     const { amount } = props
 
     try {
-        const user = await UserModel.find({ "role": "admin" });
+        const user = await UserModel.find({ "accountType": "admin" });
         if (user.length <= 0) {
             res.json({ status: 'error', message: `Admin Not Found` })
         }
