@@ -221,19 +221,19 @@ JobRouter.post("/apply/:id", uploadMiddleWare.single('cv'), UserAuthentication, 
     const decoded = jwt.verify(token, 'Authentication')
 
     if (!req?.file) {
-         res.json({ status: "error", message: `Please Upload Your CV` });
+        res.json({ status: "error", message: `Please Upload Your CV` });
     }
     try {
         const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }]);
 
         if (JobDetails.length > 0) {
-             res.json({ status: "error", message: `You Cannot Apply For The Job Created By Youself !! ` })
+            res.json({ status: "error", message: `You Cannot Apply For The Job Created By Youself !! ` })
         }
 
         const appliedJob = await JobAppliedModel.aggregate([{ $match: { jobId: new mongoose.Types.ObjectId(id), appliedBy: new mongoose.Types.ObjectId(decoded._id) } }])
 
         if (appliedJob.length > 0) {
-             res.json({ status: "error", message: `You Have Already Applied For This Job !!` })
+            res.json({ status: "error", message: `You Have Already Applied For This Job !!` })
         }
 
         const newApplication = new JobAppliedModel({
@@ -296,8 +296,7 @@ JobRouter.get("/listall/applied", UserAuthentication, async (req, res) => {
 
 JobRouter.get("/find", UserAuthentication, async (req, res) => {
     const { search } = req.query;
-    const currentDate = new Date();
-    const dateObj = new Date(currentDate.setDate(currentDate.getDate() + 30));
+    const dateObj = new Date();
     // Creating Date
     const month = (dateObj.getUTCMonth() + 1) < 10 ? String(dateObj.getUTCMonth() + 1).padStart(2, '0') : dateObj.getUTCMonth() + 1 // months from 1-12
     const day = dateObj.getUTCDate() < 10 ? String(dateObj.getUTCDate()).padStart(2, '0') : dateObj.getUTCDate()
@@ -321,7 +320,6 @@ JobRouter.get("/find", UserAuthentication, async (req, res) => {
                 endtime: { $gte: date }
             }
         }]);
-
         if (results.length === 0) {
             return res.json({ status: 'error', message: 'No matching records found' });
         }
