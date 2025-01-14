@@ -212,7 +212,7 @@ CollabRouter.post("/add/collaborators/:id", [ArtistAuthentication, WalletChecker
         return res.json({ status: "error", message: `Failed To Deduct Amount From User Wallet` });
       }
       transactionData.push({
-        amount:amount,
+        amount: amount,
         userId: decoded._id,
         type: "Debit",
         status: "Success",
@@ -238,7 +238,7 @@ CollabRouter.post("/add/collaborators/:id", [ArtistAuthentication, WalletChecker
 }
 );
 
-// Counter Offer For Collaborators
+// Counter Offer For Collaborators || Not In Use
 CollabRouter.patch("/edit/collaborators/amount/:id", ArtistAuthentication, async (req, res) => {
   const { id } = req.params;
   const { amount } = req.body;
@@ -300,12 +300,94 @@ CollabRouter.get("/list", ArtistAuthentication, async (req, res) => {
   }
 });
 
-// Get All Collaboration Events Requests Sent To User
+// Get All Collaboration Events Requests Received By User (User Indicate Artist Who will Participate In The Event)
 CollabRouter.get("/request/list", ArtistAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
     const list = await CollabModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(decoded._id) } }, { $lookup: { from: 'events', localField: 'eventId', foreignField: '_id', as: 'event' } }])
+    if (list.length == 0) {
+      res.json({ status: "error", message: "No Collaboration Request Found" })
+    } else {
+      res.json({ status: "success", data: list })
+    }
+  } catch (error) {
+    res.json({ status: "error", message: `Unable To Find Collaboration Events Requests ${error.message}` })
+  }
+});
+
+// Get All Collaboration Events Requests Received By User (User Indicate Artist Who will Participate In The Event)
+CollabRouter.get("/request/upcoming", ArtistAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const dateObj = new Date();
+  // Creating Date
+  const month = (dateObj.getUTCMonth() + 1) < 10 ? String(dateObj.getUTCMonth() + 1).padStart(2, '0') : dateObj.getUTCMonth() + 1 // months from 1-12
+  const day = dateObj.getUTCDate() < 10 ? String(dateObj.getUTCDate()).padStart(2, '0') : dateObj.getUTCDate()
+  const year = dateObj.getUTCFullYear();
+  const currentDate = year + "-" + month + "-" + day;
+
+  try {  
+    const list = await CollabModel.aggregate([
+      {
+        $match: { userId: new mongoose.Types.ObjectId(decoded._id) },
+      },
+      {
+        $lookup: {
+          from: 'events',
+          localField: 'eventId',
+          foreignField: '_id',
+          pipeline: [{ $match: { endDate: { $gte: currentDate } } }],
+          as: 'event',
+        }
+      },
+      {
+        $match: {
+          $expr: { $gt: [{ $size: "$event" }, 0] },
+        },
+      },
+    ]); if (list.length == 0) {
+      res.json({ status: "error", message: "No Collaboration Request Found" })
+    } else {
+      res.json({ status: "success", data: list })
+    }
+  } catch (error) {
+    res.json({ status: "error", message: `Unable To Find Collaboration Events Requests ${error.message}` })
+  }
+});
+
+// Get All Collaboration Events Requests Received By User (User Indicate Artist Who will Participate In The Event)
+CollabRouter.get("/request/previous", ArtistAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const dateObj = new Date();
+  // Creating Date
+  const month = (dateObj.getUTCMonth() + 1) < 10 ? String(dateObj.getUTCMonth() + 1).padStart(2, '0') : dateObj.getUTCMonth() + 1 // months from 1-12
+  const day = dateObj.getUTCDate() < 10 ? String(dateObj.getUTCDate()).padStart(2, '0') : dateObj.getUTCDate()
+  const year = dateObj.getUTCFullYear();
+  const currentDate = year + "-" + month + "-" + day;
+
+  try {
+    const list = await CollabModel.aggregate([
+      {
+        $match: { userId: new mongoose.Types.ObjectId(decoded._id) },
+      },
+      {
+        $lookup: {
+          from: 'events',
+          localField: 'eventId',
+          foreignField: '_id',
+          pipeline: [{ $match: { endDate: { $lte: currentDate } } }],
+          as: 'event',
+        }
+      },
+      {
+        $match: {
+          $expr: { $gt: [{ $size: "$event" }, 0] },
+        },
+      },
+    ]);
+
     if (list.length == 0) {
       res.json({ status: "error", message: "No Collaboration Request Found" })
     } else {

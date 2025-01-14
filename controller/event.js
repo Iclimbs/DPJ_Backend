@@ -305,6 +305,8 @@ EventRouter.get("/lists/:id", async (req, res) => {
   }
 });
 
+// Get Detail of an Particular Events For Professional User Only
+
 EventRouter.get("/detail/:id", async (req, res) => {
   const { id } = req.params;
   const token = req.headers.authorization.split(" ")[1];

@@ -280,7 +280,7 @@ JobRouter.get("/listall/applied", UserAuthentication, async (req, res) => {
     try {
         const JobDetails = await JobAppliedModel.aggregate([
             { $match: { appliedBy: new mongoose.Types.ObjectId(decoded._id) } },
-            { $lookup: { from: "jobs", localField: "jobId", foreignField: "_id", pipeline: [{ $lookup: { from: "users", localField: "createdBy", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }], as: "userdetails" } }], as: "jobdetails" } }
+            { $lookup: { from: "jobs", localField: "jobId", foreignField: "_id", pipeline: [{ $lookup: { from: "users", localField: "createdBy", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }], as: "professionaldetails" } }], as: "jobdetails" } }
         ]);
         if (JobDetails.length === 0) {
             res.json({ status: "error", message: `No Job Application Found with this ID !! ` })
