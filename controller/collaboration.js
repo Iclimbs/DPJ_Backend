@@ -300,6 +300,24 @@ CollabRouter.get("/list", ArtistAuthentication, async (req, res) => {
   }
 });
 
+// Get Collaboration Events Complete Details Created By User
+CollabRouter.get("/list/detailone/:id", ArtistAuthentication, async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const list = await EventModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id), type: "Collaboration" } },{$lookup: { from: 'collabs', localField: '_id', foreignField: 'eventId',pipeline:[{$lookup:{from:"reviews",localField:"userId",foreignField:"userId",as:"reviews"}}], as: 'collaborators' }}])
+    if (list.length == 0) {
+      res.json({ status: "error", message: "No Collaboration Event Found" })
+    } else {
+      res.json({ status: "success", data: list })
+    }
+  } catch (error) {
+    res.json({ status: "error", message: `Unable To Find Collaboration Events ${error.message}` })
+  }
+});
+
+
 // Get All Collaboration Events Requests Received By User (User Indicate Artist Who will Participate In The Event)
 CollabRouter.get("/request/list", ArtistAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
