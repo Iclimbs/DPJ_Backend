@@ -6,7 +6,6 @@ const ObjectId = mongoose.Schema.Types.ObjectId;
 const reviewSchema = mongoose.Schema({
     eventId: {
         type: ObjectId,
-        required: true
     },
     userId: {
         type: ObjectId,
