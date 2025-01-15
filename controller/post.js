@@ -3,7 +3,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 
 // Basic Model Imports
-const { PostModel, CommentModel, BookMarkModel } = require("../model/ModelExport");
+const { PostModel, CommentModel, BookMarkModel, UserModel, LikeModel } = require("../model/ModelExport");
 
 // Basic Middleware Imports
 const { ArtistAuthentication, AdminAuthentication, uploadMiddleWare, UserAuthentication } = require("../middleware/MiddlewareExport");
@@ -394,6 +394,131 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
 
 })
 
+
+// Api's For Post Search
+PostRouter.get("/find", UserAuthentication, async (req, res) => {
+    const { search } = req.query;
+    const regex = new RegExp(search, 'i');
+
+    try {
+        let result = {};
+        const postResult = await PostModel.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { description: { $regex: regex } },
+                    ],
+                }
+            },
+            {
+                $lookup: {
+                    from: "users", localField: "createdBy", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }], as: "professionaldetails"
+                }
+            }
+        ]);
+
+        const userResult = await UserModel.aggregate([{
+            $match: {
+                $or: [
+                    { name: { $regex: regex } },
+                    { category: { $regex: regex } }]
+            },
+        },
+        {
+            $lookup: {
+                from: "posts", localField: "_id", foreignField: "createdBy", as: "posts"
+            }
+        }
+        ]);
+        result.post = postResult;
+        result.user = userResult;
+        console.log("User Result ", userResult);
+        res.json({
+            status: "success",
+            data: result,
+        });
+    } catch (error) {
+        res.json({
+            status: "error",
+            message: `Failed To Get Live Post Feed's ${error.message}`,
+        });
+    }
+
+})
+
+PostRouter.get("/like", UserAuthentication, async (req, res) => {
+    const { postId, status } = req.query;
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+
+    try {
+        const postResult = await LikeModel.aggregate([{ $match: { postId: new mongoose.Types.ObjectId(postId) } }]);
+        if (postResult.length == 0) {
+            if (status == "false") {
+                res.json({
+                    status: "error",
+                    message: "No Like Found",
+                });
+
+            } else {
+                const like = new LikeModel({
+                    likedBy: decoded._id,
+                    postId: postId,
+                });
+                await like.save();
+                res.json({ status: "success", message: `Post Liked Successfully` });
+            }
+
+        } else {
+            const likeResult = await LikeModel.aggregate([{ $match: { likedBy: new mongoose.Types.ObjectId(decoded._id) } }]);
+
+            if (likeResult.length > 0) {
+                if (status == "false") {
+                    const like = await LikeModel.updateOne(
+                        { postId: new mongoose.Types.ObjectId(postId) },
+                        { $pull: { likedBy: new mongoose.Types.ObjectId(decoded._id) } } // Add ObjectId to the array
+                    )
+
+                    res.json({
+                        status: "success",
+                        message: "Post Disliked Successfully",
+                    });
+
+                } else {
+                    res.json({
+                        status: "success",
+                        message: "Post Already Liked",
+                    });
+                }
+
+            } else {
+                if (status == "false") {
+                    res.json({
+                        status: "success",
+                        message: "Post Already Disliked",
+                    });
+
+                } else {
+                    const like = await LikeModel.updateOne(
+                        { postId: new mongoose.Types.ObjectId(postId) },
+                        { $push: { likedBy: new mongoose.Types.ObjectId(decoded._id) } } // Add ObjectId to the array
+                    )
+                    res.json({
+                        status: "success",
+                        message: "Post Liked Successfully",
+                    });
+                }
+
+            }
+        }
+    } catch (error) {
+        res.json({
+            status: "error",
+            message: `Failed To Get Live Post Feed's ${error.message}`,
+        });
+    }
+
+})
 
 
 

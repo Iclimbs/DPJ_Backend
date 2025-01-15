@@ -1,10 +1,11 @@
 const mongoose = require("mongoose");
+const ObjectId = mongoose.Schema.Types.ObjectId;
 const likeschema = mongoose.Schema({
     likedBy: { // Save Detailed Description of Job & basic detail about the job
-        type: Array,
+        type: [ObjectId],
         required: true
     },
-    postId: { type: String, required: true }, // Save The Post ID for which this Post was Liked
+    postId: { type: ObjectId, required: true }, // Save The Post ID for which this Post was Liked
     CreatedAt: { type: Date, default: Date.now }, // Save The Time When the following Job was created 
 
 });
