@@ -362,7 +362,7 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     console.log(decoded._id);
-    
+
     try {
         const result = await PostModel.aggregate([
             { $lookup: { from: "comments", localField: "_id", foreignField: "postId", as: "comments" } },
@@ -379,7 +379,17 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
                 $lookup: { from: "likes", localField: "_id", foreignField: "postId", as: "like" }
             },
             {
-                $addFields: { likestatus: { $in: [new mongoose.Types.ObjectId(decoded._id), "$like.likedBy"] } }
+                $addFields: {
+                    likestatus: {
+                        $in: [new mongoose.Types.ObjectId(decoded._id), {
+                            $reduce: {
+                                input: "$like",
+                                initialValue: [],
+                                in: { $concatArrays: ["$$value", "$$this.likedBy"] }, // Flatten the likedBy arrays
+                            },
+                        }],
+                    }
+                }
             },
             { $sort: { CreatedAt: -1 } }]);
         if (result.length == 0) {
