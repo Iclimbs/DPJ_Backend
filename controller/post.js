@@ -74,8 +74,42 @@ PostRouter.get("/listall", UserAuthentication, async (req, res) => {
 
 PostRouter.get("/details/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+
     try {
-        const post = await PostModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }, { $lookup: { from: 'comments', localField: '_id', foreignField: 'postId', as: 'comments' } }])
+        const post = await PostModel.aggregate([
+            { $match: { _id: new mongoose.Types.ObjectId(id) } },
+            { $lookup: { from: "comments", localField: "_id", foreignField: "postId", as: "comments" } },
+            {
+                $lookup: {
+                    from: "users", localField: "createdBy", foreignField: "_id", as: "userdetails",
+                    pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }]
+                }
+            },
+            {
+                $lookup: { from: "bookmarks", localField: "_id", foreignField: "postId", as: "bookmarks" }
+            },
+            {
+                $addFields: { bookmark: { $in: [new mongoose.Types.ObjectId(decoded._id), "$bookmarks.bookmarkedBy"] } }
+            },
+            {
+                $lookup: { from: "likes", localField: "_id", foreignField: "postId", as: "like" }
+            },
+            {
+                $addFields: {
+                    likestatus: {
+                        $in: [new mongoose.Types.ObjectId(decoded._id), {
+                            $reduce: {
+                                input: "$like",
+                                initialValue: [],
+                                in: { $concatArrays: ["$$value", "$$this.likedBy"] }, // Flatten the likedBy arrays
+                            },
+                        }],
+                    }
+                }
+            },
+            { $sort: { CreatedAt: -1 } }]);
         if (post.length == 0) {
             res.json({
                 status: "error",
