@@ -435,7 +435,7 @@ CollabRouter.get("/request/details/:id", ArtistAuthentication, async (req, res) 
 CollabRouter.get("/list/artists/:id", ArtistAuthentication, async (req, res) => {
   const { id } = req.params
   try {
-    const list = await CollabModel.aggregate([{ $match: { eventId: new mongoose.Types.ObjectId(id), status: "Pending" } }, { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'userdetails' } }])
+    const list = await CollabModel.aggregate([{ $match: { eventId: new mongoose.Types.ObjectId(id) } }, { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', pipeline:[{$project:{profile:1,}}], as: 'userdetails' } }])
     if (list.length == 0) {
       res.json({ status: "error", message: "No Collaborators Added In This Event " })
     } else {

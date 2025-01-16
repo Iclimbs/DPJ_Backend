@@ -90,7 +90,7 @@ ReviewRouter.post("/add/otherArtist/:userId", UserAuthentication, async (req, re
 })
 
 
-ReviewRouter.post("/edit/:id", UserAuthentication, async (req, res) => {
+ReviewRouter.patch("/edit/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params;
     try {
         const reviewExists = await ReviewModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
