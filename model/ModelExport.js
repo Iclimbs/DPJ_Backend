@@ -13,4 +13,5 @@ const { TransactionModel } = require('./transaction.model');
 const { UserModel } = require('./user.model');
 const { WalletModel } = require('./wallet.model');
 const { ReviewModel } = require('./review.model');
-module.exports = { BookedTicketModel, BookMarkModel, BookMarkModel, CollabModel, CollabModel, CommentModel, CommentModel, DocumentModel, DocumentModel, EventModel, EventModel, JobModel, JobModel, JobAppliedModel, JobAppliedModel, LikeModel, PostModel, PostModel, TicketModel, TicketModel, TransactionModel, TransactionModel, UserModel, UserModel, WalletModel, WalletModel, ReviewModel }
+const {FollowModel} = require('./follow.model');
+module.exports = { BookedTicketModel, BookMarkModel, BookMarkModel, CollabModel, CollabModel, CommentModel, CommentModel, DocumentModel, DocumentModel, EventModel, EventModel, JobModel, JobModel, JobAppliedModel, JobAppliedModel, LikeModel, PostModel, PostModel, TicketModel, TicketModel, TransactionModel, TransactionModel, UserModel, UserModel, WalletModel, WalletModel, ReviewModel, FollowModel }

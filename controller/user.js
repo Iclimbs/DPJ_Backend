@@ -61,7 +61,7 @@ const { oauth2client } = require("../service/googleConfig");
 const { transporter } = require("../service/transporter");
 
 // Required Models 
-const { UserModel, DocumentModel } = require("../model/ModelExport");
+const { UserModel, DocumentModel, FollowModel } = require("../model/ModelExport");
 
 // Required Middleware For File Upload & User Authentication 
 const { UserAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
@@ -173,7 +173,7 @@ UserRouter.post("/login", async (req, res) => {
 UserRouter.post("/login/admin", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const userExists = await UserModel.find({ email:email,verified:"true" });
+    const userExists = await UserModel.find({ email: email, verified: "true" });
     if (userExists.length === 0) {
       return res.json({
         status: "error",
@@ -759,6 +759,89 @@ UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: 'profil
   }
 }
 );
+
+
+
+// Follow Each Other 
+UserRouter.get("/follow", UserAuthentication, async (req, res) => {
+  const { userId, status } = req.query;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const userIdResult = await FollowModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(userId) } }]);
+
+    if (userIdResult.length == 0) {
+      if (status == "false") {
+        res.json({
+          status: "error",
+          message: "No Follow Found",
+        });
+
+      } else {
+        const follow = new FollowModel({
+          followedBy: decoded._id,
+          userId: userId,
+        });
+        await follow.save();
+        res.json({ status: "success", message: `Started Following` });
+      }
+
+    } else {
+      const followResult = await FollowModel.aggregate([
+        {
+          $match: {
+            userId: new mongoose.Types.ObjectId(userId),
+            followedBy: { $elemMatch: { $eq: new mongoose.Types.ObjectId(decoded._id) } }
+          }
+        }
+      ]);
+
+      if (followResult.length > 0) {
+        if (status == "false") {
+          const follow = await FollowModel.updateOne(
+            { userId: new mongoose.Types.ObjectId(userId) },
+            { $pull: { followedBy: new mongoose.Types.ObjectId(decoded._id) } } // Add ObjectId to the array
+          )
+
+          res.json({
+            status: "success",
+            message: "Stopped Following",
+          });
+        } else {
+          res.json({
+            status: "success",
+            message: "You Already Follow This User",
+          });
+        }
+
+      } else {
+        if (status == "false") {
+          res.json({
+            status: "success",
+            message: "You Already Unfollow This User",
+          });
+
+        } else {
+          const follow = await FollowModel.updateOne(
+            { userId: new mongoose.Types.ObjectId(userId) },
+            { $push: { followedBy: new mongoose.Types.ObjectId(decoded._id) } } // Add ObjectId to the array
+          )
+          res.json({
+            status: "success",
+            message: "Started Following",
+          });
+        }
+
+      }
+    }
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Get Follow Details Of User's ${error.message}`,
+    });
+  }
+
+})
 
 
 // Register With Google
