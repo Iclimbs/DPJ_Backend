@@ -41,23 +41,23 @@ ReviewRouter.post("/add/collabArtist/:event", UserAuthentication, async (req, re
     }
 })
 
-// Collab Artist Review Event Creator Artist
-ReviewRouter.post("/add/eventCreator/:userId", UserAuthentication, async (req, res) => {
-    const { userId } = req.params;
+// Collab Artist Review Event Creator Artist For The Particular Event in This API
+ReviewRouter.post("/add/eventCreator", UserAuthentication, async (req, res) => {
+    const { userId, eventId } = req.query;
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
 
     // Seach For Event Creator Artist Review
 
     try {
-        const reviewExists = await ReviewModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(userId), reviewedByUserId: new mongoose.Types.ObjectId(decoded._id) } }])
+        const reviewExists = await ReviewModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(userId), eventId: new mongoose.Types.ObjectId(eventId), reviewedByUserId: new mongoose.Types.ObjectId(decoded._id) } }])
 
         // Checking If Review Already Exists For The Event
         if (reviewExists.length > 0) {
             res.json({ status: 'error', message: `Review Already Exists` })
         }
         //Create New Review
-        const eventReview = new ReviewModel({ userId: userId, reviewedByUserId: decoded._id, reviewedBy: "eventCreator", rating: req.body.rating, review: req.body.review })
+        const eventReview = new ReviewModel({ userId: userId, reviewedByUserId: decoded._id, eventId: eventId, reviewedBy: "artist", rating: req.body.rating, review: req.body.review })
         await eventReview.save()
         res.json({ status: 'success', message: `Review Successfully Created` })
     } catch (error) {
@@ -65,27 +65,27 @@ ReviewRouter.post("/add/eventCreator/:userId", UserAuthentication, async (req, r
     }
 })
 
-// Event Creator Artist Review Other Collab Artist in This API
-ReviewRouter.post("/add/otherArtist/:userId", UserAuthentication, async (req, res) => {
-    const { userId } = req.params;
+// Event Creator Artist Review Other Collab Artist For The Particular Event in This API
+ReviewRouter.post("/add/otherArtist", UserAuthentication, async (req, res) => {
+    const { userId,eventId } = req.query;
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
 
     // Seach For Event Creator Artist Review
 
     try {
-        const reviewExists = await ReviewModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(userId), reviewedByUserId: new mongoose.Types.ObjectId(decoded._id) } }])
+        const reviewExists = await ReviewModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(userId), eventId: new mongoose.Types.ObjectId(eventId), reviewedByUserId: new mongoose.Types.ObjectId(decoded._id) } }])
 
         // Checking If Review Already Exists For The Event
         if (reviewExists.length > 0) {
             res.json({ status: 'error', message: `Review Already Exists` })
         }
         //Create New Review
-        const eventReview = new ReviewModel({ userId: userId, reviewedByUserId: decoded._id, reviewedBy: "artist", rating: req.body.rating, review: req.body.review })
+        const eventReview = new ReviewModel({ userId: userId, eventId:eventId, reviewedByUserId: decoded._id, reviewedBy: "eventCreator", rating: req.body.rating, review: req.body.review })
         await eventReview.save()
-         res.json({ status: 'success', message: `Review Successfully Created` });
+        res.json({ status: 'success', message: `Review Successfully Created` });
     } catch (error) {
-         res.json({ status: 'error', message: `Failed To Create Review For Other Artist, Error :- ${error.message}` })
+        res.json({ status: 'error', message: `Failed To Create Review For Other Artist, Error :- ${error.message}` })
     }
 })
 
