@@ -5,7 +5,7 @@ const { UserAuthentication } = require('../middleware/MiddlewareExport');
 const { default: mongoose } = require('mongoose');
 const ReviewRouter = express.Router();
 
-// Collab Artist Review Event In Which He/She Has Participated
+// Collab Artist Review the Event In Which He/She Has Participated
 ReviewRouter.post("/add/collabArtist/:event", UserAuthentication, async (req, res) => {
     const { event } = req.params;
     const token = req.headers.authorization.split(" ")[1];

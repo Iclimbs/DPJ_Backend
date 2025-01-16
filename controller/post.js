@@ -462,7 +462,7 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
                 }
             },
             { $sort: { CreatedAt: -1 } },
-            { $project: {followerlist:0,like:0} }
+            { $project: {followerlist:0} }
         ]);
         if (result.length == 0) {
             res.json({
