@@ -94,6 +94,22 @@ PostRouter.get("/details/:id", UserAuthentication, async (req, res) => {
                 $addFields: { bookmark: { $in: [new mongoose.Types.ObjectId(decoded._id), "$bookmarks.bookmarkedBy"] } }
             },
             {
+                $lookup: { from: "followers", localField: "createdBy", foreignField: "userId", as: "followerlist" }
+            },
+            {
+                $addFields: {
+                    followstatus: {
+                        $in: [new mongoose.Types.ObjectId(decoded._id), {
+                            $reduce: {
+                                input: "$followerlist",
+                                initialValue: [],
+                                in: { $concatArrays: ["$$value", "$$this.followedBy"] }, // Flatten the likedBy arrays
+                            },
+                        }],
+                    }
+                }
+            },
+            {
                 $lookup: { from: "likes", localField: "_id", foreignField: "postId", as: "like" }
             },
             {
@@ -109,7 +125,11 @@ PostRouter.get("/details/:id", UserAuthentication, async (req, res) => {
                     }
                 }
             },
-            { $sort: { CreatedAt: -1 } }]);
+            {
+                $project: { followerlist: 0 }
+            },
+            { $sort: { CreatedAt: -1 } }
+        ]);
         if (post.length == 0) {
             res.json({
                 status: "error",
