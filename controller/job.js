@@ -165,8 +165,17 @@ JobRouter.get("/listall/active", UserAuthentication, async (req, res) => {
 
 JobRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1]
+    const decoded = jwt.verify(token, 'Authentication')
     try {
-        const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }, { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }], as: 'ProfessionalDetails' } }])
+        const JobDetails = await JobModel.aggregate([
+            { $match: { _id: new mongoose.Types.ObjectId(id) } },
+            { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }], as: 'ProfessionalDetails' } },
+            { $lookup: { from: 'job_applications', localField: '_id', foreignField: 'jobId', as: 'applications' } },
+            { $addFields: { isApplied: { $in: [new mongoose.Types.ObjectId(decoded._id), "$applications.appliedBy"] } } },
+            { $project: { applications: 0 } }
+        ])
+
         if (JobDetails.length !== 0) {
             res.json({ status: "success", data: JobDetails })
         } else {
