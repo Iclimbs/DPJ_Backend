@@ -19,7 +19,6 @@ const {
   UserAuthentication,
 } = require("../middleware/MiddlewareExport");
 const { default: mongoose } = require("mongoose");
-const { logging } = require("googleapis/build/src/apis/logging");
 
 const PostRouter = express.Router();
 
