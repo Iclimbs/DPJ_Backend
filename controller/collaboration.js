@@ -583,13 +583,8 @@ CollabRouter.get(
             pipeline: [
               {
                 $match: {
-                  // $expr: {
-                  //   $and: [
-                  //     { $eq: ["$_id", "$$userId"] }, // Match userId from the orders collection
-                  //     { $eq: ["$isActive", true] }, // Additional condition to check if user is active
-                  //   ],
-                  // },
-                  $eq: { $reviewedBy: "collabArtist" },
+                  reviewedBy: "collabArtist",
+                  userId: null,
                 },
               },
             ],
@@ -601,7 +596,7 @@ CollabRouter.get(
             from: "reviews",
             localField: "createdBy",
             foreignField: "userId",
-            as: "userreview",
+            as: "eventCreatorReview",
           },
         },
       ]);

@@ -39,7 +39,7 @@ ReviewRouter.post(
 
       // Checking If Review Already Exists For The Event
       if (reviewExists.length > 0) {
-        res.json({ status: "error", message: `Review Already Exists` });
+        return res.json({ status: "error", message: `Review Already Exists` });
       }
 
       // Checking Event Details Create Review Only For The Event Which Has Expired
@@ -47,29 +47,31 @@ ReviewRouter.post(
         {
           $match: {
             _id: new mongoose.Types.ObjectId(event),
-            endtime: { $lte: date },
+            endDate: { $lte: date },
           },
         },
       ]);
 
-      if (eventDetails.length == 0) {
-        res.json({
+      if (eventDetails.length === 0) {
+        return res.json({
           status: "error",
           message: `Either No Event is Present with This Id Or Event Has Not Expired Till Now`,
         });
-      } else {
-        const eventReview = new ReviewModel({
-          eventId: event,
-          reviewedByUserId: decoded._id,
-          reviewedBy: "collabArtist",
-          rating: req.body.rating,
-          review: req.body.review,
-        });
-        await eventReview.save();
-        res.json({ status: "success", message: `Review Successfully Created` });
       }
+      const eventReview = new ReviewModel({
+        eventId: event,
+        reviewedByUserId: decoded._id,
+        reviewedBy: "collabArtist",
+        rating: req.body.rating,
+        review: req.body.review,
+      });
+      await eventReview.save();
+      return res.json({
+        status: "success",
+        message: `Review Successfully Created`,
+      });
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Failed To Create Review For Event, Error :- ${error.message}`,
       });
@@ -98,21 +100,24 @@ ReviewRouter.post("/add/eventCreator", UserAuthentication, async (req, res) => {
 
     // Checking If Review Already Exists For The Event
     if (reviewExists.length > 0) {
-      res.json({ status: "error", message: `Review Already Exists` });
+      return res.json({ status: "error", message: `Review Already Exists` });
     }
     //Create New Review
     const eventReview = new ReviewModel({
       userId: userId,
       reviewedByUserId: decoded._id,
       eventId: eventId,
-      reviewedBy: "artist",
+      reviewedBy: "collabArtist",
       rating: req.body.rating,
       review: req.body.review,
     });
     await eventReview.save();
-    res.json({ status: "success", message: `Review Successfully Created` });
+    return res.json({
+      status: "success",
+      message: `Review Successfully Created`,
+    });
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Create Review For Event Creator Artist, Error :-  ${error.message}`,
     });
@@ -124,6 +129,7 @@ ReviewRouter.post("/add/otherArtist", UserAuthentication, async (req, res) => {
   const { userId, eventId } = req.query;
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
+  console.log("decoed ", decoded._id);
 
   // Seach For Event Creator Artist Review
 
@@ -134,13 +140,14 @@ ReviewRouter.post("/add/otherArtist", UserAuthentication, async (req, res) => {
           userId: new mongoose.Types.ObjectId(userId),
           eventId: new mongoose.Types.ObjectId(eventId),
           reviewedByUserId: new mongoose.Types.ObjectId(decoded._id),
+          reviewedBy: "eventCreator",
         },
       },
     ]);
 
     // Checking If Review Already Exists For The Event
     if (reviewExists.length > 0) {
-      res.json({ status: "error", message: `Review Already Exists` });
+      return res.json({ status: "error", message: `Review Already Exists` });
     }
     //Create New Review
     const eventReview = new ReviewModel({
@@ -152,9 +159,12 @@ ReviewRouter.post("/add/otherArtist", UserAuthentication, async (req, res) => {
       review: req.body.review,
     });
     await eventReview.save();
-    res.json({ status: "success", message: `Review Successfully Created` });
+    return res.json({
+      status: "success",
+      message: `Review Successfully Created`,
+    });
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Create Review For Other Artist, Error :- ${error.message}`,
     });
