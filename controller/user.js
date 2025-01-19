@@ -60,12 +60,18 @@ const { oauth2client } = require("../service/googleConfig");
 // Required Modules For Sending Email
 const { transporter } = require("../service/transporter");
 
-// Required Models 
-const { UserModel, DocumentModel, FollowModel } = require("../model/ModelExport");
+// Required Models
+const {
+  UserModel,
+  DocumentModel,
+  FollowModel,
+} = require("../model/ModelExport");
 
-// Required Middleware For File Upload & User Authentication 
-const { UserAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
-
+// Required Middleware For File Upload & User Authentication
+const {
+  UserAuthentication,
+  uploadMiddleWare,
+} = require("../middleware/MiddlewareExport");
 
 const UserRouter = express.Router();
 
@@ -94,7 +100,10 @@ UserRouter.post("/login", async (req, res) => {
         redirect: "/user/register",
       });
     } else {
-      if (hash.sha256(password) === userExists[0].password && userExists[0].disabled != true) {
+      if (
+        hash.sha256(password) === userExists[0].password &&
+        userExists[0].disabled != true
+      ) {
         if (userExists[0].accountType !== "admin") {
           let token = jwt.sign(
             {
@@ -106,7 +115,7 @@ UserRouter.post("/login", async (req, res) => {
               verified: userExists[0].verified,
               exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
             },
-            "Authentication"
+            "Authentication",
           );
           if (userExists[0].dob === undefined || userExists[0].dob === "") {
             return res.json({
@@ -117,7 +126,10 @@ UserRouter.post("/login", async (req, res) => {
               redirect: "/user/basicprofile",
             });
           }
-          if (userExists[0].profile === undefined || userExists[0].profile === "") {
+          if (
+            userExists[0].profile === undefined ||
+            userExists[0].profile === ""
+          ) {
             return res.json({
               status: "success",
               message: "Login Successful",
@@ -127,7 +139,10 @@ UserRouter.post("/login", async (req, res) => {
             });
           }
 
-          if (userExists[0].category === undefined || userExists[0].category === "") {
+          if (
+            userExists[0].category === undefined ||
+            userExists[0].category === ""
+          ) {
             return res.json({
               status: "success",
               message: "Login Successful",
@@ -159,7 +174,7 @@ UserRouter.post("/login", async (req, res) => {
         res.json({
           status: "error",
           message: "Your Account has been Temporarily disabled",
-        })
+        });
       }
     }
   } catch (error) {
@@ -181,7 +196,10 @@ UserRouter.post("/login/admin", async (req, res) => {
         redirect: "/user/register",
       });
     } else {
-      if (hash.sha256(password) === userExists[0].password && userExists[0].disabled != true) {
+      if (
+        hash.sha256(password) === userExists[0].password &&
+        userExists[0].disabled != true
+      ) {
         if (userExists[0].accountType === "admin") {
           let token = jwt.sign(
             {
@@ -193,7 +211,7 @@ UserRouter.post("/login/admin", async (req, res) => {
               verified: userExists[0].verified,
               exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
             },
-            "Authentication"
+            "Authentication",
           );
 
           res.json({
@@ -218,7 +236,7 @@ UserRouter.post("/login/admin", async (req, res) => {
         res.json({
           status: "error",
           message: "Your Account has been Temporarily disabled",
-        })
+        });
       }
     }
   } catch (error) {
@@ -237,7 +255,7 @@ UserRouter.post("/register", async (req, res) => {
     res.json({
       status: "error",
       message: "You Cannot Register Using Admin Credential's",
-    })
+    });
   }
   const userExists = await UserModel.find({ email });
   if (userExists.length >= 1) {
@@ -294,7 +312,7 @@ UserRouter.post("/forgot", async (req, res) => {
           email: userExists[0].email,
           exp: Math.floor(Date.now() / 1000) + 60 * 15,
         },
-        "Registration"
+        "Registration",
       );
       let link = `${process.env.domainurl}${newotp}/${forgotpasswordtoken}`;
       userExists[0].otp = newotp;
@@ -310,7 +328,7 @@ UserRouter.post("/forgot", async (req, res) => {
       }
       let forgotPasswordtemplate = path.join(
         __dirname,
-        "../emailtemplate/forgotPassword.ejs"
+        "../emailtemplate/forgotPassword.ejs",
       );
       ejs.renderFile(
         forgotPasswordtemplate,
@@ -342,7 +360,7 @@ UserRouter.post("/forgot", async (req, res) => {
               }
             });
           }
-        }
+        },
       );
     }
   } catch (error) {
@@ -378,7 +396,7 @@ UserRouter.post("/forgot/phone", async (req, res) => {
           phoneno: userExists[0].phoneno,
           exp: Math.floor(Date.now() / 1000) + 60 * 15,
         },
-        "Registration"
+        "Registration",
       );
       userExists[0].otp = newotp;
       userExists[0].forgotpasswordtoken = forgotpasswordtoken;
@@ -393,7 +411,7 @@ UserRouter.post("/forgot/phone", async (req, res) => {
       }
       let forgotPasswordtemplate = path.join(
         __dirname,
-        "../emailtemplate/forgotPasswordmobile.ejs"
+        "../emailtemplate/forgotPasswordmobile.ejs",
       );
       ejs.renderFile(
         forgotPasswordtemplate,
@@ -426,7 +444,7 @@ UserRouter.post("/forgot/phone", async (req, res) => {
               }
             });
           }
-        }
+        },
       );
     }
   } catch (error) {
@@ -454,15 +472,16 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
         {
           $match: {
             _id: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
-          }
-        }, {
+          },
+        },
+        {
           $lookup: {
-            from: 'wallets',
-            localField: '_id',
-            foreignField: 'userId',
-            as: 'walletdetails'
-          }
-        }
+            from: "wallets",
+            localField: "_id",
+            foreignField: "userId",
+            as: "walletdetails",
+          },
+        },
       ]);
       return res.json({
         status: "success",
@@ -480,67 +499,84 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
 
 // Updating User Detail's in the Database.
 
-UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: 'profile', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), UserAuthentication, async (req, res) => {
+UserRouter.patch(
+  "/me/update",
+  uploadMiddleWare.fields([
+    { name: "profile", maxCount: 1 },
+    { name: "banner", maxCount: 1 },
+  ]),
+  UserAuthentication,
+  async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
 
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
+    try {
+      const updatedUser = await UserModel.findOne({ _id: decoded._id });
 
-  try {
-    const updatedUser = await UserModel.findOne({ _id: decoded._id });
+      let addressdata = {};
+      addressdata.country = req.body?.country || updatedUser?.address?.country;
+      addressdata.state = req.body?.state || updatedUser?.address?.state;
+      addressdata.city = req.body?.city || updatedUser?.address?.city;
+      addressdata.location =
+        req.body?.location || updatedUser?.address?.location;
 
-    let addressdata = {};
-    addressdata.country = req.body?.country || updatedUser?.address?.country;
-    addressdata.state = req.body?.state || updatedUser?.address?.state;
-    addressdata.city = req.body?.city || updatedUser?.address?.city;
-    addressdata.location = req.body?.location || updatedUser?.address?.location;
+      let sociallinks = {};
+      sociallinks.facebook =
+        req.body?.facebook || updatedUser?.sociallinks?.facebook;
+      sociallinks.linkdein =
+        req.body?.linkdein || updatedUser?.sociallinks?.linkdein;
+      sociallinks.twitter =
+        req.body?.twitter || updatedUser?.sociallinks?.twitter;
+      sociallinks.instagram =
+        req.body?.instagram || updatedUser?.sociallinks?.instagram;
 
-    let sociallinks = {};
-    sociallinks.facebook = req.body?.facebook || updatedUser?.sociallinks?.facebook;
-    sociallinks.linkdein = req.body?.linkdein || updatedUser?.sociallinks?.linkdein;
-    sociallinks.twitter = req.body?.twitter || updatedUser?.sociallinks?.twitter;
-    sociallinks.instagram = req.body?.instagram || updatedUser?.sociallinks?.instagram;
+      let profile;
+      if (!!req?.files.profile) {
+        profile = req.files.profile[0]?.location || updatedUser?.profile;
+      }
+      let banner;
+      if (!!req?.files.banner) {
+        banner = req.files.banner[0]?.location || updatedUser?.banner;
+      }
 
-    let profile;
-    if (!!req?.files.profile) {
-      profile = req.files.profile[0]?.location || updatedUser?.profile;
+      let skills;
+
+      if (updatedUser?.accountType === "artist") {
+        skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
+      }
+
+      let companycategory;
+      if (updatedUser?.accountType === "professional") {
+        companycategory =
+          req.body?.companycategory || updatedUser?.companycategory;
+      }
+
+      const updatedData = {
+        ...req.body, // Update other fields if provided
+        banner: banner, // Use the new image if uploaded
+        profile: profile,
+        address: addressdata,
+        sociallinks: sociallinks,
+        skills: skills,
+        companycategory: companycategory,
+      };
+
+      const updatedItem = await UserModel.findByIdAndUpdate(
+        decoded._id,
+        updatedData,
+        {
+          new: true, // Return the updated document
+        },
+      );
+      return res.json({ status: "success", message: "User Details Updated" });
+    } catch (error) {
+      res.json({
+        status: "error",
+        message: `Failed To Update User Detail's  ${error.message}`,
+      });
     }
-    let banner;
-    if (!!req?.files.banner) {
-      banner = req.files.banner[0]?.location || updatedUser?.banner;;
-    }
-
-    let skills;
-
-    if (updatedUser?.accountType === "artist") {
-      skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
-    }
-
-    let companycategory;
-    if (updatedUser?.accountType === "professional") {
-      companycategory = req.body?.companycategory || updatedUser?.companycategory;
-    }
-
-    const updatedData = {
-      ...req.body, // Update other fields if provided
-      banner: banner, // Use the new image if uploaded
-      profile: profile,
-      address: addressdata,
-      sociallinks: sociallinks,
-      skills: skills,
-      companycategory: companycategory
-    };
-
-    const updatedItem = await UserModel.findByIdAndUpdate(decoded._id, updatedData, {
-      new: true, // Return the updated document
-    });
-    return res.json({ status: "success", message: "User Details Updated" });
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Failed To Update User Detail's  ${error.message}`,
-    });
-  }
-});
+  },
+);
 
 // Step 1 Uploading Documents For Account Verifications :-
 
@@ -584,30 +620,40 @@ UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: 'profile', maxCo
 // }
 // );
 
-
 // Get List of All The Artists From Server It Will Be Based On Email & Category
 UserRouter.get("/find/artist", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   const { search } = req.query;
-  const regex = new RegExp(search, 'i');
+  const regex = new RegExp(search, "i");
   try {
-    const results = await UserModel.find({
-      $or: [
-        { email: { $regex: regex, $ne: decoded.email } },
-        { category: { $regex: regex } },
-      ],
-      accountType: "artist", disabled: "false", verified: "true"
-    }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+    const results = await UserModel.find(
+      {
+        $or: [
+          { email: { $regex: regex, $ne: decoded.email } },
+          { category: { $regex: regex } },
+        ],
+        accountType: "artist",
+        disabled: "false",
+        verified: "true",
+      },
+      { password: 0, verified: 0, disabled: 0, CreatedAt: 0 },
+    );
 
     if (results.length === 0) {
-      return res.json({ status: 'error', message: 'No matching records found' });
+      return res.json({
+        status: "error",
+        message: "No matching records found",
+      });
     }
-    return res.json({ status: 'success', data: results });
+    return res.json({ status: "success", data: results });
   } catch (error) {
-    return res.json({ status: 'error', message: `Èrror Found While Searching For Artist ${error.message}` });
+    return res.json({
+      status: "error",
+      message: `Èrror Found While Searching For Artist ${error.message}`,
+    });
   }
-})
+});
 
 // Get List of All The Artists From Server User Which needs to be shown in Artist Search Page
 
@@ -615,160 +661,224 @@ UserRouter.get("/listall/artist", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
-    const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+    const results = await UserModel.find(
+      {
+        email: { $ne: decoded.email },
+        accountType: "artist",
+        disabled: "false",
+        verified: "true",
+      },
+      { password: 0, verified: 0, disabled: 0, CreatedAt: 0 },
+    );
 
     if (results.length === 0) {
-      return res.json({ status: 'error', message: 'No Artist found' });
+      return res.json({ status: "error", message: "No Artist found" });
     }
-    return res.json({ status: 'success', data: results });
+    return res.json({ status: "success", data: results });
   } catch (error) {
-    return res.json({ status: 'error', message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}` });
+    return res.json({
+      status: "error",
+      message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}`,
+    });
   }
-})
+});
 
 // Get List of All The Details of Artist From Server
 
-UserRouter.get("/detailone/artist/:id", UserAuthentication, async (req, res) => {
-  const { id } = req.params;
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
-  try {
-    // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+UserRouter.get(
+  "/detailone/artist/:id",
+  UserAuthentication,
+  async (req, res) => {
+    const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    try {
+      // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
 
-    const results = await UserModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
-    if (results.length === 0) {
-      return res.json({ status: 'error', message: 'No Artist found' });
+      const results = await UserModel.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      ]);
+      if (results.length === 0) {
+        return res.json({ status: "error", message: "No Artist found" });
+      }
+      return res.json({ status: "success", data: results });
+    } catch (error) {
+      return res.json({
+        status: "error",
+        message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}`,
+      });
     }
-    return res.json({ status: 'success', data: results });
-  } catch (error) {
-    return res.json({ status: 'error', message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}` });
-  }
-})
+  },
+);
 
-// 
+//
 
 UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   const { search } = req.query;
-  const regex = new RegExp(search, 'i');
+  const regex = new RegExp(search, "i");
   try {
-    const results = await UserModel.find({
-      $or: [
-        { email: { $regex: regex, $ne: decoded.email } },
-        { category: { $regex: regex } },
-      ],
-      accountType: "artist", disabled: "false", verified: "true"
-    }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+    const results = await UserModel.find(
+      {
+        $or: [
+          { email: { $regex: regex, $ne: decoded.email } },
+          { category: { $regex: regex } },
+        ],
+        accountType: "artist",
+        disabled: "false",
+        verified: "true",
+      },
+      { password: 0, verified: 0, disabled: 0, CreatedAt: 0 },
+    );
 
     if (results.length === 0) {
-      return res.json({ status: 'error', message: 'No matching records found' });
+      return res.json({
+        status: "error",
+        message: "No matching records found",
+      });
     }
-    return res.json({ status: 'success', data: results });
+    return res.json({ status: "success", data: results });
   } catch (error) {
-    return res.json({ status: 'error', message: `Èrror Found While Searching For Artist ${error.message}` });
+    return res.json({
+      status: "error",
+      message: `Èrror Found While Searching For Artist ${error.message}`,
+    });
   }
-})
+});
 
 // Get List of All The Artists From Server User Which needs to be shown in Artist Search Page
 
-UserRouter.get("/listall/professional", UserAuthentication, async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
-  try {
-    const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+UserRouter.get(
+  "/listall/verified/professional",
+  UserAuthentication,
+  async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    try {
+      const results = await UserModel.find(
+        {
+          email: { $ne: decoded.email },
+          accountType: "artist",
+          disabled: "false",
+          verified: "true",
+        },
+        { password: 0, verified: 0, disabled: 0, CreatedAt: 0 },
+      );
 
-    if (results.length === 0) {
-      return res.json({ status: 'error', message: 'No Artist found' });
+      if (results.length === 0) {
+        return res.json({ status: "error", message: "No Artist found" });
+      }
+      return res.json({ status: "success", data: results });
+    } catch (error) {
+      return res.json({
+        status: "error",
+        message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}`,
+      });
     }
-    return res.json({ status: 'success', data: results });
-  } catch (error) {
-    return res.json({ status: 'error', message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}` });
-  }
-})
+  },
+);
 
 // Get List of All The Details of Artist From Server
 
-UserRouter.get("/detailone/artist/:id", UserAuthentication, async (req, res) => {
-  const { id } = req.params;
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
-  try {
-    // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+UserRouter.get(
+  "/detailone/artist/:id",
+  UserAuthentication,
+  async (req, res) => {
+    const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    try {
+      // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
 
-    const results = await UserModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
-    if (results.length === 0) {
-      return res.json({ status: 'error', message: 'No Artist found' });
+      const results = await UserModel.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      ]);
+      if (results.length === 0) {
+        return res.json({ status: "error", message: "No Artist found" });
+      }
+      return res.json({ status: "success", data: results });
+    } catch (error) {
+      return res.json({
+        status: "error",
+        message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}`,
+      });
     }
-    return res.json({ status: 'success', data: results });
-  } catch (error) {
-    return res.json({ status: 'error', message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}` });
-  }
-})
-
-
-// Add Basic Profile Details 
-
-UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: 'profile', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), UserAuthentication, async (req, res) => {
-
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
-  const { gender, country, state, city, dob, category } = req.body;
-
-  if (!req?.files?.profile) {
-    return res.json({ status: "error", error: "please upload a Profile Image" })
-  }
-
-  if (!req?.files?.banner) {
-    return res.json({ status: "error", error: "please upload a Banner Image" })
-
-  }
-
-  try {
-    const user = await UserModel.findOne({ _id: decoded._id });
-    user.gender = gender;
-    user.dob = dob;
-    user.category = category;
-
-    if (!user.address) {
-      user.address = {}; // Initialize address if it doesn't exist
-    }
-
-    // Safely update address fields
-    user.address.country = country || user.address.country;
-    user.address.state = state || user.address.state;
-    user.address.city = city || user.address.city;
-
-    if (!!req?.files.profile) {
-      user.profile = req.files.profile[0].location;
-    }
-    if (!!req?.files.banner) {
-      user.banner = req.files.banner[0].location;
-    }
-    await user.save();
-    res.json({
-      status: "success",
-      message: `Successfully Updated Basic Profile Details`,
-    });
-
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Error Found while trying to upload Documents ${error.message}`,
-    });
-  }
-}
+  },
 );
 
+// Add Basic Profile Details
 
+UserRouter.post(
+  "/basicdetails/update",
+  uploadMiddleWare.fields([
+    { name: "profile", maxCount: 1 },
+    { name: "banner", maxCount: 1 },
+  ]),
+  UserAuthentication,
+  async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    const { gender, country, state, city, dob, category } = req.body;
 
-// Follow Each Other 
+    if (!req?.files?.profile) {
+      return res.json({
+        status: "error",
+        error: "please upload a Profile Image",
+      });
+    }
+
+    if (!req?.files?.banner) {
+      return res.json({
+        status: "error",
+        error: "please upload a Banner Image",
+      });
+    }
+
+    try {
+      const user = await UserModel.findOne({ _id: decoded._id });
+      user.gender = gender;
+      user.dob = dob;
+      user.category = category;
+
+      if (!user.address) {
+        user.address = {}; // Initialize address if it doesn't exist
+      }
+
+      // Safely update address fields
+      user.address.country = country || user.address.country;
+      user.address.state = state || user.address.state;
+      user.address.city = city || user.address.city;
+
+      if (!!req?.files.profile) {
+        user.profile = req.files.profile[0].location;
+      }
+      if (!!req?.files.banner) {
+        user.banner = req.files.banner[0].location;
+      }
+      await user.save();
+      res.json({
+        status: "success",
+        message: `Successfully Updated Basic Profile Details`,
+      });
+    } catch (error) {
+      res.json({
+        status: "error",
+        message: `Error Found while trying to upload Documents ${error.message}`,
+      });
+    }
+  },
+);
+
+// Follow Each Other
 UserRouter.get("/follow", UserAuthentication, async (req, res) => {
   const { userId, status } = req.query;
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
-    const userIdResult = await FollowModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(userId) } }]);
+    const userIdResult = await FollowModel.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+    ]);
 
     if (userIdResult.length == 0) {
       if (status == "false") {
@@ -776,7 +886,6 @@ UserRouter.get("/follow", UserAuthentication, async (req, res) => {
           status: "error",
           message: "No Follow Found",
         });
-
       } else {
         const follow = new FollowModel({
           followedBy: decoded._id,
@@ -785,23 +894,24 @@ UserRouter.get("/follow", UserAuthentication, async (req, res) => {
         await follow.save();
         res.json({ status: "success", message: `Started Following` });
       }
-
     } else {
       const followResult = await FollowModel.aggregate([
         {
           $match: {
             userId: new mongoose.Types.ObjectId(userId),
-            followedBy: { $elemMatch: { $eq: new mongoose.Types.ObjectId(decoded._id) } }
-          }
-        }
+            followedBy: {
+              $elemMatch: { $eq: new mongoose.Types.ObjectId(decoded._id) },
+            },
+          },
+        },
       ]);
 
       if (followResult.length > 0) {
         if (status == "false") {
           const follow = await FollowModel.updateOne(
             { userId: new mongoose.Types.ObjectId(userId) },
-            { $pull: { followedBy: new mongoose.Types.ObjectId(decoded._id) } } // Add ObjectId to the array
-          )
+            { $pull: { followedBy: new mongoose.Types.ObjectId(decoded._id) } }, // Add ObjectId to the array
+          );
 
           res.json({
             status: "success",
@@ -813,25 +923,22 @@ UserRouter.get("/follow", UserAuthentication, async (req, res) => {
             message: "You Already Follow This User",
           });
         }
-
       } else {
         if (status == "false") {
           res.json({
             status: "success",
             message: "You Already Unfollow This User",
           });
-
         } else {
           const follow = await FollowModel.updateOne(
             { userId: new mongoose.Types.ObjectId(userId) },
-            { $push: { followedBy: new mongoose.Types.ObjectId(decoded._id) } } // Add ObjectId to the array
-          )
+            { $push: { followedBy: new mongoose.Types.ObjectId(decoded._id) } }, // Add ObjectId to the array
+          );
           res.json({
             status: "success",
             message: "Started Following",
           });
         }
-
       }
     }
   } catch (error) {
@@ -840,9 +947,7 @@ UserRouter.get("/follow", UserAuthentication, async (req, res) => {
       message: `Failed To Get Follow Details Of User's ${error.message}`,
     });
   }
-
-})
-
+});
 
 // Register With Google
 
@@ -852,7 +957,7 @@ UserRouter.get("/register/google", async (req, res) => {
     const googleRes = await oauth2client.getToken(code);
     oauth2client.setCredentials(googleRes.tokens);
     const googleresponse = await fetch(
-      `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`
+      `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`,
     );
     const result = await googleresponse.json();
     const { email, name, picture } = result;
@@ -866,7 +971,7 @@ UserRouter.get("/register/google", async (req, res) => {
           email: user.email,
           exp: Math.floor(Date.now() / 1000) + 60 * 60,
         },
-        "Authentication"
+        "Authentication",
       );
       return res.json({
         status: "success",
@@ -880,7 +985,7 @@ UserRouter.get("/register/google", async (req, res) => {
           email: user.email,
           exp: Math.floor(Date.now() / 1000) + 60 * 60,
         },
-        "Authentication"
+        "Authentication",
       );
       return res.json({
         status: "success",
@@ -896,6 +1001,6 @@ UserRouter.get("/register/google", async (req, res) => {
   }
 });
 
-
+// Admin Routes
 
 module.exports = { UserRouter };
