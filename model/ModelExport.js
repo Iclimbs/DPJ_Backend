@@ -14,7 +14,7 @@ const { UserModel } = require("./user.model");
 const { WalletModel } = require("./wallet.model");
 const { ReviewModel } = require("./review.model");
 const { FollowModel } = require("./follow.model");
-const { FeatureModel } = require("./features.model");
+const { FeaturesModel } = require("./feature.model");
 const { SubscriptionModel } = require("./subscription.model");
 module.exports = {
   BookedTicketModel,
@@ -45,6 +45,6 @@ module.exports = {
   WalletModel,
   ReviewModel,
   FollowModel,
-  FeatureModel,
+  FeaturesModel,
   SubscriptionModel,
 };
