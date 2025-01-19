@@ -7,16 +7,19 @@ const { TicketRouter } = require("../controller/ticket");
 const { UserRouter } = require("../controller/user");
 const { WalletRouter } = require("../controller/wallet");
 const { ReviewRouter } = require("../controller/review");
+const { SubscriptionRouter } = require("../controller/subscription");
+const { FeaturesRouter } = require("../controller/features");
 
 router
-    .use("/user", UserRouter)
-    .use("/job", JobRouter)
-    .use("/collaborator", CollabRouter)
-    .use("/post", PostRouter)
-    .use("/event", EventRouter)
-    .use("/wallet", WalletRouter)
-    .use("/tickets", TicketRouter)
-    .use("/review", ReviewRouter)
-
+  .use("/user", UserRouter)
+  .use("/job", JobRouter)
+  .use("/collaborator", CollabRouter)
+  .use("/post", PostRouter)
+  .use("/event", EventRouter)
+  .use("/wallet", WalletRouter)
+  .use("/tickets", TicketRouter)
+  .use("/review", ReviewRouter)
+  .use("/subscription", SubscriptionRouter)
+  .use("/features", FeaturesRouter);
 
 module.exports = router;
