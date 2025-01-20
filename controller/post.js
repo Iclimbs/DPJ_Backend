@@ -19,46 +19,44 @@ const {
   UserAuthentication,
 } = require("../middleware/MiddlewareExport");
 const { default: mongoose } = require("mongoose");
+const { PostCreationChecker } = require("../middleware/PostCreation");
 
 const PostRouter = express.Router();
 
 // Api's For Post
 
 // Api To Add New Post
-PostRouter.post(
-  "/add",
-  uploadMiddleWare.single("media"),
-  UserAuthentication,
-  async (req, res) => {
-    if (!req?.file) {
-      res.json({
-        status: "error",
-        message: `Please Upload Image Or Video For Post`,
-      });
-    }
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    const { description } = req.body;
-    const post = new PostModel({
-      media: req.file.location,
-      description: description,
-      createdBy: decoded._id,
-      mediaType: req.file.mimetype.split("/")[0],
-      isVideo: req.file.mimetype.split("/")[0] == "video" ? true : false,
+PostRouter.post("/add", [PostCreationChecker, uploadMiddleWare.single("media"), UserAuthentication], async (req, res) => {
+  if (!req?.file) {
+    res.json({
+      status: "error",
+      message: `Please Upload Image Or Video For Post`,
     });
-    try {
-      await post.save();
-      res.json({
-        status: "success",
-        message: `Post Created Successfully`,
-      });
-    } catch (error) {
-      res.json({
-        status: "error",
-        message: `Failed To Add  ${error.message}`,
-      });
-    }
-  },
+  }
+
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const { description } = req.body;
+  const post = new PostModel({
+    media: req.file.location,
+    description: description,
+    createdBy: decoded._id,
+    mediaType: req.file.mimetype.split("/")[0],
+    isVideo: req.file.mimetype.split("/")[0] == "video" ? true : false,
+  });
+  try {
+    await post.save();
+    res.json({
+      status: "success",
+      message: `Post Created Successfully`,
+    });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Add  ${error.message}`,
+    });
+  }
+},
 );
 
 // Api To Get All Post List Created By User
@@ -510,7 +508,6 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
 PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  console.log("Decoded ", decoded);
 
   try {
     const result = await PostModel.aggregate([
@@ -685,9 +682,6 @@ PostRouter.get("/like", UserAuthentication, async (req, res) => {
   const { postId, status } = req.query;
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  console.log("Decoed Id ", decoded._id);
-  console.log("status ", status);
-  console.log("post id", postId);
   try {
     const postResult = await LikeModel.aggregate([
       { $match: { postId: new mongoose.Types.ObjectId(postId) } },

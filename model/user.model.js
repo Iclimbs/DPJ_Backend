@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
+const ObjectId = mongoose.Schema.Types.ObjectId;
 
 const addressSchema = new Schema({
   country: {
@@ -105,6 +106,13 @@ const userschema = mongoose.Schema({
   // Professional Specific Details
   companycategory: {
     type: String
+  },
+  //Subscription Details
+  subscription: {
+    type: ObjectId
+  },
+  planExpireAt:{
+    type: Date
   },
   CreatedAt: { type: Date, default: Date.now },
 });

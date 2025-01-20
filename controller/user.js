@@ -113,6 +113,8 @@ UserRouter.post("/login", async (req, res) => {
               accountType: userExists[0].accountType,
               profile: userExists[0].profile,
               verified: userExists[0].verified,
+              subscription: userExists[0].subscription,
+              planExpireAt: userExists[0].planExpireAt,
               exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
             },
             "Authentication",
@@ -499,83 +501,78 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
 
 // Updating User Detail's in the Database.
 
-UserRouter.patch(
-  "/me/update",
-  uploadMiddleWare.fields([
-    { name: "profile", maxCount: 1 },
-    { name: "banner", maxCount: 1 },
-  ]),
-  UserAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
+UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "banner", maxCount: 1 },]), UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  console.log(req.body);
 
-    try {
-      const updatedUser = await UserModel.findOne({ _id: decoded._id });
 
-      let addressdata = {};
-      addressdata.country = req.body?.country || updatedUser?.address?.country;
-      addressdata.state = req.body?.state || updatedUser?.address?.state;
-      addressdata.city = req.body?.city || updatedUser?.address?.city;
-      addressdata.location =
-        req.body?.location || updatedUser?.address?.location;
+  try {
+    const updatedUser = await UserModel.findOne({ _id: decoded._id });
 
-      let sociallinks = {};
-      sociallinks.facebook =
-        req.body?.facebook || updatedUser?.sociallinks?.facebook;
-      sociallinks.linkdein =
-        req.body?.linkdein || updatedUser?.sociallinks?.linkdein;
-      sociallinks.twitter =
-        req.body?.twitter || updatedUser?.sociallinks?.twitter;
-      sociallinks.instagram =
-        req.body?.instagram || updatedUser?.sociallinks?.instagram;
+    let addressdata = {};
+    addressdata.country = req.body?.country || updatedUser?.address?.country;
+    addressdata.state = req.body?.state || updatedUser?.address?.state;
+    addressdata.city = req.body?.city || updatedUser?.address?.city;
+    addressdata.location =
+      req.body?.location || updatedUser?.address?.location;
 
-      let profile;
-      if (!!req?.files.profile) {
-        profile = req.files.profile[0]?.location || updatedUser?.profile;
-      }
-      let banner;
-      if (!!req?.files.banner) {
-        banner = req.files.banner[0]?.location || updatedUser?.banner;
-      }
+    let sociallinks = {};
+    sociallinks.facebook =
+      req.body?.facebook || updatedUser?.sociallinks?.facebook;
+    sociallinks.linkdein =
+      req.body?.linkdein || updatedUser?.sociallinks?.linkdein;
+    sociallinks.twitter =
+      req.body?.twitter || updatedUser?.sociallinks?.twitter;
+    sociallinks.instagram =
+      req.body?.instagram || updatedUser?.sociallinks?.instagram;
 
-      let skills;
-
-      if (updatedUser?.accountType === "artist") {
-        skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
-      }
-
-      let companycategory;
-      if (updatedUser?.accountType === "professional") {
-        companycategory =
-          req.body?.companycategory || updatedUser?.companycategory;
-      }
-
-      const updatedData = {
-        ...req.body, // Update other fields if provided
-        banner: banner, // Use the new image if uploaded
-        profile: profile,
-        address: addressdata,
-        sociallinks: sociallinks,
-        skills: skills,
-        companycategory: companycategory,
-      };
-
-      const updatedItem = await UserModel.findByIdAndUpdate(
-        decoded._id,
-        updatedData,
-        {
-          new: true, // Return the updated document
-        },
-      );
-      return res.json({ status: "success", message: "User Details Updated" });
-    } catch (error) {
-      res.json({
-        status: "error",
-        message: `Failed To Update User Detail's  ${error.message}`,
-      });
+    let profile;
+    if (!!req?.files.profile) {
+      profile = req.files.profile[0]?.location || updatedUser?.profile;
     }
-  },
+    let banner;
+    if (!!req?.files.banner) {
+      banner = req.files.banner[0]?.location || updatedUser?.banner;
+    }
+
+    let skills;
+
+    if (updatedUser?.accountType === "artist") {
+      skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
+    }
+
+    let companycategory;
+    if (updatedUser?.accountType === "professional") {
+      companycategory =
+        req.body?.companycategory || updatedUser?.companycategory;
+    }
+
+    const updatedData = {
+      ...req.body, // Update other fields if provided
+      banner: banner, // Use the new image if uploaded
+      profile: profile,
+      address: addressdata,
+      sociallinks: sociallinks,
+      skills: skills,
+      companycategory: companycategory,
+    };
+
+    const updatedItem = await UserModel.findByIdAndUpdate(
+      decoded._id,
+      updatedData,
+      {
+        new: true, // Return the updated document
+      },
+    );
+    return res.json({ status: "success", message: "User Details Updated" });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Update User Detail's  ${error.message}`,
+    });
+  }
+},
 );
 
 // Step 1 Uploading Documents For Account Verifications :-
