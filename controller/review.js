@@ -6,77 +6,75 @@ const { default: mongoose } = require("mongoose");
 const ReviewRouter = express.Router();
 
 // Collab Artist Review the Event In Which He/She Has Participated
-ReviewRouter.post(
-  "/add/collabArtist/:event",
-  UserAuthentication,
-  async (req, res) => {
-    const { event } = req.params;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
+ReviewRouter.post("/add/collabArtist/:event", UserAuthentication, async (req, res) => {
+  const { event } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
 
-    const dateObj = new Date();
-    // Creating Date
-    const month =
-      dateObj.getUTCMonth() + 1 < 10
-        ? String(dateObj.getUTCMonth() + 1).padStart(2, "0")
-        : dateObj.getUTCMonth() + 1; // months from 1-12
-    const day =
-      dateObj.getUTCDate() < 10
-        ? String(dateObj.getUTCDate()).padStart(2, "0")
-        : dateObj.getUTCDate();
-    const year = dateObj.getUTCFullYear();
-    const date = year + "-" + month + "-" + day;
+  const dateObj = new Date();
+  // Creating Date
+  const month =
+    dateObj.getUTCMonth() + 1 < 10
+      ? String(dateObj.getUTCMonth() + 1).padStart(2, "0")
+      : dateObj.getUTCMonth() + 1; // months from 1-12
+  const day =
+    dateObj.getUTCDate() < 10
+      ? String(dateObj.getUTCDate()).padStart(2, "0")
+      : dateObj.getUTCDate();
+  const year = dateObj.getUTCFullYear();
+  const date = year + "-" + month + "-" + day;
 
-    try {
-      const reviewExists = await ReviewModel.aggregate([
-        {
-          $match: {
-            eventId: new mongoose.Types.ObjectId(event),
-            reviewedByUserId: new mongoose.Types.ObjectId(decoded._id),
-          },
+  try {
+    const reviewExists = await ReviewModel.aggregate([
+      {
+        $match: {
+          eventId: new mongoose.Types.ObjectId(event),
+          reviewedByUserId: new mongoose.Types.ObjectId(decoded._id),
+          userId:null
         },
-      ]);
+      },
+    ]);
 
-      // Checking If Review Already Exists For The Event
-      if (reviewExists.length > 0) {
-        return res.json({ status: "error", message: `Review Already Exists` });
-      }
+    // Checking If Review Already Exists For The Event
+    if (reviewExists.length > 0) {
+      return res.json({ status: "error", message: `Review Already Exists` });
+    }
 
-      // Checking Event Details Create Review Only For The Event Which Has Expired
-      const eventDetails = await EventModel.aggregate([
-        {
-          $match: {
-            _id: new mongoose.Types.ObjectId(event),
-            endDate: { $lte: date },
-          },
+    // Checking Event Details Create Review Only For The Event Which Has Expired
+    const eventDetails = await EventModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(event),
+          endDate: { $lte: date },
         },
-      ]);
+      },
+    ]);
 
-      if (eventDetails.length === 0) {
-        return res.json({
-          status: "error",
-          message: `Either No Event is Present with This Id Or Event Has Not Expired Till Now`,
-        });
-      }
-      const eventReview = new ReviewModel({
-        eventId: event,
-        reviewedByUserId: decoded._id,
-        reviewedBy: "collabArtist",
-        rating: req.body.rating,
-        review: req.body.review,
-      });
-      await eventReview.save();
-      return res.json({
-        status: "success",
-        message: `Review Successfully Created`,
-      });
-    } catch (error) {
+    if (eventDetails.length === 0) {
       return res.json({
         status: "error",
-        message: `Failed To Create Review For Event, Error :- ${error.message}`,
+        message: `Either No Event is Present with This Id Or Event Has Not Expired Till Now`,
       });
     }
-  },
+    const eventReview = new ReviewModel({
+      eventId: event,
+      reviewedByUserId: decoded._id,
+      reviewedBy: "collabArtist",
+      rating: req.body.rating,
+      review: req.body.review,
+    });
+    await eventReview.save();
+    return res.json({
+      status: "success",
+      message: `Review Successfully Created`,
+    });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Create Review For Event, Error :- ${error.message}`,
+    });
+  }
+},
 );
 
 // Collab Artist Review Event Creator Artist For The Particular Event in This API
