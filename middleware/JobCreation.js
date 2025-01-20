@@ -1,16 +1,21 @@
 const jwt = require('jsonwebtoken')
 const { currentDate, currentDateTimeISO } = require('../service/currentDate')
-const { SubscriptionModel } = require('../model/subscription.model')
+const { SubscriptionModel,UserModel } = require('../model/ModelExport')
 const { default: mongoose } = require('mongoose')
 
-const PostCreationChecker = async (req, res, next) => {
+const JobCreationChecker = async (req, res, next) => {
     if (req.headers.authorization) {
         const token = req.headers.authorization.split(" ")[1]
         const decoded = jwt.verify(token, 'Authentication')
-        const plan = decoded.subscription;
-        const expireAt = decoded.planExpireAt;
 
         try {
+            const user = await UserModel.findOne({ _id: decoded._id })
+            if (!user) {
+                return res.json({ status: "error", message: "User Not Found. Please Login Again" })
+            }
+
+            const plan = user.subscription;
+            const expireAt = user.planExpireAt;
             if (expireAt < currentDateTimeISO) {
                 return res.json({ status: "error", message: "Subscription Expired. Please Renew Subscription" })
             }
@@ -33,4 +38,4 @@ const PostCreationChecker = async (req, res, next) => {
     }
 }
 
-module.exports = { PostCreationChecker }
+module.exports = { JobCreationChecker }
