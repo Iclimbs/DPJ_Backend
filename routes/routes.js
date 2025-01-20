@@ -20,6 +20,7 @@ router
   .use("/tickets", TicketRouter)
   .use("/review", ReviewRouter)
   .use("/subscription", SubscriptionRouter)
-  .use("/features",FeatureRouter );
+  .use("/features",FeatureRouter )
+  .use("/payment", PaymentRouter)
 
 module.exports = router;
