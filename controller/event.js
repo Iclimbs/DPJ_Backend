@@ -8,7 +8,6 @@ const { EventModel, TicketModel } = require("../model/ModelExport");
 
 // Basic MiddleWare Imports
 const { ArtistAuthentication, ProfessionalAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
-const { pipeline } = require("nodemailer/lib/xoauth2");
 
 const EventRouter = express.Router();
 
@@ -412,7 +411,38 @@ EventRouter.get("/active/list", async (req, res) => {
   }
 });
 
+// Get List of Events For Admin
+EventRouter.get("/lists", async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
 
+    const list = await EventModel.aggregate([
+      {
+        $match: { createdBy: new mongoose.Types.ObjectId(decoded._id), type: "Event" }
+      },
+      {
+        $lookup: {
+          from: 'tickets',
+          localField: '_id',
+          foreignField: 'eventId',
+          as: 'tickets'
+        }
+      },
+      {
+        $sort: { CreatedAt: -1 } // Sort by CreatedAt field in descending order
+      }
+    ]);
+
+    if (list.length == 0) {
+      res.json({ status: "error", message: "No Event List Found" })
+    } else {
+      res.json({ status: "success", data: list })
+    }
+  } catch (error) {
+    res.json({ status: "error", message: `Unable To Find Events Lists ${error.message}` })
+  }
+});
 
 
 module.exports = { EventRouter };
