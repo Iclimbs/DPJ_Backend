@@ -71,6 +71,7 @@ const {
 const {
   UserAuthentication,
   uploadMiddleWare,
+  AdminAuthentication,
 } = require("../middleware/MiddlewareExport");
 
 const UserRouter = express.Router();
@@ -575,6 +576,23 @@ UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: "profile", maxCo
 },
 );
 
+// Disable Any User By Admin
+
+UserRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const updatedUser = await UserModel.findByIdAndUpdate(id, { disabled: true });
+    return res.json({ status: "success", message: "User SuccessFully Deactivated " });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Disable User ${error.message}`,
+    });
+  }
+},
+);
+
+
 // Step 1 Uploading Documents For Account Verifications :-
 
 // UserRouter.post("/documentupload", upload.single("document"), UserAuthentication, async (req, res) => {
@@ -618,6 +636,7 @@ UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: "profile", maxCo
 // );
 
 // Get List of All The Artists From Server It Will Be Based On Email & Category
+
 UserRouter.get("/find/artist", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
@@ -680,35 +699,7 @@ UserRouter.get("/listall/artist", UserAuthentication, async (req, res) => {
   }
 });
 
-// Get List of All The Details of Artist From Server
-
-UserRouter.get(
-  "/detailone/artist/:id",
-  UserAuthentication,
-  async (req, res) => {
-    const { id } = req.params;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    try {
-      // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
-
-      const results = await UserModel.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(id) } },
-      ]);
-      if (results.length === 0) {
-        return res.json({ status: "error", message: "No Artist found" });
-      }
-      return res.json({ status: "success", data: results });
-    } catch (error) {
-      return res.json({
-        status: "error",
-        message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}`,
-      });
-    }
-  },
-);
-
-//
+// Search For Professional Based on Email & Category
 
 UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
@@ -722,7 +713,7 @@ UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
           { email: { $regex: regex, $ne: decoded.email } },
           { category: { $regex: regex } },
         ],
-        accountType: "artist",
+        accountType: "professional",
         disabled: "false",
         verified: "true",
       },
@@ -739,132 +730,142 @@ UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
   } catch (error) {
     return res.json({
       status: "error",
-      message: `Èrror Found While Searching For Artist ${error.message}`,
+      message: `Èrror Found While Searching For Professional ${error.message}`,
     });
   }
 });
 
-// Get List of All The Artists From Server User Which needs to be shown in Artist Search Page
+// Get List of All The Verified Professional From Server User Which needs to be shown in Professional Search Page
 
-UserRouter.get(
-  "/listall/verified/professional",
-  UserAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    try {
-      const results = await UserModel.find(
-        {
-          email: { $ne: decoded.email },
-          accountType: "artist",
-          disabled: "false",
-          verified: "true",
-        },
-        { password: 0, verified: 0, disabled: 0, CreatedAt: 0 },
-      );
+UserRouter.get("/listall/professional", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const results = await UserModel.find(
+      {
+        email: { $ne: decoded.email },
+        accountType: "professional",
+        disabled: "false",
+        verified: "true",
+      },
+      { password: 0, verified: 0, disabled: 0, CreatedAt: 0 },
+    );
 
-      if (results.length === 0) {
-        return res.json({ status: "error", message: "No Artist found" });
-      }
-      return res.json({ status: "success", data: results });
-    } catch (error) {
-      return res.json({
-        status: "error",
-        message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}`,
-      });
+    if (results.length === 0) {
+      return res.json({ status: "error", message: "No Professional found" });
     }
-  },
+    return res.json({ status: "success", data: results });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Èrror Found While Fetching The List Of All Professional ${error.message}`,
+    });
+  }
+},
 );
 
-// Get List of All The Details of Artist From Server
+// Get Basic Detail Of One User
 
-UserRouter.get(
-  "/detailone/artist/:id",
-  UserAuthentication,
-  async (req, res) => {
-    const { id } = req.params;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    try {
-      // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+UserRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
 
-      const results = await UserModel.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(id) } },
-      ]);
-      if (results.length === 0) {
-        return res.json({ status: "error", message: "No Artist found" });
-      }
-      return res.json({ status: "success", data: results });
-    } catch (error) {
-      return res.json({
-        status: "error",
-        message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}`,
-      });
+    const results = await UserModel.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id), disabled: false, verified: true } },
+      { $project: { password: 0, CreatedAt: 0 } }
+    ]);
+    if (results.length === 0) {
+      return res.json({ status: "error", message: "No user found" });
     }
-  },
+    return res.json({ status: "success", data: results });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Èrror Found While Fetching The List Of All Users ${error.message}`,
+    });
+  }
+},
 );
+
+// Get Basic Detail Of One User used by Admin
+UserRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
+
+    const results = await UserModel.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      { $project: { password: 0, CreatedAt: 0 } }
+    ]);
+    if (results.length === 0) {
+      return res.json({ status: "error", message: "No Artist found" });
+    }
+    return res.json({ status: "success", data: results });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Èrror Found While Fetching The List Of AllvArtist ${error.message}`,
+    });
+  }
+},
+);
+
 
 // Add Basic Profile Details
 
-UserRouter.post(
-  "/basicdetails/update",
-  uploadMiddleWare.fields([
-    { name: "profile", maxCount: 1 },
-    { name: "banner", maxCount: 1 },
-  ]),
-  UserAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    const { gender, country, state, city, dob, category } = req.body;
+UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "banner", maxCount: 1 },]), UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const { gender, country, state, city, dob, category } = req.body;
 
-    if (!req?.files?.profile) {
-      return res.json({
-        status: "error",
-        error: "please upload a Profile Image",
-      });
+  if (!req?.files?.profile) {
+    return res.json({
+      status: "error",
+      error: "please upload a Profile Image",
+    });
+  }
+
+  if (!req?.files?.banner) {
+    return res.json({
+      status: "error",
+      error: "please upload a Banner Image",
+    });
+  }
+
+  try {
+    const user = await UserModel.findOne({ _id: decoded._id });
+    user.gender = gender;
+    user.dob = dob;
+    user.category = category;
+
+    if (!user.address) {
+      user.address = {}; // Initialize address if it doesn't exist
     }
 
-    if (!req?.files?.banner) {
-      return res.json({
-        status: "error",
-        error: "please upload a Banner Image",
-      });
+    // Safely update address fields
+    user.address.country = country || user.address.country;
+    user.address.state = state || user.address.state;
+    user.address.city = city || user.address.city;
+
+    if (!!req?.files.profile) {
+      user.profile = req.files.profile[0].location;
     }
-
-    try {
-      const user = await UserModel.findOne({ _id: decoded._id });
-      user.gender = gender;
-      user.dob = dob;
-      user.category = category;
-
-      if (!user.address) {
-        user.address = {}; // Initialize address if it doesn't exist
-      }
-
-      // Safely update address fields
-      user.address.country = country || user.address.country;
-      user.address.state = state || user.address.state;
-      user.address.city = city || user.address.city;
-
-      if (!!req?.files.profile) {
-        user.profile = req.files.profile[0].location;
-      }
-      if (!!req?.files.banner) {
-        user.banner = req.files.banner[0].location;
-      }
-      await user.save();
-      res.json({
-        status: "success",
-        message: `Successfully Updated Basic Profile Details`,
-      });
-    } catch (error) {
-      res.json({
-        status: "error",
-        message: `Error Found while trying to upload Documents ${error.message}`,
-      });
+    if (!!req?.files.banner) {
+      user.banner = req.files.banner[0].location;
     }
-  },
+    await user.save();
+    res.json({
+      status: "success",
+      message: `Successfully Updated Basic Profile Details`,
+    });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Error Found while trying to upload Documents ${error.message}`,
+    });
+  }
+},
 );
 
 // Follow Each Other
