@@ -1,4 +1,4 @@
-import { UserAuthentication } from "../middleware/Authentication";
+const  { UserAuthentication } = require("../middleware/Authentication");    
 
 const express = require("express");
 const PaymentRouter = express.Router();

@@ -47,8 +47,8 @@ app.use(
   swaggerui.setup(openapiSpecification)
 );
 
-app.use('/public/', express.static(path.join(__dirname, 'public')));
 app.use("/api/v1/", require("./routes/routes"));
+app.use('/', express.static(path.join(__dirname, 'public')));
 
 app.listen(process.env.Port, async () => {
   try {

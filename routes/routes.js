@@ -9,6 +9,7 @@ const { WalletRouter } = require("../controller/wallet");
 const { ReviewRouter } = require("../controller/review");
 const { SubscriptionRouter } = require("../controller/subscription");
 const { FeatureRouter } = require("../controller/features");
+const {PaymentRouter} = require("../controller/payment")
 
 router
   .use("/user", UserRouter)
