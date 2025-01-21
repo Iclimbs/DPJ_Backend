@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 const { EventModel, TicketModel } = require("../model/ModelExport");
 
 // Basic MiddleWare Imports
-const { ArtistAuthentication, ProfessionalAuthentication, uploadMiddleWare } = require("../middleware/MiddlewareExport");
+const { ArtistAuthentication, ProfessionalAuthentication, uploadMiddleWare, AdminAuthentication } = require("../middleware/MiddlewareExport");
 
 const EventRouter = express.Router();
 
@@ -412,14 +412,12 @@ EventRouter.get("/active/list", async (req, res) => {
 });
 
 // Get List of Events For Admin
-EventRouter.get("/lists", async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
-  try {
 
+EventRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
+  try {
     const list = await EventModel.aggregate([
       {
-        $match: { createdBy: new mongoose.Types.ObjectId(decoded._id), type: "Event" }
+        $match: { type: "Event" }
       },
       {
         $lookup: {
@@ -443,6 +441,43 @@ EventRouter.get("/lists", async (req, res) => {
     res.json({ status: "error", message: `Unable To Find Events Lists ${error.message}` })
   }
 });
+
+// Get Detail of an Particular Events
+
+EventRouter.get("/listall/admin/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const list = await EventModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id), // Convert id to ObjectId using 'new'
+          type: "Event"
+        }
+      }, {
+        $lookup: {
+          from: 'tickets',
+          localField: '_id',
+          foreignField: 'eventId',
+          pipeline: [{
+            $lookup: {
+              from: 'bookedtickets', localField: '_id', foreignField: 'ticketId',
+              pipeline: [{ $lookup: { from: 'users', localField: 'bookedBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 } }], as: 'userdetails' } }], as: 'bookedTickets'
+            }
+          }], as: 'tickets'
+        }
+      }]);
+
+    // const list = await EventModel.find({ createdBy: decoded._id, type: "Event" })
+    if (list.length == 0) {
+      res.json({ status: "error", message: "No Event List Found" })
+    } else {
+      res.json({ status: "success", data: list })
+    }
+  } catch (error) {
+    res.json({ status: "error", message: `Unable To Find Events Details ${error.message}` })
+  }
+});
+
 
 
 module.exports = { EventRouter };
