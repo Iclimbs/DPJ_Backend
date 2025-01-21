@@ -19,7 +19,7 @@ const transactionSchema = mongoose.Schema({
     },
     userId: {
         type: ObjectId,
-        required: true
+        // required: true
     },
     method: String,
     refNo: String,
