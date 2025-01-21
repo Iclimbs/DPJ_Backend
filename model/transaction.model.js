@@ -19,10 +19,11 @@ const transactionSchema = mongoose.Schema({
     },
     userId: {
         type: ObjectId,
-        // required: true
+        required: true
     },
     method: String,
-    refNo: String,
+    paymentId: String,
+    orderId:String,
     from: {
         type: ObjectId,
     },
