@@ -1,8 +1,9 @@
 const express = require('express');
 const FeatureRouter = express.Router();
 const { FeaturesModel } = require('../model/ModelExport');
+const { AdminAuthentication } = require('../middleware/MiddlewareExport');
 
-FeatureRouter.post('/create', async (req, res) => {
+FeatureRouter.post('/create', AdminAuthentication, async (req, res) => {
     try {
         const feature = new FeaturesModel(req.body);
         await feature.save();
@@ -12,18 +13,17 @@ FeatureRouter.post('/create', async (req, res) => {
     }
 });
 
-FeatureRouter.post('/update/:id', async (req, res) => {
+FeatureRouter.post('/update/:id', AdminAuthentication, async (req, res) => {
     try {
-        const feature = new FeaturesModel(req.body);
-        await feature.save();
-        res.json({ status: 'success', message: "Feature created successfully" });
+        const feature = await FeaturesModel.findByIdAndUpdate(req.params.id, { status: req.body.status });
+        res.json({ status: 'success', message: "Feature Value Updated successfully" });
     } catch (error) {
         res.json({ status: 'error', message: `Failed To Create New Feature${error}` });
     }
 });
 
 
-FeatureRouter.get('/list/active', async (req, res) => {
+FeatureRouter.get('/list/active', AdminAuthentication, async (req, res) => {
     try {
         const features = await FeaturesModel.find({ status: true });
         if (features.length < 1) {
@@ -36,7 +36,7 @@ FeatureRouter.get('/list/active', async (req, res) => {
     }
 })
 
-FeatureRouter.get('/all', async (req, res) => {
+FeatureRouter.get('/all', AdminAuthentication, async (req, res) => {
     try {
         const features = await FeaturesModel.find({ status: true });
         if (features.length < 1) {

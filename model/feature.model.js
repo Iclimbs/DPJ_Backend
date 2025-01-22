@@ -12,7 +12,7 @@ const featureSchema = new Schema({
   status: {
     type: Boolean,
     required: true,
-    default:true
+    default: true
   }
 });
 const FeaturesModel = mongoose.model('features', featureSchema);
