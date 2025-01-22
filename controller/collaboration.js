@@ -745,8 +745,11 @@ CollabRouter.post("/update/collab/status/:id", ArtistAuthentication, async (req,
 CollabRouter.post("/success/transaction/status/admin/:id", AdminAuthentication, async (req, res) => {
   const { id } = req.params;
   try {
-    const list = await TransactionModel.find({ _id: id });
+    const list = await TransactionModel.find({ _id: id,status: 'In Process'});
     console.log("list ",list);
+    const amount = list[0]?.amount;
+    const userId = list[0]?.userId;
+    const eventId = list[0]?.eventId;
     
     res.json({ status: "success", message: "Updated Collaborator Status" });
   } catch (error) {

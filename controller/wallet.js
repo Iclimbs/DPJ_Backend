@@ -123,13 +123,4 @@ const createWallet = async (props) => {
     }
 }
 
-
-
-
-
-
-
-
-
-
 module.exports = { addAmountinWallet,createWallet, WalletRouter, subAmountinWallet, addAmountInAdminWallet, subAmountInAdminWallet }
