@@ -381,7 +381,7 @@ CollabRouter.get("/list/detailone/:id", ArtistAuthentication, async (req, res) =
                 from: "reviews",
                 localField: "userId",
                 foreignField: "userId",
-                pipeline:[{$match: {eventId: new mongoose.Types.ObjectId(id)}}],
+                pipeline: [{ $match: { eventId: new mongoose.Types.ObjectId(id) } }],
                 as: "reviews",
               },
             },
@@ -434,235 +434,220 @@ CollabRouter.get("/request/list", ArtistAuthentication, async (req, res) => {
 });
 
 // Get All Collaboration Events Requests Received By User (User Indicate Artist Who will Participate In The Event)
-CollabRouter.get(
-  "/request/upcoming",
-  ArtistAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    const dateObj = new Date();
-    // Creating Date
-    const month =
-      dateObj.getUTCMonth() + 1 < 10
-        ? String(dateObj.getUTCMonth() + 1).padStart(2, "0")
-        : dateObj.getUTCMonth() + 1; // months from 1-12
-    const day =
-      dateObj.getUTCDate() < 10
-        ? String(dateObj.getUTCDate()).padStart(2, "0")
-        : dateObj.getUTCDate();
-    const year = dateObj.getUTCFullYear();
-    const currentDate = year + "-" + month + "-" + day;
+CollabRouter.get("/request/upcoming", ArtistAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const dateObj = new Date();
+  // Creating Date
+  const month =
+    dateObj.getUTCMonth() + 1 < 10
+      ? String(dateObj.getUTCMonth() + 1).padStart(2, "0")
+      : dateObj.getUTCMonth() + 1; // months from 1-12
+  const day =
+    dateObj.getUTCDate() < 10
+      ? String(dateObj.getUTCDate()).padStart(2, "0")
+      : dateObj.getUTCDate();
+  const year = dateObj.getUTCFullYear();
+  const currentDate = year + "-" + month + "-" + day;
 
-    try {
-      const list = await CollabModel.aggregate([
-        {
-          $match: { userId: new mongoose.Types.ObjectId(decoded._id) },
+  try {
+    const list = await CollabModel.aggregate([
+      {
+        $match: { userId: new mongoose.Types.ObjectId(decoded._id) },
+      },
+      {
+        $lookup: {
+          from: "events",
+          localField: "eventId",
+          foreignField: "_id",
+          pipeline: [{ $match: { endDate: { $gte: currentDate } } }],
+          as: "event",
         },
-        {
-          $lookup: {
-            from: "events",
-            localField: "eventId",
-            foreignField: "_id",
-            pipeline: [{ $match: { endDate: { $gte: currentDate } } }],
-            as: "event",
-          },
+      },
+      {
+        $match: {
+          $expr: { $gt: [{ $size: "$event" }, 0] },
         },
-        {
-          $match: {
-            $expr: { $gt: [{ $size: "$event" }, 0] },
-          },
-        },
-      ]);
-      if (list.length == 0) {
-        res.json({
-          status: "error",
-          message: "No Collaboration Request Found",
-        });
-      } else {
-        res.json({ status: "success", data: list });
-      }
-    } catch (error) {
+      },
+    ]);
+    if (list.length == 0) {
       res.json({
         status: "error",
-        message: `Unable To Find Collaboration Events Requests ${error.message}`,
+        message: "No Collaboration Request Found",
       });
+    } else {
+      res.json({ status: "success", data: list });
     }
-  },
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Unable To Find Collaboration Events Requests ${error.message}`,
+    });
+  }
+},
 );
 
 // Get All Collaboration Events Requests Received By User (User Indicate Artist Who will Participate In The Event)
-CollabRouter.get(
-  "/request/previous",
-  ArtistAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    const dateObj = new Date();
-    // Creating Date
-    const month =
-      dateObj.getUTCMonth() + 1 < 10
-        ? String(dateObj.getUTCMonth() + 1).padStart(2, "0")
-        : dateObj.getUTCMonth() + 1; // months from 1-12
-    const day =
-      dateObj.getUTCDate() < 10
-        ? String(dateObj.getUTCDate()).padStart(2, "0")
-        : dateObj.getUTCDate();
-    const year = dateObj.getUTCFullYear();
-    const currentDate = year + "-" + month + "-" + day;
+CollabRouter.get("/request/previous", ArtistAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const dateObj = new Date();
+  // Creating Date
+  const month =
+    dateObj.getUTCMonth() + 1 < 10
+      ? String(dateObj.getUTCMonth() + 1).padStart(2, "0")
+      : dateObj.getUTCMonth() + 1; // months from 1-12
+  const day =
+    dateObj.getUTCDate() < 10
+      ? String(dateObj.getUTCDate()).padStart(2, "0")
+      : dateObj.getUTCDate();
+  const year = dateObj.getUTCFullYear();
+  const currentDate = year + "-" + month + "-" + day;
 
-    try {
-      const list = await CollabModel.aggregate([
-        {
-          $match: { userId: new mongoose.Types.ObjectId(decoded._id) },
+  try {
+    const list = await CollabModel.aggregate([
+      {
+        $match: { userId: new mongoose.Types.ObjectId(decoded._id) },
+      },
+      {
+        $lookup: {
+          from: "events",
+          localField: "eventId",
+          foreignField: "_id",
+          pipeline: [{ $match: { endDate: { $lte: currentDate } } }],
+          as: "event",
         },
-        {
-          $lookup: {
-            from: "events",
-            localField: "eventId",
-            foreignField: "_id",
-            pipeline: [{ $match: { endDate: { $lte: currentDate } } }],
-            as: "event",
-          },
+      },
+      {
+        $match: {
+          $expr: { $gt: [{ $size: "$event" }, 0] },
         },
-        {
-          $match: {
-            $expr: { $gt: [{ $size: "$event" }, 0] },
-          },
-        },
-      ]);
+      },
+    ]);
 
-      if (list.length == 0) {
-        res.json({
-          status: "error",
-          message: "No Collaboration Request Found",
-        });
-      } else {
-        res.json({ status: "success", data: list });
-      }
-    } catch (error) {
+    if (list.length == 0) {
       res.json({
         status: "error",
-        message: `Unable To Find Collaboration Events Requests ${error.message}`,
+        message: "No Collaboration Request Found",
       });
+    } else {
+      res.json({ status: "success", data: list });
     }
-  },
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Unable To Find Collaboration Events Requests ${error.message}`,
+    });
+  }
+},
 );
 
 // Get Collaboration Event Details
-CollabRouter.get(
-  "/request/details/:id",
-  ArtistAuthentication,
-  async (req, res) => {
-    const { id } = req.params;
-    try {
-      const list = await EventModel.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(id) } },
-        {
-          $lookup: {
-            from: "reviews",
-            localField: "_id",
-            foreignField: "eventId",
-            pipeline: [
-              {
-                $match: {
-                  reviewedBy: "collabArtist",
-                  userId: null,
-                },
+CollabRouter.get("/request/details/:id", ArtistAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const list = await EventModel.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      {
+        $lookup: {
+          from: "reviews",
+          localField: "_id",
+          foreignField: "eventId",
+          pipeline: [
+            {
+              $match: {
+                reviewedBy: "collabArtist",
+                userId: null,
               },
-            ],
-            as: "eventreview",
-          },
+            },
+          ],
+          as: "eventreview",
         },
-        {
-          $lookup: {
-            from: "reviews",
-            localField: "createdBy",
-            foreignField: "userId",
-            as: "eventCreatorReview",
-          },
+      },
+      {
+        $lookup: {
+          from: "reviews",
+          localField: "createdBy",
+          foreignField: "userId",
+          as: "eventCreatorReview",
         },
-      ]);
+      },
+    ]);
 
-      if (list.length == 0) {
-        res.json({
-          status: "error",
-          message: "No Collaboration Request Found",
-        });
-      } else {
-        res.json({ status: "success", data: list });
-      }
-    } catch (error) {
+    if (list.length == 0) {
       res.json({
         status: "error",
-        message: `Unable To Find Collaboration Events Requests ${error.message}`,
+        message: "No Collaboration Request Found",
       });
+    } else {
+      res.json({ status: "success", data: list });
     }
-  },
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Unable To Find Collaboration Events Requests ${error.message}`,
+    });
+  }
+},
 );
 // Get All Collaborator List Whom Request Sent For Collaboration
-CollabRouter.get(
-  "/list/artists/:id",
-  ArtistAuthentication,
-  async (req, res) => {
-    const { id } = req.params;
-    try {
-      const list = await CollabModel.aggregate([
-        { $match: { eventId: new mongoose.Types.ObjectId(id) } },
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            pipeline: [{ $project: { profile: 1 } }],
-            as: "userdetails",
-          },
+CollabRouter.get("/list/artists/:id", ArtistAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const list = await CollabModel.aggregate([
+      { $match: { eventId: new mongoose.Types.ObjectId(id) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          pipeline: [{ $project: { profile: 1 } }],
+          as: "userdetails",
         },
-      ]);
-      if (list.length == 0) {
-        res.json({
-          status: "error",
-          message: "No Collaborators Added In This Event ",
-        });
-      } else {
-        res.json({ status: "success", data: list });
-      }
-    } catch (error) {
+      },
+    ]);
+    if (list.length == 0) {
       res.json({
         status: "error",
-        message: `Unable To Find Collaborators List In This Events ${error.message}`,
+        message: "No Collaborators Added In This Event ",
       });
+    } else {
+      res.json({ status: "success", data: list });
     }
-  },
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Unable To Find Collaborators List In This Events ${error.message}`,
+    });
+  }
+},
 );
 
 // Update Collaborator Status
-CollabRouter.post(
-  "/update/collab/status/:id",
-  ArtistAuthentication,
-  async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    try {
-      const list = await CollabModel.find({ _id: id, userId: decoded._id });
-      if (list.length == 0) {
-        res.json({
-          status: "error",
-          message: "No Collaborators Added In This Event ",
-        });
-      } else {
-        list[0].status = status;
-        await list[0].save();
-        res.json({ status: "success", message: "Updated Collaborator Status" });
-      }
-    } catch (error) {
+CollabRouter.post("/update/collab/status/:id", ArtistAuthentication, async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const list = await CollabModel.find({ _id: id, userId: decoded._id });
+    if (list.length == 0) {
       res.json({
         status: "error",
-        message: `Unable To Update Collaborators Status In This Events ${error.message}`,
+        message: "No Collaborators Added In This Event ",
       });
+    } else {
+      list[0].status = status;
+      await list[0].save();
+      res.json({ status: "success", message: "Updated Collaborator Status" });
     }
-  },
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Unable To Update Collaborators Status In This Events ${error.message}`,
+    });
+  }
+},
 );
 
 module.exports = { CollabRouter };

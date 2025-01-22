@@ -14,6 +14,10 @@ const subscriptionSchema = mongoose.Schema({
     required: true,
     enum: ["artist", "professional"],
   },
+  amount:{
+    type: Number,
+    required: true
+  }
 });
 
 const SubscriptionModel = mongoose.model("plan", subscriptionSchema);

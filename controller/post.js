@@ -13,7 +13,6 @@ const {
 
 // Basic Middleware Imports
 const {
-  ArtistAuthentication,
   AdminAuthentication,
   uploadMiddleWare,
   UserAuthentication,
@@ -65,7 +64,7 @@ PostRouter.get("/listall", UserAuthentication, async (req, res) => {
   const decoded = jwt.verify(token, "Authentication");
   try {
     const result = await PostModel.aggregate([
-      { $match: { createdBy: new mongoose.Types.ObjectId(decoded._id),disabled:false } },
+      { $match: { createdBy: new mongoose.Types.ObjectId(decoded._id), disabled: false } },
       {
         $lookup: {
           from: "comments",
@@ -104,7 +103,7 @@ PostRouter.get("/details/:id", UserAuthentication, async (req, res) => {
 
   try {
     const post = await PostModel.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      { $match: { _id: new mongoose.Types.ObjectId(id), disabled: false } },
       {
         $lookup: {
           from: "comments",
@@ -229,6 +228,7 @@ PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), UserAuthenticati
         $match: {
           _id: new mongoose.Types.ObjectId(id),
           createdBy: new mongoose.Types.ObjectId(decoded._id),
+          disabled: false
         },
       },
     ]);
@@ -270,11 +270,21 @@ PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), UserAuthenticati
 },
 );
 
-// Api To Get All Post List Created By All The USER
+// Api To Get All Post List For Admin
 
 PostRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
   try {
-    const result = await PostModel.find({}).sort({ CreatedAt: -1 });
+    const result = await PostModel.aggregate([
+      {
+        $lookup: {
+          from: "users", localField: "createdBy", foreignField: "_id",
+          pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }]
+          , as: "userdetails"
+        }
+      }
+      , { $lookup: { from: "comments", localField: "_id", foreignField: "postId", pipeline: [{ $project: { postId: 0, CreatedAt: 0, __v: 0 } }], as: "comments" } },
+      { $sort: { CreatedAt: -1 } }]);
+
     if (result.length == 0) {
       res.json({
         status: "error",
@@ -293,6 +303,79 @@ PostRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
     });
   }
 });
+
+// Api To Get Full Detail Of A Particular Post Created By User For Admin
+
+PostRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => {
+  try {
+    const result = await PostModel.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
+      {
+        $lookup: {
+          from: "users", localField: "createdBy", foreignField: "_id",
+          pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }]
+          , as: "userdetails"
+        }
+      }
+      , { $lookup: { from: "comments", localField: "_id", foreignField: "postId", pipeline: [{ $project: { postId: 0, CreatedAt: 0, __v: 0 } }], as: "comments" } },
+      { $sort: { CreatedAt: -1 } }]);
+
+    if (result.length == 0) {
+      res.json({
+        status: "error",
+        message: "No Post Created By User",
+      });
+    } else {
+      res.json({
+        status: "success",
+        data: result,
+      });
+    }
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Get Post Detail's ${error.message}`,
+    });
+  }
+});
+
+// Api To Disable A Particular Post Created By User Only For Admin
+
+PostRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const post = await PostModel.findByIdAndUpdate(id, { disabled: true })
+    res.json({
+      status: "success",
+      message: "Post Disabled Successfully",
+    });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Disable Event ${error.message}`,
+    });
+  }
+},
+);
+
+// Api To Enable A Particular Post Created By User Only For Admin
+
+PostRouter.patch("/enable/admin/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const post = await PostModel.findByIdAndUpdate(id, { disabled: false })
+    res.json({
+      status: "success",
+      message: "Post Enabled Successfully",
+    });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Enable Event ${error.message}`,
+    });
+  }
+},
+);
 
 // Api's For Comment
 
@@ -507,6 +590,7 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
 
   try {
     const result = await PostModel.aggregate([
+      { $match: { disabled: false } },
       {
         $lookup: {
           from: "comments",
@@ -616,7 +700,73 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
   }
 });
 
-// Api's For Post Search
+// Api's For Live Post Feed For Admin
+PostRouter.get("/listall/admin/live", AdminAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+
+  try {
+    const result = await PostModel.aggregate([
+      { $match: { disabled: false } },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "postId",
+          as: "comments",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "userdetails",
+          pipeline: [
+            {
+              $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 },
+            },
+          ],
+        },
+      },
+      {
+        $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "postId",
+          pipeline: [{ $unwind: "$likedBy" }, {
+            $lookup: {
+              from: "users", localField: "likedBy", foreignField: "_id", pipeline: [{
+                $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 },
+              }], as: "userlist"
+            }
+          }],
+          as: "like",
+        },
+      },
+      { $sort: { CreatedAt: -1 } },
+      { $project: { followerlist: 0, disabled: 0 } },
+    ]);
+    if (result.length == 0) {
+      res.json({
+        status: "error",
+        message: "No Live Post Found",
+      });
+    } else {
+      res.json({
+        status: "success",
+        data: result,
+      });
+    }
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Get Live Post Feed's ${error.message}`,
+    });
+  }
+});
+
+// Api's For Post Search Not In Use
 PostRouter.get("/find", UserAuthentication, async (req, res) => {
   const { search } = req.query;
   const regex = new RegExp(search, "i");
@@ -627,6 +777,7 @@ PostRouter.get("/find", UserAuthentication, async (req, res) => {
       {
         $match: {
           $or: [{ description: { $regex: regex } }],
+          disabled: false,
         },
       },
       {
