@@ -764,6 +764,30 @@ UserRouter.get("/listall/professional", UserAuthentication, async (req, res) => 
 },
 );
 
+UserRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const results = await UserModel.find(
+      {
+        email: { $ne: decoded.email },
+      },
+      { password: 0,CreatedAt: 0 },
+    );
+
+    if (results.length === 0) {
+      return res.json({ status: "error", message: "No Professional found" });
+    }
+    return res.json({ status: "success", data: results });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Èrror Found While Fetching The List Of All Professional ${error.message}`,
+    });
+  }
+},
+);
+
 // Get Basic Detail Of One User
 
 UserRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {

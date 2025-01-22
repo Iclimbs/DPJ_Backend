@@ -4,7 +4,6 @@ const express = require("express");
 const PaymentRouter = express.Router();
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
-const uniqid = require('uniqid');
 const jwt = require("jsonwebtoken");
 const { TransactionModel } = require("../model/transaction.model");
 const { addAmountinWallet } = require("./wallet");
@@ -36,7 +35,7 @@ PaymentRouter.post("/checkout", UserAuthentication, async (req, res) => {
     }
 })
 
-PaymentRouter.post("/verification", async (req, res) => {
+PaymentRouter.post("/verification",UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
 

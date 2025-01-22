@@ -9,6 +9,7 @@ const postschema = mongoose.Schema({
     media: { type: String, required: true },
     mediaType: { type: String, required: false },
     isVideo: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false },
     CreatedAt: { type: Date, default: Date.now }, // Save The Time When the following Job was created 
 
 });

@@ -12,6 +12,17 @@ FeatureRouter.post('/create', async (req, res) => {
     }
 });
 
+FeatureRouter.post('/update/:id', async (req, res) => {
+    try {
+        const feature = new FeaturesModel(req.body);
+        await feature.save();
+        res.json({ status: 'success', message: "Feature created successfully" });
+    } catch (error) {
+        res.json({ status: 'error', message: `Failed To Create New Feature${error}` });
+    }
+});
+
+
 FeatureRouter.get('/list/active', async (req, res) => {
     try {
         const features = await FeaturesModel.find({ status: true });

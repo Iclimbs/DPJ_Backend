@@ -65,7 +65,7 @@ PostRouter.get("/listall", UserAuthentication, async (req, res) => {
   const decoded = jwt.verify(token, "Authentication");
   try {
     const result = await PostModel.aggregate([
-      { $match: { createdBy: new mongoose.Types.ObjectId(decoded._id) } },
+      { $match: { createdBy: new mongoose.Types.ObjectId(decoded._id),disabled:false } },
       {
         $lookup: {
           from: "comments",
@@ -218,60 +218,56 @@ PostRouter.get("/details/:id", UserAuthentication, async (req, res) => {
 
 // Api To Edit Detail's Of A Particular Post Created By User
 
-PostRouter.patch(
-  "/edit/:id",
-  uploadMiddleWare.single("media"),
-  UserAuthentication,
-  async (req, res) => {
-    const { id } = req.params;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
+PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), UserAuthentication, async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
 
-    try {
-      const post = await PostModel.aggregate([
-        {
-          $match: {
-            _id: new mongoose.Types.ObjectId(id),
-            createdBy: new mongoose.Types.ObjectId(decoded._id),
-          },
+  try {
+    const post = await PostModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+          createdBy: new mongoose.Types.ObjectId(decoded._id),
         },
-      ]);
-      if (post.length == 0) {
-        res.json({
-          status: "error",
-          message: "No Post Created By User",
-        });
-      } else {
-        let isVideovalue;
-        if (req.file) {
-          isVideovalue =
-            req.file?.mimetype.split("/")[0] == "video" ? true : false;
-        } else {
-          isVideovalue = post[0].isVideo;
-        }
-
-        const updatedPost = {
-          ...req.body,
-          description: req.body?.description || post[0].description,
-          media: req.file?.location || post[0].media,
-          mediaType: req.file?.mimetype.split("/")[0] || post[0].mimetype,
-          isVideo: isVideovalue,
-        };
-        const newpost = await PostModel.findByIdAndUpdate(id, updatedPost, {
-          new: true, // Return the updated document
-        });
-        res.json({
-          status: "success",
-          message: "Post Updated Successfully",
-        });
-      }
-    } catch (error) {
+      },
+    ]);
+    if (post.length == 0) {
       res.json({
         status: "error",
-        message: `Failed To Update Event Details ${error.message}`,
+        message: "No Post Created By User",
+      });
+    } else {
+      let isVideovalue;
+      if (req.file) {
+        isVideovalue =
+          req.file?.mimetype.split("/")[0] == "video" ? true : false;
+      } else {
+        isVideovalue = post[0].isVideo;
+      }
+
+      const updatedPost = {
+        ...req.body,
+        description: req.body?.description || post[0].description,
+        media: req.file?.location || post[0].media,
+        mediaType: req.file?.mimetype.split("/")[0] || post[0].mimetype,
+        isVideo: isVideovalue,
+      };
+      const newpost = await PostModel.findByIdAndUpdate(id, updatedPost, {
+        new: true, // Return the updated document
+      });
+      res.json({
+        status: "success",
+        message: "Post Updated Successfully",
       });
     }
-  },
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Update Event Details ${error.message}`,
+    });
+  }
+},
 );
 
 // Api To Get All Post List Created By All The USER
