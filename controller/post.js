@@ -825,6 +825,7 @@ PostRouter.get("/find", UserAuthentication, async (req, res) => {
   }
 });
 
+// Api's For Post Like By User
 PostRouter.get("/like", UserAuthentication, async (req, res) => {
   const { postId, status } = req.query;
   const token = req.headers.authorization.split(" ")[1];
