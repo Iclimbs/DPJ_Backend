@@ -61,9 +61,7 @@ const addAmountInAdminWallet = async (props) => {
         if (user.length <= 0) {
             res.json({ status: 'error', message: `Admin Not Found` })
         }
-        const wallet = await WalletModel.find({ "userId": user[0]._id })
-        console.log("admin wallet", wallet);
-
+        const wallet = await WalletModel.find({ "userId": user[0]._id });
         wallet[0].balance = wallet[0].balance + amount
 
         await wallet[0].save()
@@ -77,7 +75,6 @@ const addAmountInAdminWallet = async (props) => {
             from: userId,
             to: user[0]._id,
             eventId: eventId
-
         })
         
         await transaction.save()

@@ -1,0 +1,153 @@
+{
+    "status": "success",
+    "data": [
+        {
+            "_id": "678e21235127275d2505e197",
+            "title": "best event",
+            "description": "best event created by vivek.",
+            "category": "Cooking",
+            "banner": "https://dpjbackend.s3.ap-south-1.amazonaws.com/1737367841706",
+            "startDateTime": "Tue Jan 21 2025 15:00:00 GMT+0530 (India Standard Time)",
+            "startTime": "15:00",
+            "startDate": "2025-01-21",
+            "endDateTime": "Wed Jan 22 2025 18:39:00 GMT+0530 (India Standard Time)",
+            "endTime": "18:39",
+            "endDate": "2025-01-22",
+            "createdBy": "67583127d8cde15f072f03c8",
+            "link": null,
+            "address": {
+                "country": "India",
+                "state": "Haryana",
+                "city": "Gurgaon",
+                "location": "gurgoan",
+                "_id": "678e21235127275d2505e198"
+            },
+            "type": "Collaboration",
+            "eventType": "Physical",
+            "CreatedAt": "2025-01-20T10:10:43.727Z",
+            "__v": 0,
+            "userdetails": [
+                {
+                    "_id": "67583127d8cde15f072f03c8",
+                    "name": "Vivek Kumar update",
+                    "email": "mymix20@gmail.com",
+                    "profile": "https://dpjbackend.s3.ap-south-1.amazonaws.com/1736235552315",
+                    "description": "Testing Description 90"
+                }
+            ],
+            "collaborators": [
+                {
+                    "_id": "678e21825127275d2505e1a3",
+                    "userId": "676ce71c94d1d3794386dbe7",
+                    "profile": "https://dpjbackend.s3.ap-south-1.amazonaws.com/1736234184587",
+                    "email": "soniadiwedi1998@gmail.com",
+                    "name": "sonia diwedi",
+                    "amount": 4000,
+                    "status": "Accepted",
+                    "eventId": "678e21235127275d2505e197",
+                    "CreatedAt": "2025-01-20T10:12:18.265Z",
+                    "__v": 0,
+                    "reviewsByEventCreator": [
+                        {
+                            "_id": "678e2a885127275d2505e211",
+                            "eventId": "678e21235127275d2505e197",
+                            "userId": "676ce71c94d1d3794386dbe7",
+                            "rating": 5,
+                            "review": "new review 7:13",
+                            "reviewedBy": "eventCreator",
+                            "reviewedByUserId": "67583127d8cde15f072f03c8",
+                            "CreatedAt": "2025-01-20T10:50:48.850Z",
+                            "__v": 0
+                        }
+                    ],
+                    "reviewsByCollabArtists": [],
+                    "transactions": [
+                        {
+                            "_id": "678e21825127275d2505e1a5",
+                            "amount": 4000,
+                            "type": "Credit",
+                            "status": "In Process",
+                            "userId": "676ce71c94d1d3794386dbe7",
+                            "method": "Wallet",
+                            "from": "67583127d8cde15f072f03c8",
+                            "to": "676ce71c94d1d3794386dbe7",
+                            "eventId": "678e21235127275d2505e197",
+                            "CreatedAt": "2025-01-20T10:12:18.325Z",
+                            "__v": 0
+                        }
+                    ]
+                },
+                {
+                    "_id": "678e265f5127275d2505e1e7",
+                    "userId": "6789e98e1f627061213c4265",
+                    "profile": "https://dpjbackend.s3.ap-south-1.amazonaws.com/1737368171827",
+                    "email": "aman@gmail.com",
+                    "name": "Aman",
+                    "amount": 1000,
+                    "status": "Accepted",
+                    "eventId": "678e21235127275d2505e197",
+                    "CreatedAt": "2025-01-20T10:33:03.423Z",
+                    "__v": 0,
+                    "reviewsByEventCreator": [
+                        {
+                            "_id": "678e3c8b0b957a42816988d4",
+                            "eventId": "678e21235127275d2505e197",
+                            "userId": "6789e98e1f627061213c4265",
+                            "rating": 1,
+                            "review": "new update 101",
+                            "reviewedBy": "eventCreator",
+                            "reviewedByUserId": "67583127d8cde15f072f03c8",
+                            "CreatedAt": "2025-01-20T12:07:39.512Z",
+                            "__v": 0
+                        }
+                    ],
+                    "reviewsByCollabArtists": [],
+                    "transactions": [
+                        {
+                            "_id": "678e265f5127275d2505e1e9",
+                            "amount": 1000,
+                            "type": "Credit",
+                            "status": "In Process",
+                            "userId": "6789e98e1f627061213c4265",
+                            "method": "Wallet",
+                            "from": "67583127d8cde15f072f03c8",
+                            "to": "6789e98e1f627061213c4265",
+                            "eventId": "678e21235127275d2505e197",
+                            "CreatedAt": "2025-01-20T10:33:03.474Z",
+                            "__v": 0
+                        }
+                    ]
+                },
+                {
+                    "_id": "678e28015127275d2505e1fe",
+                    "userId": "677bb5cc76dc033646dc9e3e",
+                    "profile": "https://dpjbackend.s3.ap-south-1.amazonaws.com/1736189132243",
+                    "email": "uttamkrshaw@iclimbs.com",
+                    "name": "Uttam Kumar Shaw",
+                    "amount": 1000,
+                    "status": "Pending",
+                    "eventId": "678e21235127275d2505e197",
+                    "CreatedAt": "2025-01-20T10:40:01.629Z",
+                    "__v": 0,
+                    "reviewsByEventCreator": [],
+                    "reviewsByCollabArtists": [],
+                    "transactions": [
+                        {
+                            "_id": "678e28015127275d2505e200",
+                            "amount": 1000,
+                            "type": "Credit",
+                            "status": "In Process",
+                            "userId": "677bb5cc76dc033646dc9e3e",
+                            "method": "Wallet",
+                            "from": "67583127d8cde15f072f03c8",
+                            "to": "677bb5cc76dc033646dc9e3e",
+                            "eventId": "678e21235127275d2505e197",
+                            "CreatedAt": "2025-01-20T10:40:01.681Z",
+                            "__v": 0
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

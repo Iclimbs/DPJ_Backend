@@ -898,7 +898,7 @@ UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: "profil
     const user = await UserModel.findOne({ _id: decoded._id });
     user.gender = gender;
     user.dob = dob;
-    user.category = category;
+    user.category = category || "";
 
     if (!user.address) {
       user.address = {}; // Initialize address if it doesn't exist

@@ -471,6 +471,9 @@ CollabRouter.get("/listall/detailone/admin/:id", AdminAuthentication, async (req
                 as: "reviewsByCollabArtists",
               },
             },
+            {
+              $lookup: {from:"transactions",localField:"userId",foreignField:"userId",pipeline:[{$match:{eventId:new mongoose.Types.ObjectId(id)}}],as:"transactions"}
+            }
 
           ],
           as: "collaborators",
@@ -736,5 +739,25 @@ CollabRouter.post("/update/collab/status/:id", ArtistAuthentication, async (req,
   }
 },
 );
+
+// Update Transaction Status
+// Accept Pending Transaction Request
+CollabRouter.post("/success/transaction/status/admin/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const list = await TransactionModel.find({ _id: id });
+    console.log("list ",list);
+    
+    res.json({ status: "success", message: "Updated Collaborator Status" });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Unable To Settle Transaction Amount Of This Event ${error.message}`,
+    });
+  }
+},
+);
+
+// Reject Pending Transaction Request
 
 module.exports = { CollabRouter };
