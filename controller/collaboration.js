@@ -14,6 +14,7 @@ const {
   ArtistAuthentication,
   uploadMiddleWare,
   WalletChecker,
+  AdminAuthentication,
 } = require("../middleware/MiddlewareExport");
 const { default: mongoose } = require("mongoose");
 const {
@@ -356,6 +357,26 @@ CollabRouter.get("/list", ArtistAuthentication, async (req, res) => {
   }
 });
 
+// Get All Collaboration Events list For Admin
+CollabRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
+  try {
+    const list = await EventModel.aggregate([
+      { $match: { type: "Collaboration" } },
+      { $lookup: { from: "users", localField: "createdBy", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, description: 1 } }], as: "users" } },
+    ]);
+    if (list.length == 0) {
+      res.json({ status: "error", message: "No Collaboration Event Found" });
+    } else {
+      res.json({ status: "success", data: list });
+    }
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Unable To Find Collaboration Events ${error.message}`,
+    });
+  }
+});
+
 // Get Collaboration Events Complete Details Created By User
 CollabRouter.get("/list/detailone/:id", ArtistAuthentication, async (req, res) => {
   const { id } = req.params;
@@ -383,6 +404,62 @@ CollabRouter.get("/list/detailone/:id", ArtistAuthentication, async (req, res) =
                 foreignField: "userId",
                 pipeline: [{ $match: { eventId: new mongoose.Types.ObjectId(id) } }],
                 as: "reviews",
+              },
+            },
+          ],
+          as: "collaborators",
+        },
+      },
+    ]);
+    if (list.length == 0) {
+      res.json({ status: "error", message: "No Collaboration Event Found" });
+    } else {
+      res.json({ status: "success", data: list });
+    }
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Unable To Find Collaboration Events ${error.message}`,
+    });
+  }
+},
+);
+
+// Get Collaboration Events Complete Details Created By User
+CollabRouter.get("/listall/detailone/admin/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const list = await EventModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+          type: "Collaboration",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, description: 1 } }],
+          as: "userdetails"
+        }
+      },
+      {
+        $lookup: {
+          from: "collabs",
+          localField: "_id",
+          foreignField: "eventId",
+          pipeline: [
+            {
+              $lookup: {
+                from: "reviews",
+                localField: "userId",
+                foreignField: "userId",
+                pipeline: [{ $match: { eventId: new mongoose.Types.ObjectId(id) } }],
+                as: "eventCreatorreviews",
               },
             },
           ],

@@ -16,9 +16,9 @@ const {
   AdminAuthentication,
   uploadMiddleWare,
   UserAuthentication,
+  PostCreationChecker
 } = require("../middleware/MiddlewareExport");
 const { default: mongoose } = require("mongoose");
-const { PostCreationChecker } = require("../middleware/PostCreation");
 
 const PostRouter = express.Router();
 
