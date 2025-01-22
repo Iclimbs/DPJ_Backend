@@ -35,6 +35,7 @@ const subAmountinWallet = async (props) => {
     }
 }
 
+
 WalletRouter.post("/create", async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
@@ -110,6 +111,20 @@ const subAmountInAdminWallet = async (props) => {
     }
 }
 
+const createWallet = async (props) => {
+    const { userId } = props
+    try {
+        const walletlist = await WalletModel.find({ userId: userId })
+        if (walletlist.length > 0) {
+            return json({ status: 'error', message: `Wallet Already Exists` })
+        }
+        const wallet = new WalletModel({ balance: 0, userId: userId })
+        await wallet.save()
+        return json({ status: 'success', message: `Wallet Successfully Created For The User !!` })
+    } catch (error) {
+        return json({ status: 'error', message: `Failed To Create Wallet ${error.message}` })
+    }
+}
 
 
 
@@ -120,5 +135,4 @@ const subAmountInAdminWallet = async (props) => {
 
 
 
-
-module.exports = { addAmountinWallet, WalletRouter, subAmountinWallet, addAmountInAdminWallet, subAmountInAdminWallet }
+module.exports = { addAmountinWallet,createWallet, WalletRouter, subAmountinWallet, addAmountInAdminWallet, subAmountInAdminWallet }

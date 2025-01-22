@@ -73,6 +73,7 @@ const {
   uploadMiddleWare,
   AdminAuthentication,
 } = require("../middleware/MiddlewareExport");
+const { createWallet } = require("./wallet");
 
 const UserRouter = express.Router();
 
@@ -273,15 +274,26 @@ UserRouter.post("/register", async (req, res) => {
       name,
       email,
       password: hash.sha256(password),
-      accountType: accountType,
+      accountType: accountType, 
     });
     try {
-      await user.save();
-      res.json({
-        status: "success",
-        message: "Registration Successful",
-        redirect: "/user/login",
-      });
+     const newUser = await user.save();
+
+      const wallet = createWallet({ userId: newUser._id });
+
+      if (wallet.status === "error") {
+        return res.json({
+          status: "error",
+          message: "Failed To Create Wallet",
+          redirect: "/",
+        });
+      } else {
+        res.json({
+          status: "success",
+          message: "Registration Successful",
+          redirect: "/user/login",
+        });          
+      }
     } catch (error) {
       res.json({
         status: "error",
