@@ -425,7 +425,7 @@ CollabRouter.get("/list/detailone/:id", ArtistAuthentication, async (req, res) =
 },
 );
 
-// Get Collaboration Events Complete Details Created By User
+// Get Collaboration Events Complete Details For Admin
 CollabRouter.get("/listall/detailone/admin/:id", AdminAuthentication, async (req, res) => {
   const { id } = req.params;
   const token = req.headers.authorization.split(" ")[1];
@@ -458,10 +458,20 @@ CollabRouter.get("/listall/detailone/admin/:id", AdminAuthentication, async (req
                 from: "reviews",
                 localField: "userId",
                 foreignField: "userId",
-                pipeline: [{ $match: { eventId: new mongoose.Types.ObjectId(id) } }],
-                as: "eventCreatorreviews",
+                pipeline: [{ $match: { eventId: new mongoose.Types.ObjectId(id), "reviewedBy": "eventCreator" } }],
+                as: "reviewsByEventCreator",
               },
             },
+            {
+              $lookup: {
+                from: "reviews",
+                localField: "userId",
+                foreignField: "reviewedByUserId",
+                pipeline: [{ $match: { eventId: new mongoose.Types.ObjectId(id), "reviewedBy": "collabArtist" } }],
+                as: "reviewsByCollabArtists",
+              },
+            },
+
           ],
           as: "collaborators",
         },

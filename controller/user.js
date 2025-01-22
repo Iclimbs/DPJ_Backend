@@ -772,7 +772,7 @@ UserRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
       {
         email: { $ne: decoded.email },
       },
-      { password: 0,CreatedAt: 0 },
+      { password: 0, CreatedAt: 0 },
     );
 
     if (results.length === 0) {
@@ -792,12 +792,37 @@ UserRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
 
 UserRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
   const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
   try {
-    // const results = await UserModel.find({ email: { $ne: decoded.email }, accountType: "artist", disabled: "false", verified: "true" }, { password: 0, verified: 0, disabled: 0, CreatedAt: 0 });
-
     const results = await UserModel.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id), disabled: false, verified: true } },
-      { $project: { password: 0, CreatedAt: 0 } }
+      { $project: { password: 0, CreatedAt: 0 } },
+      {
+        $lookup: {
+          from: "followers",
+          localField: "_id",
+          foreignField: "userId",
+          as: "followerlist",
+        },
+      },
+      {
+        $addFields: {
+          followstatus: {
+            $in: [
+              new mongoose.Types.ObjectId(decoded._id),
+              {
+                $reduce: {
+                  input: "$followerlist",
+                  initialValue: [],
+                  in: { $concatArrays: ["$$value", "$$this.followedBy"] }, // Flatten the likedBy arrays
+                },
+              },
+            ],
+          },
+        },
+      },
+      {$project:{followerlist:0}}
     ]);
     if (results.length === 0) {
       return res.json({ status: "error", message: "No user found" });

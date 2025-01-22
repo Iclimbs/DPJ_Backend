@@ -1,7 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const { ReviewModel, EventModel } = require("../model/ModelExport");
-const { UserAuthentication } = require("../middleware/MiddlewareExport");
+const { UserAuthentication, AdminAuthentication } = require("../middleware/MiddlewareExport");
 const { default: mongoose } = require("mongoose");
 const ReviewRouter = express.Router();
 
@@ -170,6 +170,31 @@ ReviewRouter.post("/add/otherArtist", UserAuthentication, async (req, res) => {
 });
 
 ReviewRouter.patch("/edit/:id", UserAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const reviewExists = await ReviewModel.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+    ]);
+
+    // Checking If Review Already Exists For The Event
+    if (reviewExists.length == 0) {
+      res.json({ status: "error", message: `No Review Found` });
+    }
+    //Edit Review
+    await ReviewModel.findByIdAndUpdate(id, {
+      rating: req.body?.rating,
+      review: req.body?.review,
+    });
+    res.json({ status: "success", message: `Review Successfully Updated` });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Failed To Edit Review, Error:- ${error.message}`,
+    });
+  }
+});
+
+ReviewRouter.patch("/edit/admin/:id", AdminAuthentication, async (req, res) => {
   const { id } = req.params;
   try {
     const reviewExists = await ReviewModel.aggregate([
