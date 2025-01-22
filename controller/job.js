@@ -111,34 +111,35 @@ JobRouter.patch("/edit/:id", async (req, res) => {
 
 
 
-// Disable Job Details By Admin || Professional
+// Disable Job Details By Professional
 
-JobRouter.patch("/disable/:id", UserAuthentication, async (req, res) => {
+JobRouter.patch("/disable/:id", ProfessionalAuthentication, async (req, res) => {
     const { id } = req.params;
     const token = req.headers.authorization.split(" ")[1]
     const decoded = jwt.verify(token, 'Authentication')
     try {
-        if (decoded.accountType === "admin") {
-            const JobDetails = await JobModel.find({ _id: id })
-            JobDetails[0].status = 'Hold'
-            await JobDetails[0].save();
-            res.json({ status: "success", message: `Job Post Disabled Successfully !!` })
+        const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }])
+        JobDetails[0].status = 'Hold'
+        await JobDetails[0].save();
+        res.json({ status: "success", message: `Job Post Disabled Successfully !!` })
 
-        } else if (decoded.accountType === 'professional') {
-            const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }])
-            JobDetails[0].status = 'Hold'
-            await JobDetails[0].save();
-            res.json({ status: "success", message: `Job Post Disabled Successfully !!` })
-
-        } else {
-            res.json({ status: "error", message: `You Don't have Required Permissions !!` })
-
-        }
     } catch (error) {
         res.json({ status: "error", message: `Failed To Disable Job Details ${error.message}` })
     }
 })
 
+// Disable Job By Admin
+
+JobRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const JobDetails = await JobModel.findByIdAndUpdate(id, { status: 'Hold' })
+        res.json({ status: "success", message: `Job Post Disabled Successfully !!` })
+
+    } catch (error) {
+        res.json({ status: "error", message: `Failed To Disable Job Details ${error.message}` })
+    }
+})
 // Get All Job List Which are Currently Active
 
 JobRouter.get("/listall/active", UserAuthentication, async (req, res) => {
@@ -160,6 +161,23 @@ JobRouter.get("/listall/active", UserAuthentication, async (req, res) => {
         res.json({ status: "error", message: `Failed To Get Job List ${error.message}` })
     }
 })
+
+// Get All Job List For Admin
+
+JobRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
+    try {
+        const alljobs = await JobModel.aggregate([{ $lookup: { from: "users", localField: "createdBy", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }], as: "professionaldetails" } }, { $sort: { CreatedAt: -1 } }])
+        if (alljobs.length > 0) {
+            res.json({ status: "success", data: alljobs })
+        } else {
+            res.json({ status: "error", message: `No Active Job Post Found !!` })
+        }
+    } catch (error) {
+        res.json({ status: "error", message: `Failed To Get Job List ${error.message}` })
+    }
+})
+
+
 
 // Get Job Details Only For Artists Who are not Professional & will Apply For Job
 
@@ -203,6 +221,44 @@ JobRouter.get("/detailone/professional/:id", UserAuthentication, async (req, res
         res.json({ status: "error", message: `Failed To GET Job Details ${error.message}` })
     }
 })
+
+// Get Job Details Only For Admin   
+
+JobRouter.get("/detailone/admin/:id", UserAuthentication, async (req, res) => {
+    const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1]
+    const decoded = jwt.verify(token, 'Authentication');
+    try {
+        const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id)} }, { $lookup: { from: 'job_applications', localField: '_id', foreignField: 'jobId', as: 'applications' } }])
+        if (JobDetails.length !== 0) {
+            res.json({ status: "success", data: JobDetails })
+        } else {
+            res.json({ status: "error", message: `No Job Post Found with this ID !! ` })
+        }
+    } catch (error) {
+        res.json({ status: "error", message: `Failed To GET Job Details ${error.message}` })
+    }
+})
+
+
+// Get Job Details Only For Professional Who has Created This Job Requirement   
+
+JobRouter.get("/detailone/professional/:id", UserAuthentication, async (req, res) => {
+    const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1]
+    const decoded = jwt.verify(token, 'Authentication');
+    try {
+        const JobDetails = await JobModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), createdBy: new mongoose.Types.ObjectId(decoded._id) } }, { $lookup: { from: 'job_applications', localField: '_id', foreignField: 'jobId', as: 'applications' } }])
+        if (JobDetails.length !== 0) {
+            res.json({ status: "success", data: JobDetails })
+        } else {
+            res.json({ status: "error", message: `No Job Post Found with this ID !! ` })
+        }
+    } catch (error) {
+        res.json({ status: "error", message: `Failed To GET Job Details ${error.message}` })
+    }
+})
+
 
 // Get All Job List Created By Professional
 
@@ -319,16 +375,18 @@ JobRouter.get("/find", UserAuthentication, async (req, res) => {
             {
                 $match: {
                     $or: [
-                        { category: { $regex: regex } },
+                        { education: { $regex: regex } },
                         { salary: { $regex: regex } },
                         { description: { $regex: regex } },
                         { role: { $regex: regex } },
+                        { experience: { $regex: regex } },
                         { "address.location": { $regex: regex } },
                         { "address.state": { $regex: regex } },
                         { "address.city": { $regex: regex } }
                     ],
                     endtime: { $gte: date }
                 }
+
             },
             {
                 $lookup: { from: "users", localField: "createdBy", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }], as: "professionaldetails" }
@@ -344,6 +402,39 @@ JobRouter.get("/find", UserAuthentication, async (req, res) => {
     }
 })
 
+// Find Job By Search For Admin
+JobRouter.get("/find/admin", AdminAuthentication, async (req, res) => {
+    const { search } = req.query;
+    const regex = new RegExp(search, 'i');
+    try {
+        const results = await JobModel.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { education: { $regex: regex } },
+                        { salary: { $regex: regex } },
+                        { description: { $regex: regex } },
+                        { role: { $regex: regex } },
+                        { experience: { $regex: regex } },
+                        { "address.location": { $regex: regex } },
+                        { "address.state": { $regex: regex } },
+                        { "address.city": { $regex: regex } }
+                    ],
+                }
+            },
+            {
+                $lookup: { from: "users", localField: "createdBy", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }], as: "professionaldetails" }
+            }
+        ]);
+        if (results.length === 0) {
+            return res.json({ status: 'error', message: 'No matching records found' });
+        }
+
+        res.json({ status: 'success', data: results });
+    } catch (error) {
+        res.json({ status: "error", message: `Failed to Fetch Job Detail's ${error.message}` })
+    }
+})
 
 
 module.exports = { JobRouter }
