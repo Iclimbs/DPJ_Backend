@@ -14,7 +14,7 @@ const transactionSchema = mongoose.Schema({
     status: {
         type: String,
         required: true,
-        enum: ["Success", "Failed", "In Process"], // Success Means Transaction is Successful & Failed Means Transaction is Failed. 
+        enum: ["Success", "Failed", "In Process","Declined"], // Success Means Transaction is Successful & Failed Means Transaction is Failed. 
         default: "Success"
     },
     userId: {

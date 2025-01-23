@@ -795,5 +795,55 @@ CollabRouter.post("/success/transaction/status/admin/:id", AdminAuthentication, 
 );
 
 // Reject Pending Transaction Request
+CollabRouter.post("/decline/transaction/status/admin/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const list = await TransactionModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), status: 'In Process' } }]);
+    if (list.length == 0) {
+      return res.json({
+        status: "error",
+        message: "No Transaction Found",
+      });
+    }
+    const amount = list[0]?.amount;
+    const userId = list[0]?.from;
+    const eventId = list[0]?.eventId;
+
+    const userWalletTransaction = await addAmountinWallet({
+      amount: amount,
+      userId: userId,
+    });
+
+    const adminWalletTransaction = await subAmountInAdminWallet({
+      amount: amount,
+      userId: userId,
+      eventId: eventId,
+    });
+
+    if (adminWalletTransaction.status === "error") {
+      return res.json({
+        status: "error",
+        message: `Failed To Deduct Amount From Admin Wallet`,
+      });
+
+    }
+
+    if (userWalletTransaction.status === "error") {
+      return res.json({
+        status: "error",
+        message: `Failed To Add Amount in User Wallet`,
+      });
+    }
+
+    const transaction = await TransactionModel.findByIdAndUpdate(id, { status: "Declined" }, { new: true });
+    res.json({ status: "success", message: "Updated Collaborator Status" });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Unable To Settle Transaction Amount Of This Event ${error.message}`,
+    });
+  }
+},
+);
 
 module.exports = { CollabRouter };
