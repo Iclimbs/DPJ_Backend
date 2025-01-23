@@ -747,6 +747,12 @@ CollabRouter.post("/success/transaction/status/admin/:id", AdminAuthentication, 
   const { id } = req.params;
   try {
     const list = await TransactionModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), status: 'In Process' } }]);
+    if (list.length == 0) {
+      return res.json({
+        status: "error",
+        message: "No Transaction Found",
+      });
+    }
     const amount = list[0]?.amount;
     const userId = list[0]?.userId;
     const eventId = list[0]?.eventId;
