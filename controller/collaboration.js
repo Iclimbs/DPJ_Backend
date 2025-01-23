@@ -31,7 +31,7 @@ CollabRouter.post("/add", uploadMiddleWare.single("banner"), ArtistAuthenticatio
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     if (!req?.file) {
-      res.json({ status: "error", message: `Please Upload Banner Image` });
+      return res.json({ status: "error", message: `Please Upload Banner Image` });
     }
 
     const {
@@ -75,12 +75,12 @@ CollabRouter.post("/add", uploadMiddleWare.single("banner"), ArtistAuthenticatio
     });
     try {
       savedDocument = await collaboration.save();
-      res.json({
+      return res.json({
         status: "success",
         message: `Collaboration Created Successfully`,
       });
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Failed To Create New Collaboration ${error.message}`,
       });
@@ -750,37 +750,41 @@ CollabRouter.post("/success/transaction/status/admin/:id", AdminAuthentication, 
     const amount = list[0]?.amount;
     const userId = list[0]?.userId;
     const eventId = list[0]?.eventId;
-
-    console.log("amount ", amount);
-    console.log("userId ", userId);
-    console.log("eventId ", eventId);
-
-    // const userWalletTransaction = addAmountinWallet({
-    //   amount: amount,
-    //   userId: userId.toString(),
-    // });
-
-    // const adminWalletTransaction = subAmountInAdminWallet({
-    //   amount: amount,
-    // });
-
-    // if (adminWalletTransaction.status === "error") {
-    //   return res.json({
-    //     status: "error",
-    //     message: `Failed To Deduct Amount From Admin Wallet`,
-    //   });
-
-    // }
-
-    // if (userWalletTransaction.status === "error") {
-    //   return res.json({
-    //     status: "error",
-    //     message: `Failed To Add Amount in User Wallet`,
-    //   });
-    // }
+    console.log("List First value ", list);
 
 
-    // list[0].status = "Success";
+    const userWalletTransaction = await addAmountinWallet({
+      amount: amount,
+      userId: userId,
+    });
+
+    const adminWalletTransaction = await subAmountInAdminWallet({
+      amount: amount,
+      userId: userId,
+      eventId: eventId,
+    });
+    console.log("UserWalletTransaction ", userWalletTransaction);
+    console.log("AdminWalletTransaction ", adminWalletTransaction);
+
+    if (adminWalletTransaction.status === "error") {
+      return res.json({
+        status: "error",
+        message: `Failed To Deduct Amount From Admin Wallet`,
+      });
+
+    }
+
+    if (userWalletTransaction.status === "error") {
+      return res.json({
+        status: "error",
+        message: `Failed To Add Amount in User Wallet`,
+      });
+    }
+
+
+    list[0].status = "Success";
+    console.log("list ", list);
+
     // await list[0].save();
 
     res.json({ status: "success", message: "Updated Collaborator Status" });
