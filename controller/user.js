@@ -65,6 +65,8 @@ const {
   UserModel,
   DocumentModel,
   FollowModel,
+  WalletModel,
+  TransactionModel,
 } = require("../model/ModelExport");
 
 // Required Middleware For File Upload & User Authentication
@@ -512,6 +514,49 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
   }
 });
 
+// Getting Wallet & Transaction Details
+UserRouter.get("/me/wallet", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const user = await WalletModel.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
+        },
+      },
+      {
+        $lookup: {
+          from: "transactions", // Foreign collection name
+          let: { userId: "$userId", }, // Define local variables
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$userId", "$$userId"] }, // Match username with author
+                    { $eq: ["$from", "$$userId"] },   // Match email with contact
+                    { $eq: ["$to", "$$userId"] },   // Match email with contact
+                  ]
+                }
+              }
+            }
+          ],
+          as: "transactions" // Name of the output array
+        }
+      }]);
+
+    return res.json({
+      status: "success",
+      user: user
+    });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Error Found in Login Section ${error.message}`,
+    });
+  }
+});
 // Updating User Detail's in the Database.
 
 UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "banner", maxCount: 1 },]), UserAuthentication, async (req, res) => {
@@ -932,6 +977,7 @@ UserRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => 
   }
 },
 );
+
 
 
 // Add Basic Profile Details
