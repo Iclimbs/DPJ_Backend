@@ -65,13 +65,13 @@ PaymentRouter.post("/verification",UserAuthentication, async (req, res) => {
             });
             try {
                 await payment.save();
-
                const upateWalletBalance = addAmountinWallet({ amount: Math.floor(Number(amount / 100)), userId: decoded._id });
                 // Send Message 
                 if (upateWalletBalance.status === "error") {
                     return res.json({ status: 'error', message: `Internal Server Error ${upateWalletBalance.message}` });
                 } else {
                     return res.json({
+                        status: 'success',
                         message: "Payement Successfully"
                     });       
                 }

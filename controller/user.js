@@ -274,10 +274,10 @@ UserRouter.post("/register", async (req, res) => {
       name,
       email,
       password: hash.sha256(password),
-      accountType: accountType, 
+      accountType: accountType,
     });
     try {
-     const newUser = await user.save();
+      const newUser = await user.save();
 
       const wallet = createWallet({ userId: newUser._id });
 
@@ -292,7 +292,7 @@ UserRouter.post("/register", async (req, res) => {
           status: "success",
           message: "Registration Successful",
           redirect: "/user/login",
-        });          
+        });
       }
     } catch (error) {
       res.json({
@@ -607,45 +607,58 @@ UserRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => 
 
 // Step 1 Uploading Documents For Account Verifications :-
 
-// UserRouter.post("/documentupload", upload.single("document"), UserAuthentication, async (req, res) => {
-//   const token = req.headers.authorization.split(" ")[1];
-//   const { accountType, documentType } = req.body;
-//   const profile = req.files['profile'][0];
-//   const banner = req.files['banner'][0];
-//   const decoded = jwt.verify(token, "Authentication");
-//   const user = await UserModel.find({ _id: decoded._id });
-//   try {
-//     user[0].profile = profile;
-//     user[0].banner = banner;
-//     await user[0].save();
-//   } catch (error) {
-//     res.json({
-//       status: "error",
-//       message: `Error Found while trying to upload Documents ${error.message}`,
-//     });
-//   }
+UserRouter.post("/documentupload", uploadMiddleWare.single("document"), UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");  
 
-//   const documentDetails = new DocumentModel({
-//     documentType: documentType,
-//     document: fileName,
-//     userId: decoded._id,
-//   });
-
-//   try {
-//     await documentDetails.save();
-//     return res.json({
-//       status: "success",
-//       message:
-//         "Documents Successfully Uploaded Kindly Wait Till we verify the documents.",
-//     });
-//   } catch (error) {
-//     res.json({
-//       status: "error",
-//       message: `Error Found while trying to upload Documents ${error.message}`,
-//     });
-//   }
-// }
-// );
+  if (!req.file) {
+    return res.json({
+      status: "error",
+      error: "please upload a Document",
+    });
+  }
+  try {
+    const userDocuments = await DocumentModel.find({ userId:decoded._id });
+    
+    if (userDocuments.length == 0 ) {
+      const newDocument = new DocumentModel({
+        document: req.file?.location,
+        userId: decoded._id,
+      })
+      await newDocument.save();
+      return res.json({
+        status: "status",
+        message: "Document Uploaded Successfully Please Wait For 48 Hours Untill Admin Verify Your Document",
+      });
+    }else{
+      if (userDocuments[0].status === "Rejected") {
+        userDocuments[0].document = req.file?.location;
+        userDocuments[0].status = "Pending";
+        await userDocuments[0].save();
+        return res.json({
+          status: "status",
+          message: "Document ReUploaded For Verification Please Wait For 48 Hours Untill Admin Verify Your Document",
+        });
+  
+      } else if(userDocuments[0].status === "Approved"){
+        return res.json({
+          status: "status",
+          message: "Document Already Approved",
+        });
+      }else if(userDocuments[0].status === "Pending"){
+        return res.json({
+          status: "status",
+          message: "Document Already In Pending",
+        });
+      }
+    } 
+  }catch (error) {
+      res.json({
+        status: "error",
+        message: `Error Found while trying to upload Documents ${error.message}`,
+      });
+    }
+});
 
 // Get List of All The Artists From Server It Will Be Based On Email & Category
 
@@ -834,7 +847,7 @@ UserRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
           },
         },
       },
-      {$project:{followerlist:0}}
+      { $project: { followerlist: 0 } }
     ]);
     if (results.length === 0) {
       return res.json({ status: "error", message: "No user found" });

@@ -1,17 +1,22 @@
 const mongoose = require("mongoose");
+const { ObjectId } = mongoose.Schema.Types;
 const documentschema = mongoose.Schema({
-  documentType:{
-    type:String
-  },
   document:{
     type:String,
+    required:true
   },
   userId :{
-    type:String
+    type:ObjectId,
+    required:true
   },
-  verified:{
-    type:Boolean,
-    default: false
+  status:{
+    type:String,
+    default: "Pending",
+    enum:["Pending","Approved","Rejected"]
+  },
+  message:{
+    type:String,
+    default:""
   },
   CreatedAt: { type: Date, default: Date.now },
 });
