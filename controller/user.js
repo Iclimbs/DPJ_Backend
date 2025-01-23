@@ -605,11 +605,11 @@ UserRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => 
 );
 
 
-// Step 1 Uploading Documents For Account Verifications :-
+// Step 1 Uploading Documents For Account Verifications
 
 UserRouter.post("/documentupload", uploadMiddleWare.single("document"), UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");  
+  const decoded = jwt.verify(token, "Authentication");
 
   if (!req.file) {
     return res.json({
@@ -618,9 +618,9 @@ UserRouter.post("/documentupload", uploadMiddleWare.single("document"), UserAuth
     });
   }
   try {
-    const userDocuments = await DocumentModel.find({ userId:decoded._id });
-    
-    if (userDocuments.length == 0 ) {
+    const userDocuments = await DocumentModel.find({ userId: decoded._id });
+
+    if (userDocuments.length == 0) {
       const newDocument = new DocumentModel({
         document: req.file?.location,
         userId: decoded._id,
@@ -630,35 +630,73 @@ UserRouter.post("/documentupload", uploadMiddleWare.single("document"), UserAuth
         status: "status",
         message: "Document Uploaded Successfully Please Wait For 48 Hours Untill Admin Verify Your Document",
       });
-    }else{
+    } else {
       if (userDocuments[0].status === "Rejected") {
         userDocuments[0].document = req.file?.location;
         userDocuments[0].status = "Pending";
-        await userDocuments[0].save();
+        await DocumentModel.findByIdAndUpdate(userDocuments[0]._id, userDocuments[0]);
         return res.json({
           status: "status",
           message: "Document ReUploaded For Verification Please Wait For 48 Hours Untill Admin Verify Your Document",
         });
-  
-      } else if(userDocuments[0].status === "Approved"){
+
+      } else if (userDocuments[0].status === "Approved") {
         return res.json({
           status: "status",
           message: "Document Already Approved",
         });
-      }else if(userDocuments[0].status === "Pending"){
+      } else if (userDocuments[0].status === "Pending") {
         return res.json({
           status: "status",
           message: "Document Already In Pending",
         });
       }
-    } 
-  }catch (error) {
-      res.json({
-        status: "error",
-        message: `Error Found while trying to upload Documents ${error.message}`,
-      });
     }
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Error Found while trying to upload Documents ${error.message}`,
+    });
+  }
 });
+
+// Step 2 Verifying Documents Status For Account Verifications
+
+UserRouter.post("/document/verification/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const userDocuments = await DocumentModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }]);
+    if (userDocuments.length == 0) {
+      return res.json({
+        status: "error",
+        message: "No Document Found For This User",
+      })
+    } else {
+      if (req.body.status == "Approved") {
+        await UserModel.findByIdAndUpdate(userDocuments[0].userId, { verified: true });
+        await DocumentModel.findByIdAndUpdate(userDocuments[0]._id, { status: "Approved" });
+        return res.json({
+          status: "success",
+          message: "Document Approved Successfully",
+        })
+      } else if (req.body.status == "Rejected") {
+        await UserModel.findByIdAndUpdate(userDocuments[0].userId, { verified: false });
+        await DocumentModel.findByIdAndUpdate(userDocuments[0]._id, { status: "Rejected", message: req.body?.message || "Document Rejected By Admin" });
+        return res.json({
+          status: "success",
+          message: "Document Rejected Successfully",
+        })
+
+      }
+    }
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found while trying to Update Document Status ${error.message}`,
+    });
+  }
+});
+
 
 // Get List of All The Artists From Server It Will Be Based On Email & Category
 
