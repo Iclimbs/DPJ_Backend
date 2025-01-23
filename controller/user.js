@@ -623,6 +623,7 @@ UserRouter.post("/documentupload", uploadMiddleWare.single("document"), UserAuth
     if (userDocuments.length == 0) {
       const newDocument = new DocumentModel({
         document: req.file?.location,
+        documentType: req.body?.documentType,
         userId: decoded._id,
       })
       await newDocument.save();
@@ -633,6 +634,7 @@ UserRouter.post("/documentupload", uploadMiddleWare.single("document"), UserAuth
     } else {
       if (userDocuments[0].status === "Rejected") {
         userDocuments[0].document = req.file?.location;
+        userDocuments[0].documentType = req.body?.documentType || userDocuments[0].documentType;
         userDocuments[0].status = "Pending";
         await DocumentModel.findByIdAndUpdate(userDocuments[0]._id, userDocuments[0]);
         return res.json({
@@ -908,7 +910,15 @@ UserRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => 
 
     const results = await UserModel.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
-      { $project: { password: 0, CreatedAt: 0 } }
+      { $project: { password: 0, CreatedAt: 0 } },
+      {
+        $lookup: {
+          from: "documents",
+          localField: "_id",
+          foreignField: "userId",
+          as: "documentdetails",
+        },
+      },
     ]);
     if (results.length === 0) {
       return res.json({ status: "error", message: "No Artist found" });

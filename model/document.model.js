@@ -5,6 +5,10 @@ const documentschema = mongoose.Schema({
     type:String,
     required:true
   },
+  documentType:{
+    type:String,
+    required:true
+  },
   userId :{
     type:ObjectId,
     required:true

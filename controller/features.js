@@ -38,7 +38,7 @@ FeatureRouter.get('/list/active', AdminAuthentication, async (req, res) => {
 
 FeatureRouter.get('/all', AdminAuthentication, async (req, res) => {
     try {
-        const features = await FeaturesModel.find({ status: true });
+        const features = await FeaturesModel.find();
         if (features.length < 1) {
             return res.json({ status: 'error', message: "No Feature Found" });
         } else {
