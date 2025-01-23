@@ -143,18 +143,18 @@ UserRouter.post("/login", async (req, res) => {
             });
           }
 
-          if (
-            userExists[0].category === undefined ||
-            userExists[0].category === ""
-          ) {
-            return res.json({
-              status: "success",
-              message: "Login Successful",
-              token: token,
-              type: userExists[0].accountType,
-              redirect: "/user/basicprofile",
-            });
-          }
+          // if (
+          //   userExists[0].category === undefined ||
+          //   userExists[0].category === ""
+          // ) {
+          //   return res.json({
+          //     status: "success",
+          //     message: "Login Successful",
+          //     token: token,
+          //     type: userExists[0].accountType,
+          //     redirect: "/user/basicprofile",
+          //   });
+          // }
 
           res.json({
             status: "success",

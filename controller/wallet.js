@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const { WalletModel } = require("../model/wallet.model")
 const { TransactionModel } = require("../model/transaction.model");
 const { UserModel } = require("../model/user.model");
+const { default: mongoose } = require("mongoose");
 const WalletRouter = express.Router();
 
 
@@ -12,7 +13,7 @@ const WalletRouter = express.Router();
 const addAmountinWallet = async (props) => {
     const { amount, userId } = props
     const wallet = await WalletModel.find({ userId: userId })
-    wallet[0].balance = wallet[0].balance + amount;
+    wallet[0].balance = wallet[0]?.balance + amount;
 
     try {
         await wallet[0].save()

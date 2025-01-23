@@ -21,6 +21,7 @@ const {
   addAmountinWallet,
   addAmountInAdminWallet,
   subAmountinWallet,
+  subAmountInAdminWallet,
 } = require("./wallet");
 
 const CollabRouter = express.Router();
@@ -472,7 +473,7 @@ CollabRouter.get("/listall/detailone/admin/:id", AdminAuthentication, async (req
               },
             },
             {
-              $lookup: {from:"transactions",localField:"userId",foreignField:"userId",pipeline:[{$match:{eventId:new mongoose.Types.ObjectId(id)}}],as:"transactions"}
+              $lookup: { from: "transactions", localField: "userId", foreignField: "userId", pipeline: [{ $match: { eventId: new mongoose.Types.ObjectId(id) } }], as: "transactions" }
             }
 
           ],
@@ -745,12 +746,43 @@ CollabRouter.post("/update/collab/status/:id", ArtistAuthentication, async (req,
 CollabRouter.post("/success/transaction/status/admin/:id", AdminAuthentication, async (req, res) => {
   const { id } = req.params;
   try {
-    const list = await TransactionModel.find({ _id: id,status: 'In Process'});
-    console.log("list ",list);
+    const list = await TransactionModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id), status: 'In Process' } }]);
     const amount = list[0]?.amount;
     const userId = list[0]?.userId;
     const eventId = list[0]?.eventId;
-    
+
+    console.log("amount ", amount);
+    console.log("userId ", userId);
+    console.log("eventId ", eventId);
+
+    // const userWalletTransaction = addAmountinWallet({
+    //   amount: amount,
+    //   userId: userId.toString(),
+    // });
+
+    // const adminWalletTransaction = subAmountInAdminWallet({
+    //   amount: amount,
+    // });
+
+    // if (adminWalletTransaction.status === "error") {
+    //   return res.json({
+    //     status: "error",
+    //     message: `Failed To Deduct Amount From Admin Wallet`,
+    //   });
+
+    // }
+
+    // if (userWalletTransaction.status === "error") {
+    //   return res.json({
+    //     status: "error",
+    //     message: `Failed To Add Amount in User Wallet`,
+    //   });
+    // }
+
+
+    // list[0].status = "Success";
+    // await list[0].save();
+
     res.json({ status: "success", message: "Updated Collaborator Status" });
   } catch (error) {
     res.json({
