@@ -16,7 +16,6 @@ const razorpayInstance = new Razorpay({
 
 PaymentRouter.post("/checkout", UserAuthentication, async (req, res) => {
     const { amount } = req.body;
-
     try {
         const options = {
             amount: Number(amount * 100),
@@ -40,7 +39,6 @@ PaymentRouter.post("/checkout", UserAuthentication, async (req, res) => {
 PaymentRouter.post("/verification",UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
-
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
 
     try {

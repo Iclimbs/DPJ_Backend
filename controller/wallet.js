@@ -12,15 +12,10 @@ const WalletRouter = express.Router();
 
 const addAmountinWallet = async (props) => {
     const { amount, userId } = props
-    console.log("Add Amount in Wallet", amount, userId);
-
-
     try {
         const wallet = await WalletModel.find({ userId: userId })
         wallet[0].balance = wallet[0]?.balance + amount;
-        console.log(" Add Balance In wallet", wallet);
-
-        // await wallet[0].save()
+        await wallet[0].save()
         return { status: 'success', message: `Successfully Added Balance in Your Wallet` }
     } catch (error) {
         return { status: 'error', message: `Failed To Add Balance in the Wallet ${error.message}` }
@@ -40,28 +35,8 @@ const subAmountinWallet = async (props) => {
     }
 }
 
-
-// WalletRouter.post("/create", async (req, res) => {
-//     const token = req.headers.authorization.split(" ")[1];
-//     const decoded = jwt.verify(token, "Authentication");
-//     try {
-//         const walletlist = await WalletModel.find({ userId: decoded._id })
-//         if (walletlist.length > 0) {
-//             return{ status: 'error', message: `Wallet Already Exists` }
-//         }
-//         const wallet = new WalletModel({ balance: 0, userId: decoded._id })
-//         await wallet.save()
-//        return { status: 'success', message: `Wallet Successfully Created For The User !!` }
-//     } catch (error) {
-//         return { status: 'error', message: `Failed To Create Wallet ${error.message}` }
-//     }
-// })
-
-// Handlint Admin's Wallet Transactions
-
 const addAmountInAdminWallet = async (props) => {
     const { amount, userId, eventId } = props
-    console.log("Add Amount in Admin Wallet", amount, userId, eventId);
     try {
         const user = await UserModel.find({ "accountType": "admin" });
         if (user.length <= 0) {
@@ -86,8 +61,6 @@ const addAmountInAdminWallet = async (props) => {
 
 const subAmountInAdminWallet = async (props) => {
     const { amount, userId, eventId } = props
-    console.log("Sub Amount in Admin Wallet", amount, userId, eventId);
-
 
     try {
         const user = await UserModel.find({ "accountType": "admin" });
@@ -96,15 +69,13 @@ const subAmountInAdminWallet = async (props) => {
         }
         const wallet = await WalletModel.find({ "userId": user[0]._id });
         wallet[0].balance = wallet[0].balance - amount
-
-        console.log("Sub Balance in Admin wallet", wallet);
-
+        
         const transaction = transactionData({ amount: amount, toUserId: userId, fromUserId: user[0]._id, eventId: eventId });
 
         if (transaction.status === "error") {
             return { status: 'error', message: `Failed To Create Transaction Detail ${transaction.message}` }
         } else {
-            // await wallet[0].save()
+            await wallet[0].save()
             return { status: 'success', message: `Successfully Transfered Amount to User Account From Admin Account.` }
         }
     } catch (error) {
@@ -140,7 +111,7 @@ const transactionData = async (props) => {
             to: toUserId,
             eventId: eventId
         })
-        // await transaction.save()
+        await transaction.save()
         return { status: 'success', message: `Successfully Created Transaction Detail` }
     } catch (error) {
         return { status: 'error', message: `Failed To Create Transaction Detail ${error.message}` }

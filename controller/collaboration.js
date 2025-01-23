@@ -750,8 +750,6 @@ CollabRouter.post("/success/transaction/status/admin/:id", AdminAuthentication, 
     const amount = list[0]?.amount;
     const userId = list[0]?.userId;
     const eventId = list[0]?.eventId;
-    console.log("List First value ", list);
-
 
     const userWalletTransaction = await addAmountinWallet({
       amount: amount,
@@ -763,8 +761,6 @@ CollabRouter.post("/success/transaction/status/admin/:id", AdminAuthentication, 
       userId: userId,
       eventId: eventId,
     });
-    console.log("UserWalletTransaction ", userWalletTransaction);
-    console.log("AdminWalletTransaction ", adminWalletTransaction);
 
     if (adminWalletTransaction.status === "error") {
       return res.json({
@@ -781,12 +777,7 @@ CollabRouter.post("/success/transaction/status/admin/:id", AdminAuthentication, 
       });
     }
 
-
-    list[0].status = "Success";
-    console.log("list ", list);
-
-    // await list[0].save();
-
+    const transaction = await TransactionModel.findByIdAndUpdate(id, { status: "Success" }, { new: true });
     res.json({ status: "success", message: "Updated Collaborator Status" });
   } catch (error) {
     res.json({
