@@ -67,6 +67,7 @@ const {
   FollowModel,
   WalletModel,
   TransactionModel,
+  SubscriptionModel,
 } = require("../model/ModelExport");
 
 // Required Middleware For File Upload & User Authentication
@@ -74,6 +75,7 @@ const {
   UserAuthentication,
   uploadMiddleWare,
   AdminAuthentication,
+  ArtistAuthentication,
 } = require("../middleware/MiddlewareExport");
 const { createWallet } = require("./wallet");
 
@@ -562,8 +564,6 @@ UserRouter.get("/me/wallet", UserAuthentication, async (req, res) => {
 UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "banner", maxCount: 1 },]), UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  console.log(req.body);
-
 
   try {
     const updatedUser = await UserModel.findOne({ _id: decoded._id });
@@ -706,6 +706,34 @@ UserRouter.post("/documentupload", uploadMiddleWare.single("document"), UserAuth
     });
   }
 });
+
+// Resume Upload For Artist
+
+UserRouter.post("/resumeupload", uploadMiddleWare.single("resume"), ArtistAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+
+  if (!req.file) {
+    return res.json({
+      status: "error",
+      error: "please upload a Document",
+    });
+  }
+  try {
+    const userDocuments = await UserModel.findByIdAndUpdate(decoded._id, { resume: req.file?.location || "" });
+    return res.json({
+      status: "success",
+      message: `Resume Uploaded Successfully`,
+    });
+
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found while trying to upload Resume ${error.message}`,
+    });
+  }
+});
+
 
 // Step 2 Verifying Documents Status For Account Verifications
 
@@ -978,8 +1006,6 @@ UserRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => 
 },
 );
 
-
-
 // Add Basic Profile Details
 
 UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "banner", maxCount: 1 },]), UserAuthentication, async (req, res) => {
@@ -1163,6 +1189,38 @@ UserRouter.get("/register/google", async (req, res) => {
     return res.json({
       status: "error",
       message: `Error Found in User Registration ${error}`,
+    });
+  }
+});
+
+// User Subscription Plans
+
+UserRouter.get("/subscription/list", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const plan = await SubscriptionModel.aggregate([{ $match: { accountType: decoded.accountType } }, {
+      $lookup: {
+        from: "features", localField: "featurelist", foreignField: "_id", pipeline: [{$match:{"status":true}},{
+          $project: { status: 0, __v: 0 }
+        },], as: "plandetails"
+      }
+    },{$project: { featurelist: 0, __v: 0 } }]);
+    if (plan.length == 0) {
+      return res.json({
+        status: "error",
+        message: "No Subscription Plan Found",
+      });
+    } else {
+      return res.json({
+        status: "success",
+        data: plan,
+      })
+    }
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found While Getting Subscription Plans ${error}`,
     });
   }
 });

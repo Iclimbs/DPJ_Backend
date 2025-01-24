@@ -103,6 +103,10 @@ const userschema = mongoose.Schema({
   skills: {
     type: [String]
   },
+  resume: {
+type: String
+  },
+
   // Professional Specific Details
   companycategory: {
     type: String
@@ -111,7 +115,7 @@ const userschema = mongoose.Schema({
   subscription: {
     type: ObjectId
   },
-  planExpireAt:{
+  planExpireAt: {
     type: Date
   },
   CreatedAt: { type: Date, default: Date.now },
