@@ -501,6 +501,15 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
             as: "walletdetails",
           },
         },
+        {
+          $lookup: {
+            from: "documents",
+            localField: "_id",
+            foreignField: "userId",
+            as: "documentdetails",
+          },
+        },
+
       ]);
       return res.json({
         status: "success",
@@ -673,7 +682,7 @@ UserRouter.post("/documentupload", uploadMiddleWare.single("document"), UserAuth
       })
       await newDocument.save();
       return res.json({
-        status: "status",
+        status: "success",
         message: "Document Uploaded Successfully Please Wait For 48 Hours Untill Admin Verify Your Document",
       });
     } else {
@@ -683,18 +692,18 @@ UserRouter.post("/documentupload", uploadMiddleWare.single("document"), UserAuth
         userDocuments[0].status = "Pending";
         await DocumentModel.findByIdAndUpdate(userDocuments[0]._id, userDocuments[0]);
         return res.json({
-          status: "status",
+          status: "success",
           message: "Document ReUploaded For Verification Please Wait For 48 Hours Untill Admin Verify Your Document",
         });
 
       } else if (userDocuments[0].status === "Approved") {
         return res.json({
-          status: "status",
+          status: "success",
           message: "Document Already Approved",
         });
       } else if (userDocuments[0].status === "Pending") {
         return res.json({
-          status: "status",
+          status: "error",
           message: "Document Already In Pending",
         });
       }
