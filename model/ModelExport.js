@@ -16,35 +16,26 @@ const { ReviewModel } = require("./review.model");
 const { FollowModel } = require("./follow.model");
 const { FeaturesModel } = require("./feature.model");
 const { SubscriptionModel } = require("./subscription.model");
+const { forgotPasswordModel } = require("./forgotPassword.model");
 module.exports = {
   BookedTicketModel,
   BookMarkModel,
   BookMarkModel,
   CollabModel,
-  CollabModel,
-  CommentModel,
   CommentModel,
   DocumentModel,
-  DocumentModel,
-  EventModel,
   EventModel,
   JobModel,
-  JobModel,
-  JobAppliedModel,
   JobAppliedModel,
   LikeModel,
   PostModel,
-  PostModel,
-  TicketModel,
   TicketModel,
   TransactionModel,
-  TransactionModel,
   UserModel,
-  UserModel,
-  WalletModel,
   WalletModel,
   ReviewModel,
   FollowModel,
   FeaturesModel,
   SubscriptionModel,
+  forgotPasswordModel,
 };
