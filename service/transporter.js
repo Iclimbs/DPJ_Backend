@@ -11,14 +11,14 @@ const transporter = nodemailer.createTransport({
 });
 
 // For Gmail
-// const transporter = nodemailer.createTransport({
-//   service: "gmail",
-//   secure: true,
-//   port: 465,
-//   auth: {
-//     user: process.env.user,
-//     pass: process.env.pass,
-//   },
-// });
+const gmailtransporter = nodemailer.createTransport({
+  service: "gmail",
+  secure: true,
+  port: 465,
+  auth: {
+    user: process.env.user,
+    pass: process.env.pass,
+  },
+});
 
-module.exports = { transporter };
+module.exports = { transporter,gmailtransporter };

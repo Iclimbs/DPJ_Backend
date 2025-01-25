@@ -53,12 +53,13 @@ const ejs = require("ejs");
 const jwt = require("jsonwebtoken");
 const path = require("node:path");
 const express = require("express");
+const otpGenerator = require("otp-generator");
 
 // Required Modules For Google Login
 const { oauth2client } = require("../service/googleConfig");
 
 // Required Modules For Sending Email
-const { transporter } = require("../service/transporter");
+const { transporter, gmailtransporter } = require("../service/transporter");
 
 // Required Models
 const {
@@ -310,6 +311,8 @@ UserRouter.post("/register", async (req, res) => {
 // Forgot Password Step 1 Sending Otp in Email
 
 UserRouter.post("/forgot", async (req, res) => {
+  console.log(req.body);
+  
   try {
     const { email } = req.body;
     const userExists = await UserModel.find({ email });
@@ -362,7 +365,7 @@ UserRouter.post("/forgot", async (req, res) => {
               subject: "Otp To Reset Password ",
               html: template,
             };
-            transporter.sendMail(mailOptions, (error, info) => {
+            gmailtransporter.sendMail(mailOptions, (error, info) => {
               if (error) {
                 console.log(error);
                 return res.json({
@@ -390,89 +393,6 @@ UserRouter.post("/forgot", async (req, res) => {
   }
 });
 
-// Module to Send Otp on Email
-
-UserRouter.post("/forgot/phone", async (req, res) => {
-  try {
-    const { phoneno } = req.body;
-    const userExists = await UserModel.find({ phoneno });
-    if (userExists.length === 0) {
-      return res.json({
-        status: "error",
-        message: "No User Exists Please SignUp First",
-        redirect: "/user/register",
-      });
-    } else {
-      let newotp = otpGenerator.generate(6, {
-        upperCaseAlphabets: false,
-        specialChars: false,
-        lowerCaseAlphabets: false,
-      });
-      let forgotpasswordtoken = jwt.sign(
-        {
-          name: userExists[0].name,
-          email: userExists[0].email,
-          phoneno: userExists[0].phoneno,
-          exp: Math.floor(Date.now() / 1000) + 60 * 15,
-        },
-        "Registration",
-      );
-      userExists[0].otp = newotp;
-      userExists[0].forgotpasswordtoken = forgotpasswordtoken;
-      try {
-        await userExists[0].save();
-      } catch (error) {
-        return res.json({
-          status: "error",
-          message: "Failed To Save User New OTP",
-          redirect: "/",
-        });
-      }
-      let forgotPasswordtemplate = path.join(
-        __dirname,
-        "../emailtemplate/forgotPasswordmobile.ejs",
-      );
-      ejs.renderFile(
-        forgotPasswordtemplate,
-        { otp: newotp },
-        function (err, template) {
-          if (err) {
-            res.json({ status: "error", message: err.message });
-          } else {
-            const mailOptions = {
-              from: process.env.emailuser,
-              to: `${userExists[0].email}`,
-              subject: "Otp To Reset Password.",
-              html: template,
-            };
-            transporter.sendMail(mailOptions, (error, info) => {
-              if (error) {
-                console.log(error);
-                return res.json({
-                  status: "error",
-                  message: "Failed to send email",
-                  redirect: "/",
-                });
-              } else {
-                return res.json({
-                  status: "success",
-                  message: "Please Check Your Email",
-                  redirect: "/",
-                  token: forgotpasswordtoken,
-                });
-              }
-            });
-          }
-        },
-      );
-    }
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Error Found in Login Section ${error.message}`,
-    });
-  }
-});
 
 // Getting Basic User Detail's Like username, email & more which is passed via token
 
