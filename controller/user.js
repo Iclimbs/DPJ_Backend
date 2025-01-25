@@ -79,6 +79,7 @@ const {
   ArtistAuthentication,
 } = require("../middleware/MiddlewareExport");
 const { createWallet } = require("./wallet");
+const { forgotPasswordModel } = require("../middleware/password");
 
 const UserRouter = express.Router();
 
@@ -310,9 +311,7 @@ UserRouter.post("/register", async (req, res) => {
 
 // Forgot Password Step 1 Sending Otp in Email
 
-UserRouter.post("/forgot", async (req, res) => {
-  console.log(req.body);
-  
+UserRouter.post("/forgot/web", async (req, res) => {
   try {
     const { email } = req.body;
     const userExists = await UserModel.find({ email });
@@ -332,15 +331,20 @@ UserRouter.post("/forgot", async (req, res) => {
         {
           name: userExists[0].name,
           email: userExists[0].email,
+          userId: userExists[0]._id,
           exp: Math.floor(Date.now() / 1000) + 60 * 15,
         },
-        "Registration",
+        "ResetPassword",
       );
-      let link = `${process.env.domainurl}${newotp}/${forgotpasswordtoken}`;
-      userExists[0].otp = newotp;
-      userExists[0].forgotpasswordtoken = forgotpasswordtoken;
+      let link = `${process.env.domainurl}/${newotp}/${forgotpasswordtoken}`;
       try {
-        await userExists[0].save();
+        const ResetPassword = new forgotPasswordModel({
+          userId: userExists[0]._id,
+          token: forgotpasswordtoken,
+          otp: newotp,
+          expireAt: Date.now() + 15 * 60 * 1000,
+        })
+        await ResetPassword.save();
       } catch (error) {
         return res.json({
           status: "error",
@@ -354,7 +358,7 @@ UserRouter.post("/forgot", async (req, res) => {
       );
       ejs.renderFile(
         forgotPasswordtemplate,
-        { link: link },
+        { link: link, otp: newotp },
         function (err, template) {
           if (err) {
             res.json({ status: "error", message: err.message });
@@ -392,6 +396,94 @@ UserRouter.post("/forgot", async (req, res) => {
     });
   }
 });
+
+UserRouter.post("/forgot/phone", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const userExists = await UserModel.find({ email });
+    if (userExists.length === 0) {
+      return res.json({
+        status: "error",
+        message: "No User Exists With This Email, Please SignUp First",
+        redirect: "/user/register",
+      });
+    } else {
+      let newotp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        specialChars: false,
+        lowerCaseAlphabets: false,
+      });
+      let forgotpasswordtoken = jwt.sign(
+        {
+          name: userExists[0].name,
+          email: userExists[0].email,
+          userId: userExists[0]._id,
+          exp: Math.floor(Date.now() / 1000) + 60 * 15,
+        },
+        "ResetPassword",
+      );
+      try {
+        const ResetPassword = new forgotPasswordModel({
+          userId: userExists[0]._id,
+          token: forgotpasswordtoken,
+          otp: newotp,
+          expireAt: Date.now() + 15 * 60 * 1000,
+        })
+        await ResetPassword.save();
+      } catch (error) {
+        return res.json({
+          status: "error",
+          message: "Failed To Save Use",
+          redirect: "/",
+        });
+      }
+      let forgotPasswordtemplate = path.join(
+        __dirname,
+        "../emailtemplate/forgotPasswordPhone.ejs",
+      );
+      ejs.renderFile(
+        forgotPasswordtemplate,
+        { otp: newotp },
+        function (err, template) {
+          if (err) {
+            res.json({ status: "error", message: err.message });
+          } else {
+            const mailOptions = {
+              from: process.env.emailuser,
+              to: `${userExists[0].email}`,
+              subject: "Otp To Reset Password ",
+              html: template,
+            };
+            gmailtransporter.sendMail(mailOptions, (error, info) => {
+              if (error) {
+                console.log(error);
+                return res.json({
+                  status: "error",
+                  message: "Failed to send email",
+                  redirect: "/",
+                });
+              } else {
+                return res.json({
+                  status: "success",
+                  message: "Please Check Your Email",
+                  redirect: "/",
+                  token:forgotpasswordtoken
+                });
+              }
+            });
+          }
+        },
+      );
+    }
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Error Found in Forgot Password ${error.message}`,
+    });
+  }
+});
+// Forgot Password Step 2 Change Password 
+
 
 
 // Getting Basic User Detail's Like username, email & more which is passed via token
@@ -1130,11 +1222,11 @@ UserRouter.get("/subscription/list", UserAuthentication, async (req, res) => {
   try {
     const plan = await SubscriptionModel.aggregate([{ $match: { accountType: decoded.accountType } }, {
       $lookup: {
-        from: "features", localField: "featurelist", foreignField: "_id", pipeline: [{$match:{"status":true}},{
+        from: "features", localField: "featurelist", foreignField: "_id", pipeline: [{ $match: { "status": true } }, {
           $project: { status: 0, __v: 0 }
         },], as: "plandetails"
       }
-    },{$project: { featurelist: 0, __v: 0 } }]);
+    }, { $project: { featurelist: 0, __v: 0 } }]);
     if (plan.length == 0) {
       return res.json({
         status: "error",
