@@ -1606,7 +1606,9 @@ UserRouter.post(
       await subscriptionlog.save();
 
       let newSubscriptionPlan = userDetails[0]?.subscription
-        ? userDetails[0]?.subscription
+        ? userDetails[0].planExpireAt >= currentDate
+          ? userDetails[0]?.subscription
+          : req.params.id
         : req.params.id;
       let planExpireDate = userDetails[0]?.planExpireAt
         ? userDetails[0].planExpireAt >= currentDate
