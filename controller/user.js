@@ -370,7 +370,7 @@ UserRouter.post("/forgot/web", async (req, res) => {
       }
       let forgotPasswordtemplate = path.join(
         __dirname,
-        "../emailtemplate/forgotPasswordPhone.ejs",
+        "../emailtemplate/forgotPasswordWeb.ejs",
       );
       ejs.renderFile(
         forgotPasswordtemplate,
