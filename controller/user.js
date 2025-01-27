@@ -834,7 +834,7 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
-    const user = await WalletModel.aggregate([
+    const user = await FollowModel.aggregate([
       {
         $match: {
           userId: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
