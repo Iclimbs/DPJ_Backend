@@ -1498,7 +1498,29 @@ UserRouter.get("/subscription/list", UserAuthentication, async (req, res) => {
           as: "plandetails",
         },
       },
-      { $project: { featurelist: 0, __v: 0 } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "subscription",
+          pipeline: [
+            { $match: { _id: new mongoose.Types.ObjectId(decoded._id) } },
+          ],
+          as: "userdetails",
+        },
+      },
+      {
+        $addFields: {
+          isApplied: {
+            $cond: {
+              if: { $gt: [{ $size: "$userdetails" }, 0] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      { $project: { featurelist: 0, __v: 0, userdetails: 0 } },
     ]);
     if (plan.length == 0) {
       return res.json({
@@ -1587,7 +1609,9 @@ UserRouter.post(
         ? userDetails[0]?.subscription
         : req.params.id;
       let planExpireDate = userDetails[0]?.planExpireAt
-        ? getDateAfter30Days(userDetails[0]?.planExpireAt)
+        ? userDetails[0].planExpireAt >= currentDate
+          ? getDateAfter30Days(userDetails[0]?.planExpireAt)
+          : getDateAfter30Days(currentDate)
         : getDateAfter30Days(currentDate);
 
       const userUpdatedDetails = await UserModel.findByIdAndUpdate(
