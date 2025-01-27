@@ -776,6 +776,104 @@ UserRouter.patch(
   },
 );
 
+// Getting List Of All Followers Of an User
+UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const user = await FollowModel.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
+        },
+      },
+      {
+        $unwind: "$followedBy",
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "followedBy",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                profile: 1,
+                accountType: 1,
+                email: 1,
+              },
+            },
+          ],
+          as: "userdetails",
+        },
+      },
+      {
+        $unwind: "$userdetails", // Unwind userdetails to convert it from an array to an object
+      },
+      {
+        $project: { userId: 0, CreatedAt: 0, __v: 0, followedBy: 0 },
+      },
+    ]);
+
+    return res.json({
+      status: "success",
+      user: user,
+    });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Error Found in Login Section ${error.message}`,
+    });
+  }
+});
+
+// Getting list Of All Followings Of Users
+UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const user = await WalletModel.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
+        },
+      },
+      {
+        $lookup: {
+          from: "transactions", // Foreign collection name
+          let: { userId: "$userId" }, // Define local variables
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$userId", "$$userId"] }, // Match username with author
+                    { $eq: ["$from", "$$userId"] }, // Match email with contact
+                    { $eq: ["$to", "$$userId"] }, // Match email with contact
+                  ],
+                },
+              },
+            },
+          ],
+          as: "transactions", // Name of the output array
+        },
+      },
+    ]);
+
+    return res.json({
+      status: "success",
+      user: user,
+    });
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Error Found in Login Section ${error.message}`,
+    });
+  }
+});
+
 // Disable Any User By Admin
 
 UserRouter.patch(
@@ -950,6 +1048,32 @@ UserRouter.post(
     }
   },
 );
+
+// Get Document Details Current Status
+UserRouter.get("/me/document/status", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const userDocuments = await DocumentModel.find({ userId: decoded._id });
+
+    if (userDocuments.length == 0) {
+      return res.json({
+        status: "error",
+        message: "No Document Found For Your Id",
+      });
+    } else {
+      return res.json({
+        status: "success",
+        data: userDocuments,
+      });
+    }
+  } catch (error) {
+    res.json({
+      status: "error",
+      message: `Error Found while trying to Get Current Documents Details ${error.message}`,
+    });
+  }
+});
 
 // Get List of All The Artists From Server It Will Be Based On Email & Category
 
@@ -1484,6 +1608,75 @@ UserRouter.get("/subscription/list", UserAuthentication, async (req, res) => {
   try {
     const plan = await SubscriptionModel.aggregate([
       { $match: { accountType: decoded.accountType } },
+      {
+        $lookup: {
+          from: "features",
+          localField: "featurelist",
+          foreignField: "_id",
+          pipeline: [
+            { $match: { status: true } },
+            {
+              $project: { status: 0, __v: 0 },
+            },
+          ],
+          as: "plandetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "subscription",
+          pipeline: [
+            { $match: { _id: new mongoose.Types.ObjectId(decoded._id) } },
+          ],
+          as: "userdetails",
+        },
+      },
+      {
+        $addFields: {
+          isApplied: {
+            $cond: {
+              if: { $gt: [{ $size: "$userdetails" }, 0] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      { $project: { featurelist: 0, __v: 0, userdetails: 0 } },
+    ]);
+    if (plan.length == 0) {
+      return res.json({
+        status: "error",
+        message: "No Subscription Plan Found",
+      });
+    } else {
+      return res.json({
+        status: "success",
+        data: plan,
+      });
+    }
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found While Getting Subscription Plans ${error}`,
+    });
+  }
+});
+
+// User Subscription Plan Details
+UserRouter.get("/me/subscription", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const plan = await SubscriptionModel.aggregate([
+      {
+        $match: {
+          accountType: decoded.accountType,
+          _id: new mongoose.Types.ObjectId(decoded.subscription),
+        },
+      },
       {
         $lookup: {
           from: "features",
