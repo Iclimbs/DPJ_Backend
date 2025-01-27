@@ -84,6 +84,8 @@ const {
   ArtistAuthentication,
 } = require("../middleware/MiddlewareExport");
 const { createWallet } = require("./wallet");
+const { currentDate, getDateAfter30Days } = require("../service/currentDate");
+const { log } = require("node:console");
 
 const UserRouter = express.Router();
 
@@ -1525,6 +1527,13 @@ UserRouter.post(
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     try {
+      const userDetails = await UserModel.find({ _id: decoded._id });
+      if (userDetails.length === 0) {
+        return res.json({
+          status: "error",
+          message: "No User Found",
+        });
+      }
       const planDetails = await SubscriptionModel.find({
         _id: req.params.id,
         accountType: decoded.accountType,
@@ -1535,9 +1544,9 @@ UserRouter.post(
           message: "No Subscription Plan Detail found",
         });
       }
-      console.log("plan details ", planDetails);
+
       const walletDetails = await WalletModel.find({ userId: decoded._id });
-      console.log("wallet details ", walletDetails);
+
       if (planDetails[0].amount > walletDetails[0].balance) {
         return res.json({
           status: "error",
@@ -1567,13 +1576,31 @@ UserRouter.post(
       const subscriptionlog = new SubscriptionLogs({
         userId: decoded._id,
         planId: req.params.id,
-        purchaseDate: "Today",
-        expireDate: "30days",
+        purchaseDate: currentDate,
+        expireDate: userDetails[0]?.planExpireAt
+          ? getDateAfter30Days(userDetails[0]?.planExpireAt)
+          : getDateAfter30Days(currentDate),
       });
       await subscriptionlog.save();
 
+      let newSubscriptionPlan = userDetails[0]?.subscription
+        ? userDetails[0]?.subscription
+        : req.params.id;
+      let planExpireDate = userDetails[0]?.planExpireAt
+        ? getDateAfter30Days(userDetails[0]?.planExpireAt)
+        : getDateAfter30Days(currentDate);
+
+      const userUpdatedDetails = await UserModel.findByIdAndUpdate(
+        decoded._id,
+        {
+          subscription: newSubscriptionPlan,
+          planExpireAt: planExpireDate,
+        },
+      );
+      console.log("user details ", userUpdatedDetails);
       return res.json({
         status: "success",
+        message: "Subscription Plan Purchased Successfully ",
       });
     } catch (error) {
       return res.json({

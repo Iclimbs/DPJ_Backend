@@ -10,12 +10,12 @@ const addressSchema = new Schema({
     type: String,
   },
   city: {
-    type: String
+    type: String,
   },
   location: {
-    type: String
-  }
-})
+    type: String,
+  },
+});
 
 const socialSchema = new Schema({
   facebook: {
@@ -25,26 +25,25 @@ const socialSchema = new Schema({
     type: String,
   },
   twitter: {
-    type: String
+    type: String,
   },
   instagram: {
-    type: String
-  }
-})
-
+    type: String,
+  },
+});
 
 const userschema = mongoose.Schema({
   // Enable & Disable Account
   verified: {
     type: Boolean,
-    default: false
+    default: false,
   },
   disabled: {
     type: Boolean,
-    default: false
+    default: false,
   },
   description: {
-    type: String
+    type: String,
   },
   // Basic Details Common for all Account Types
   name: {
@@ -52,45 +51,45 @@ const userschema = mongoose.Schema({
     required: true,
   },
   banner: {
-    type: String
+    type: String,
   },
   profile: {
-    type: String
+    type: String,
   },
   address: addressSchema,
   sociallinks: socialSchema,
   email: {
     type: String,
-    required: true
+    required: true,
   },
   phoneno: {
     type: Number,
   },
   password: {
     type: String,
-    required: true
+    required: true,
   },
   otp: {
-    type: Number
+    type: Number,
   },
   signuptoken: {
-    type: String
+    type: String,
   },
   forgotpasswordtoken: {
-    type: String
+    type: String,
   },
   accountType: {
     type: String,
     enum: ["artist", "professional", "guest", "admin"], // Replace with your allowed values
   },
   dob: {
-    type: String
+    type: String,
   },
   category: {
-    type: String
+    type: String,
   },
   documentType: {
-    type: String
+    type: String,
   },
   document: {
     type: String,
@@ -98,25 +97,25 @@ const userschema = mongoose.Schema({
 
   // Artist Specific Details
   gender: {
-    type: String
+    type: String,
   },
   skills: {
-    type: [String]
+    type: [String],
   },
   resume: {
-type: String
+    type: String,
   },
 
   // Professional Specific Details
   companycategory: {
-    type: String
+    type: String,
   },
   //Subscription Details
   subscription: {
-    type: ObjectId
+    type: ObjectId,
   },
   planExpireAt: {
-    type: Date
+    type: String,
   },
   CreatedAt: { type: Date, default: Date.now },
 });
