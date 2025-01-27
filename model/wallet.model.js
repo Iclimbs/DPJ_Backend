@@ -8,7 +8,8 @@ const walletSchema = mongoose.Schema({
     userId: {
         type: ObjectId,
         required: true
-    }
+    },
+    CreatedAt: { type: Date, default: Date.now }
 })
 
 const WalletModel = mongoose.model("Wallet", walletSchema)

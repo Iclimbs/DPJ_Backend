@@ -17,7 +17,8 @@ const subscriptionSchema = mongoose.Schema({
   amount:{
     type: Number,
     required: true
-  }
+  },
+  CreatedAt: { type: Date, default: Date.now },
 });
 
 const SubscriptionModel = mongoose.model("plan", subscriptionSchema);

@@ -61,6 +61,9 @@ const { oauth2client } = require("../service/googleConfig");
 // Required Modules For Sending Email
 const { transporter, gmailtransporter } = require("../service/transporter");
 
+// Transaction Api
+const { transactionData, subAmountinWallet } = require("./wallet");
+
 // Required Models
 const {
   UserModel,
@@ -68,7 +71,9 @@ const {
   FollowModel,
   WalletModel,
   SubscriptionModel,
-  forgotPasswordModel,
+  ForgotPasswordModel,
+  TransactionModel,
+  SubscriptionLogs,
 } = require("../model/ModelExport");
 
 // Required Middleware For File Upload & User Authentication
@@ -79,7 +84,6 @@ const {
   ArtistAuthentication,
 } = require("../middleware/MiddlewareExport");
 const { createWallet } = require("./wallet");
-const { log } = require("node:console");
 
 const UserRouter = express.Router();
 
@@ -338,7 +342,7 @@ UserRouter.post("/forgot/web", async (req, res) => {
       );
       let link = `${process.env.domainurl}/${newotp}/${forgotpasswordtoken}`;
       try {
-        const existstoken = await forgotPasswordModel.find({
+        const existstoken = await ForgotPasswordModel.find({
           userId: userExists[0]._id,
         });
         if (existstoken.length !== 0) {
@@ -348,7 +352,7 @@ UserRouter.post("/forgot/web", async (req, res) => {
               "Check Your mailbox You can still use your old otp to reset the password ",
           });
         }
-        const ResetPassword = new forgotPasswordModel({
+        const ResetPassword = new ForgotPasswordModel({
           userId: userExists[0]._id,
           token: forgotpasswordtoken,
           otp: newotp,
@@ -433,7 +437,7 @@ UserRouter.post("/forgot/phone", async (req, res) => {
         "ResetPassword",
       );
       try {
-        const existstoken = await forgotPasswordModel.find({
+        const existstoken = await ForgotPasswordModel.find({
           userId: userExists[0]._id,
         });
         if (existstoken.length !== 0) {
@@ -443,7 +447,7 @@ UserRouter.post("/forgot/phone", async (req, res) => {
               "Check Your mailbox You can still use your old otp to reset the password ",
           });
         }
-        const ResetPassword = new forgotPasswordModel({
+        const ResetPassword = new ForgotPasswordModel({
           userId: userExists[0]._id,
           token: forgotpasswordtoken,
           otp: newotp,
@@ -496,7 +500,7 @@ UserRouter.post("/forgot/phone", async (req, res) => {
       );
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Error Found in Forgot Password ${error.message}`,
     });
@@ -509,7 +513,7 @@ UserRouter.post("/changePassword/phone", async (req, res) => {
   const { otp, password, cnfpassword } = req.body;
   try {
     const decoded = jwt.verify(token, "ResetPassword");
-    const otpkey = await forgotPasswordModel.aggregate([
+    const otpkey = await ForgotPasswordModel.aggregate([
       {
         $match: { userId: new mongoose.Types.ObjectId(decoded.userId) },
       },
@@ -553,7 +557,7 @@ UserRouter.post("/changePassword/web", async (req, res) => {
   const { otp, password, cnfpassword } = req.body;
   try {
     const decoded = jwt.verify(token, "ResetPassword");
-    const otpkey = await forgotPasswordModel.aggregate([
+    const otpkey = await ForgotPasswordModel.aggregate([
       {
         $match: { userId: new mongoose.Types.ObjectId(decoded.userId) },
       },
@@ -580,7 +584,7 @@ UserRouter.post("/changePassword/web", async (req, res) => {
     const user = await UserModel.findByIdAndUpdate(decoded.userId, {
       password: hash.sha256(password),
     });
-    const deletetoken = await forgotPasswordModel.findByIdAndDelete(
+    const deletetoken = await ForgotPasswordModel.findByIdAndDelete(
       decoded.userId,
     );
     return res.json({
@@ -1344,7 +1348,7 @@ UserRouter.get("/register/google", async (req, res) => {
     const { email, name, picture } = result;
     let user = await UserModel.findOne({ email });
     if (!user) {
-      user = new UserModel({ name, email, picture, verified: { email: true } });
+      user = new UserModel({ name, email, picture });
       await user.save();
       let token = jwt.sign(
         {
@@ -1360,6 +1364,31 @@ UserRouter.get("/register/google", async (req, res) => {
         token: token,
       });
     } else {
+      if (user.dob === undefined || user.dob === "") {
+        return res.json({
+          status: "success",
+          message: "Login Successful",
+          token: token,
+          redirect: "/user/basicprofile",
+        });
+      }
+      if (user.profile === undefined || user.profile === "") {
+        return res.json({
+          status: "success",
+          message: "Login Successful",
+          token: token,
+          redirect: "/user/basicprofile",
+        });
+      }
+      if (user.accountType === undefined || user.accountType === "") {
+        return res.json({
+          status: "success",
+          message: "Login Successful",
+          token: token,
+          redirect: "/user/basicprofile",
+        });
+      }
+
       let token = jwt.sign(
         {
           name: user.name,
@@ -1381,6 +1410,69 @@ UserRouter.get("/register/google", async (req, res) => {
     });
   }
 });
+
+UserRouter.get(
+  "/basicdetails/update/google",
+  uploadMiddleWare.fields([
+    { name: "profile", maxCount: 1 },
+    { name: "banner", maxCount: 1 },
+  ]),
+  UserAuthentication,
+  async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    const { gender, country, state, city, dob, category, accountType } =
+      req.body;
+
+    if (!req?.files?.profile) {
+      return res.json({
+        status: "error",
+        error: "please upload a Profile Image",
+      });
+    }
+
+    if (!req?.files?.banner) {
+      return res.json({
+        status: "error",
+        error: "please upload a Banner Image",
+      });
+    }
+
+    try {
+      const user = await UserModel.findOne({ _id: decoded._id });
+      user.gender = gender;
+      user.dob = dob;
+      user.category = category || "";
+      user.accountType = accountType;
+
+      if (!user.address) {
+        user.address = {}; // Initialize address if it doesn't exist
+      }
+
+      // Safely update address fields
+      user.address.country = country || user.address.country;
+      user.address.state = state || user.address.state;
+      user.address.city = city || user.address.city;
+
+      if (!!req?.files.profile) {
+        user.profile = req.files.profile[0].location;
+      }
+      if (!!req?.files.banner) {
+        user.banner = req.files.banner[0].location;
+      }
+      await user.save();
+      res.json({
+        status: "success",
+        message: `Successfully Updated Basic Profile Details`,
+      });
+    } catch (error) {
+      res.json({
+        status: "error",
+        message: `Error Found while trying to upload Documents ${error.message}`,
+      });
+    }
+  },
+);
 
 // User Subscription Plans
 
@@ -1425,6 +1517,71 @@ UserRouter.get("/subscription/list", UserAuthentication, async (req, res) => {
   }
 });
 
-// Admin Routes
+// Purchase Subscription
+UserRouter.post(
+  "/subscription/purchase/:id",
+  UserAuthentication,
+  async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    try {
+      const planDetails = await SubscriptionModel.find({
+        _id: req.params.id,
+        accountType: decoded.accountType,
+      });
+      if (planDetails.length === 0) {
+        return res.json({
+          status: "error",
+          message: "No Subscription Plan Detail found",
+        });
+      }
+      console.log("plan details ", planDetails);
+      const walletDetails = await WalletModel.find({ userId: decoded._id });
+      console.log("wallet details ", walletDetails);
+      if (planDetails[0].amount > walletDetails[0].balance) {
+        return res.json({
+          status: "error",
+          message:
+            "You Don't have enough balance in your wallet. Please Recharge To Purchase This Subscription Plan",
+        });
+      }
+      const subscribetransaction = new TransactionModel({
+        amount: planDetails[0].amount,
+        type: "Debit",
+        userId: decoded._id,
+        status: "Success",
+        paymentId: "Subscription Purchase",
+      });
+      await subscribetransaction.save();
+      const walletupdate = await subAmountinWallet({
+        amount: planDetails[0].amount,
+        userId: decoded._id,
+      });
+      if (walletupdate.status === "error") {
+        return res.json({
+          status: "error",
+          message: walletupdate.message,
+        });
+      }
+
+      const subscriptionlog = new SubscriptionLogs({
+        userId: decoded._id,
+        planId: req.params.id,
+        purchaseDate: "Today",
+        expireDate: "30days",
+      });
+      await subscriptionlog.save();
+
+      return res.json({
+        status: "success",
+      });
+    } catch (error) {
+      return res.json({
+        status: "error",
+        message: `Error Found While Getting Subscription Plans ${error}`,
+      });
+    }
+  },
+);
 
 module.exports = { UserRouter };

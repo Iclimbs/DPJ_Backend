@@ -16,7 +16,8 @@ const { ReviewModel } = require("./review.model");
 const { FollowModel } = require("./follow.model");
 const { FeaturesModel } = require("./feature.model");
 const { SubscriptionModel } = require("./subscription.model");
-const { forgotPasswordModel } = require("./forgotPassword.model");
+const { ForgotPasswordModel } = require("./forgotPassword.model");
+const {SubscriptionLogs} = require("./subscription.log.model")
 module.exports = {
   BookedTicketModel,
   BookMarkModel,
@@ -37,5 +38,6 @@ module.exports = {
   FollowModel,
   FeaturesModel,
   SubscriptionModel,
-  forgotPasswordModel,
+  ForgotPasswordModel,
+  SubscriptionLogs
 };

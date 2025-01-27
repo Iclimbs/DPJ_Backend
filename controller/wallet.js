@@ -45,7 +45,7 @@ const addAmountInAdminWallet = async (props) => {
         const wallet = await WalletModel.find({ "userId": user[0]._id });
         wallet[0].balance = wallet[0].balance + amount
 
-        const transaction = transactionData({ amount: amount, fromUserId: userId, toUserId: user[0]._id, eventId: eventId });
+      const transaction = transactionData({ amount: amount, type:"Credit", fromUserId: userId, toUserId: user[0]._id, eventId: eventId });
 
         if (transaction.status === "error") {
             return { status: 'error', message: `Failed To Create Transaction Detail ${transaction.message}` }
@@ -69,8 +69,8 @@ const subAmountInAdminWallet = async (props) => {
         }
         const wallet = await WalletModel.find({ "userId": user[0]._id });
         wallet[0].balance = wallet[0].balance - amount
-        
-        const transaction = transactionData({ amount: amount, toUserId: userId, fromUserId: user[0]._id, eventId: eventId });
+
+        const transaction = transactionData({ amount: amount,type:"Debit", toUserId: userId, fromUserId: user[0]._id, eventId: eventId });
 
         if (transaction.status === "error") {
             return { status: 'error', message: `Failed To Create Transaction Detail ${transaction.message}` }
@@ -99,17 +99,16 @@ const createWallet = async (props) => {
 }
 
 const transactionData = async (props) => {
-    const { amount, fromUserId, toUserId, eventId } = props
     try {
         const transaction = new TransactionModel({
-            amount: amount,
-            userId: fromUserId,
-            type: "Credit",
+            amount: props?.amount,
+            userId: props?.userId || props?.fromUserId,
+            type: props?.type,
             status: "Success",
             method: "Wallet",
-            from: fromUserId,
-            to: toUserId,
-            eventId: eventId
+            from: props?.fromUserId || "",
+            to: props?.toUserId || "",
+            eventId: props?.eventId || ""
         })
         await transaction.save()
         return { status: 'success', message: `Successfully Created Transaction Detail` }
@@ -118,4 +117,4 @@ const transactionData = async (props) => {
     }
 }
 
-module.exports = { addAmountinWallet, createWallet, WalletRouter, subAmountinWallet, addAmountInAdminWallet, subAmountInAdminWallet }
+module.exports = {transactionData, addAmountinWallet, createWallet, WalletRouter, subAmountinWallet, addAmountInAdminWallet, subAmountInAdminWallet }

@@ -1,5 +1,5 @@
+// Getting Current Date
 const dateObj = new Date();
-// Creating Date
 const month =
   dateObj.getUTCMonth() + 1 < 10
     ? String(dateObj.getUTCMonth() + 1).padStart(2, "0")
@@ -10,9 +10,10 @@ const day =
     : dateObj.getUTCDate();
 const year = dateObj.getUTCFullYear();
 const currentDate = year + "-" + month + "-" + day;
-// Creating Date Time
+// Current Date In String
 const currentDateTimeISO = dateObj.toISOString();
 
+// Getting 30 days After Current Date
 const today = new Date();
 const futureDate = new Date(today);
 futureDate.setDate(today.getDate() + 30); // Add 30 days
@@ -21,10 +22,25 @@ const futureyear = String(futureDate.getFullYear()).slice(2); // Get last two di
 const futuremonth = String(futureDate.getMonth() + 1).padStart(2, "0"); // Months are 0-based
 const futureday = String(futureDate.getDate()).padStart(2, "0");
 
-const future = `${futureyear}-${futuremonth}-${futureday}`;
-console.log(formattedDate);
+const futuredate = `${futureyear}-${futuremonth}-${futureday}`;
 
-console.log("currentDate", currentDate);
-console.log("iso ", currentDateTimeISO);
+function getDateAfter30Days(inputDate) {
+  // Parse the input date
+  const date = new Date(inputDate);
 
-module.exports = { currentDate, currentDateTimeISO };
+  // Add 30 days to the date
+  date.setDate(date.getDate() + 30);
+
+  // Format the resulting date as YYYY-MM-DD
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-based
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+// Example usage
+const inputDate = "2025-01-26";
+console.log(getDateAfter30Days(inputDate)); // Output: 2025-02-25
+
+module.exports = { futuredate, currentDate, currentDateTimeISO };
