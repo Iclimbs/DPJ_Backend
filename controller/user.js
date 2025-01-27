@@ -1698,6 +1698,7 @@ UserRouter.get("/me/subscription", UserAuthentication, async (req, res) => {
           foreignField: "subscription",
           pipeline: [
             { $match: { _id: new mongoose.Types.ObjectId(decoded._id) } },
+            { $project: { planExpireAt: 1 } },
           ],
           as: "userdetails",
         },
@@ -1713,7 +1714,7 @@ UserRouter.get("/me/subscription", UserAuthentication, async (req, res) => {
           },
         },
       },
-      { $project: { featurelist: 0, __v: 0, userdetails: 0 } },
+      { $project: { featurelist: 0, __v: 0 } },
     ]);
     if (plan.length == 0) {
       return res.json({
