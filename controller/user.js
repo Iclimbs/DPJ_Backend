@@ -803,6 +803,7 @@ UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
                 profile: 1,
                 accountType: 1,
                 email: 1,
+                category: 1,
               },
             },
           ],
@@ -850,8 +851,49 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
           from: "users",
           localField: "userId",
           foreignField: "_id",
-          pipeline: [{ $project: { profile: 1, name: 1, email: 1 } }],
+          pipeline: [
+            { $project: { profile: 1, name: 1, email: 1, category: 1 } },
+          ],
           as: "userDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "followers",
+          localField: "followedBy",
+          foreignField: "userId",
+          as: "myDetails",
+        },
+      },
+      {
+        $addFields: {
+          followStatus: {
+            $map: {
+              input: "$userDetails",
+              as: "user",
+              in: {
+                $cond: {
+                  if: {
+                    $in: [
+                      "$$user._id",
+                      { $arrayElemAt: ["$myDetails.followedBy", 0] },
+                    ],
+                  },
+                  then: true,
+                  else: false,
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          myDetails: 0,
+          __v: 0,
+          CreatedAt: 0,
+          userId: 0,
+          followedBy: 0,
         },
       },
     ]);
