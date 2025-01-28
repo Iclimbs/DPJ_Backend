@@ -151,4 +151,55 @@ ChatRouter.post("/logout", async (req, res) => {
   }
 });
 
+ChatRouter.post("/startchat", async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const id = decoded._id;
+  const name = decoded.name;
+  const image = decoded.profile;
+
+  if (!id || !name) {
+    return res.json({
+      status: "error",
+      message: "User Id Required For SignUp",
+    });
+  }
+
+  try {
+    const existingUsers = await streamChat.queryUsers({ id });
+
+    if (existingUsers.users.length > 0) {
+      const token = streamChat.createToken(id);
+      const user = existingUsers.users[0];
+
+      TOKEN_USER_ID_MAP.set(token, user.id);
+      return res.json({
+        status: "success",
+        data: { token: token, user: user.name, id: user.id, image: user.image },
+      });
+    }
+
+    await streamChat.upsertUser({ id, name, image });
+
+    const newUsers = await streamChat.queryUsers({ id });
+
+    if (newUsers.users.length > 0) {
+      const token = streamChat.createToken(id);
+      const user = newUsers.users[0];
+
+      TOKEN_USER_ID_MAP.set(token, user.id);
+      return res.json({
+        status: "success",
+        data: { token: token, user: user.name, id: user.id, image: user.image },
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.json({
+      status: "error",
+      message: `Stream SignUp Failed  error.message`,
+    });
+  }
+});
+
 module.exports = ChatRouter;
