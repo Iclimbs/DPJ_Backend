@@ -1809,6 +1809,7 @@ UserRouter.post(
       const subscribetransaction = new TransactionModel({
         amount: planDetails[0].amount,
         type: "Debit",
+        message: "Subscibing To New Plan",
         userId: decoded._id,
         status: "Success",
         paymentId: "Subscription Purchase",
