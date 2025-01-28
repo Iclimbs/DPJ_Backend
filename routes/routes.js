@@ -9,7 +9,8 @@ const { WalletRouter } = require("../controller/wallet");
 const { ReviewRouter } = require("../controller/review");
 const { SubscriptionRouter } = require("../controller/subscription");
 const { FeatureRouter } = require("../controller/features");
-const {PaymentRouter} = require("../controller/payment")
+const { PaymentRouter } = require("../controller/payment");
+const ChatRouter = require("../controller/chat");
 
 router
   .use("/user", UserRouter)
@@ -21,7 +22,8 @@ router
   .use("/tickets", TicketRouter)
   .use("/review", ReviewRouter)
   .use("/subscription", SubscriptionRouter)
-  .use("/features",FeatureRouter )
+  .use("/features", FeatureRouter)
   .use("/payment", PaymentRouter)
+  .use("/chat", ChatRouter);
 
 module.exports = router;

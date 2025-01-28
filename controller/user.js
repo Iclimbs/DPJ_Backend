@@ -837,27 +837,21 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
     const user = await FollowModel.aggregate([
       {
         $match: {
-          userId: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
+          followedBy: {
+            $elemMatch: {
+              $eq: new mongoose.Types.ObjectId(decoded._id), // Check if the userId is in the followedBy array
+            },
+          },
         },
       },
+      { $unwind: "$followedBy" },
       {
         $lookup: {
-          from: "transactions", // Foreign collection name
-          let: { userId: "$userId" }, // Define local variables
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $eq: ["$userId", "$$userId"] }, // Match username with author
-                    { $eq: ["$from", "$$userId"] }, // Match email with contact
-                    { $eq: ["$to", "$$userId"] }, // Match email with contact
-                  ],
-                },
-              },
-            },
-          ],
-          as: "transactions", // Name of the output array
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          pipeline: [{ $project: { profile: 1, name: 1, email: 1 } }],
+          as: "userDetails",
         },
       },
     ]);

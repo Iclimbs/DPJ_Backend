@@ -28,6 +28,7 @@
     "nodemailer": "^6.9.14",
     "otp-generator": "^4.0.1",
     "razorpay": "^2.9.5",
+    "stream-chat": "^8.52.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
