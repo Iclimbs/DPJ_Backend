@@ -39,10 +39,6 @@ function getDateAfter30Days(inputDate) {
   return `${year}-${month}-${day}`;
 }
 
-// Example usage
-const inputDate = "2025-01-26";
-console.log(typeof getDateAfter30Days(inputDate)); // Output: 2025-02-25
-
 module.exports = {
   futuredate,
   currentDate,

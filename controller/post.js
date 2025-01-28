@@ -16,7 +16,7 @@ const {
   AdminAuthentication,
   uploadMiddleWare,
   UserAuthentication,
-  PostCreationChecker
+  PostCreationChecker,
 } = require("../middleware/MiddlewareExport");
 const { default: mongoose } = require("mongoose");
 
@@ -25,37 +25,40 @@ const PostRouter = express.Router();
 // Api's For Post
 
 // Api To Add New Post
-PostRouter.post("/add", [PostCreationChecker, uploadMiddleWare.single("media"), UserAuthentication], async (req, res) => {
-  if (!req?.file) {
-    res.json({
-      status: "error",
-      message: `Please Upload Image Or Video For Post`,
-    });
-  }
+PostRouter.post(
+  "/add",
+  [PostCreationChecker, UserAuthentication, uploadMiddleWare.single("media")],
+  async (req, res) => {
+    if (!req?.file) {
+      return res.json({
+        status: "error",
+        message: `Please Upload Image Or Video For Post`,
+      });
+    }
 
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
-  const { description } = req.body;
-  const post = new PostModel({
-    media: req.file.location,
-    description: description,
-    createdBy: decoded._id,
-    mediaType: req.file.mimetype.split("/")[0],
-    isVideo: req.file.mimetype.split("/")[0] == "video" ? true : false,
-  });
-  try {
-    await post.save();
-    res.json({
-      status: "success",
-      message: `Post Created Successfully`,
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    const { description } = req.body;
+    const post = new PostModel({
+      media: req.file.location,
+      description: description,
+      createdBy: decoded._id,
+      mediaType: req.file.mimetype.split("/")[0],
+      isVideo: req.file.mimetype.split("/")[0] == "video" ? true : false,
     });
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Failed To Add  ${error.message}`,
-    });
-  }
-},
+    try {
+      await post.save();
+      return res.json({
+        status: "success",
+        message: `Post Created Successfully`,
+      });
+    } catch (error) {
+      return res.json({
+        status: "error",
+        message: `Failed To Add  ${error.message}`,
+      });
+    }
+  },
 );
 
 // Api To Get All Post List Created By User
@@ -64,7 +67,12 @@ PostRouter.get("/listall", UserAuthentication, async (req, res) => {
   const decoded = jwt.verify(token, "Authentication");
   try {
     const result = await PostModel.aggregate([
-      { $match: { createdBy: new mongoose.Types.ObjectId(decoded._id), disabled: false } },
+      {
+        $match: {
+          createdBy: new mongoose.Types.ObjectId(decoded._id),
+          disabled: false,
+        },
+      },
       {
         $lookup: {
           from: "comments",
@@ -76,18 +84,18 @@ PostRouter.get("/listall", UserAuthentication, async (req, res) => {
       { $sort: { CreatedAt: -1 } },
     ]);
     if (result.length == 0) {
-      res.json({
+      return res.json({
         status: "error",
         message: "No Post Created By User",
       });
     } else {
-      res.json({
+      return res.json({
         status: "success",
         data: result,
       });
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Get Post Detail's ${error.message}`,
     });
@@ -96,178 +104,191 @@ PostRouter.get("/listall", UserAuthentication, async (req, res) => {
 
 // Api To Get All Detail Of A Particular Post Created By User
 
-PostRouter.get("/details/:id", UserAuthentication, async (req, res) => {
-  const { id } = req.params;
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
+PostRouter.get(
+  "/details/:id",
+  [UserAuthentication, PostCreationChecker],
+  async (req, res) => {
+    const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
 
-  try {
-    const post = await PostModel.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(id), disabled: false } },
-      {
-        $lookup: {
-          from: "comments",
-          localField: "_id",
-          foreignField: "postId",
-          as: "comments",
+    try {
+      const post = await PostModel.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(id), disabled: false } },
+        {
+          $lookup: {
+            from: "comments",
+            localField: "_id",
+            foreignField: "postId",
+            as: "comments",
+          },
         },
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "createdBy",
-          foreignField: "_id",
-          as: "userdetails",
-          pipeline: [
-            {
-              $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 },
+        {
+          $lookup: {
+            from: "users",
+            localField: "createdBy",
+            foreignField: "_id",
+            as: "userdetails",
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  category: 1,
+                  profile: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: "bookmarks",
+            localField: "_id",
+            foreignField: "postId",
+            as: "bookmarks",
+          },
+        },
+        {
+          $addFields: {
+            bookmark: {
+              $in: [
+                new mongoose.Types.ObjectId(decoded._id),
+                "$bookmarks.bookmarkedBy",
+              ],
             },
-          ],
-        },
-      },
-      {
-        $lookup: {
-          from: "bookmarks",
-          localField: "_id",
-          foreignField: "postId",
-          as: "bookmarks",
-        },
-      },
-      {
-        $addFields: {
-          bookmark: {
-            $in: [
-              new mongoose.Types.ObjectId(decoded._id),
-              "$bookmarks.bookmarkedBy",
-            ],
           },
         },
-      },
-      {
-        $lookup: {
-          from: "followers",
-          localField: "createdBy",
-          foreignField: "userId",
-          as: "followerlist",
+        {
+          $lookup: {
+            from: "followers",
+            localField: "createdBy",
+            foreignField: "userId",
+            as: "followerlist",
+          },
         },
-      },
-      {
-        $addFields: {
-          followstatus: {
-            $in: [
-              new mongoose.Types.ObjectId(decoded._id),
-              {
-                $reduce: {
-                  input: "$followerlist",
-                  initialValue: [],
-                  in: { $concatArrays: ["$$value", "$$this.followedBy"] }, // Flatten the likedBy arrays
+        {
+          $addFields: {
+            followstatus: {
+              $in: [
+                new mongoose.Types.ObjectId(decoded._id),
+                {
+                  $reduce: {
+                    input: "$followerlist",
+                    initialValue: [],
+                    in: { $concatArrays: ["$$value", "$$this.followedBy"] }, // Flatten the likedBy arrays
+                  },
                 },
-              },
-            ],
+              ],
+            },
           },
         },
-      },
-      {
-        $lookup: {
-          from: "likes",
-          localField: "_id",
-          foreignField: "postId",
-          as: "like",
+        {
+          $lookup: {
+            from: "likes",
+            localField: "_id",
+            foreignField: "postId",
+            as: "like",
+          },
         },
-      },
-      {
-        $addFields: {
-          likestatus: {
-            $in: [
-              new mongoose.Types.ObjectId(decoded._id),
-              {
-                $reduce: {
-                  input: "$like",
-                  initialValue: [],
-                  in: { $concatArrays: ["$$value", "$$this.likedBy"] }, // Flatten the likedBy arrays
+        {
+          $addFields: {
+            likestatus: {
+              $in: [
+                new mongoose.Types.ObjectId(decoded._id),
+                {
+                  $reduce: {
+                    input: "$like",
+                    initialValue: [],
+                    in: { $concatArrays: ["$$value", "$$this.likedBy"] }, // Flatten the likedBy arrays
+                  },
                 },
-              },
-            ],
+              ],
+            },
           },
         },
-      },
-      {
-        $project: { followerlist: 0 },
-      },
-      { $sort: { CreatedAt: -1 } },
-    ]);
-    if (post.length == 0) {
-      res.json({
+        {
+          $project: { followerlist: 0 },
+        },
+        { $sort: { CreatedAt: -1 } },
+      ]);
+      if (post.length == 0) {
+        return res.json({
+          status: "error",
+          message: "No Post Created By User",
+        });
+      } else {
+        return res.json({
+          status: "success",
+          data: post,
+        });
+      }
+    } catch (error) {
+      return res.json({
         status: "error",
-        message: "No Post Created By User",
-      });
-    } else {
-      res.json({
-        status: "success",
-        data: post,
+        message: `Failed To Get Details Of A Particular Event ${error.message}`,
       });
     }
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Failed To Get Details Of A Particular Event ${error.message}`,
-    });
-  }
-});
+  },
+);
 
 // Api To Edit Detail's Of A Particular Post Created By User
 
-PostRouter.patch("/edit/:id", uploadMiddleWare.single("media"), UserAuthentication, async (req, res) => {
-  const { id } = req.params;
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
+PostRouter.patch(
+  "/edit/:id",
+  [PostCreationChecker, UserAuthentication, uploadMiddleWare.single("media")],
+  async (req, res) => {
+    const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
 
-  try {
-    const post = await PostModel.aggregate([
-      {
-        $match: {
-          _id: new mongoose.Types.ObjectId(id),
-          createdBy: new mongoose.Types.ObjectId(decoded._id),
-          disabled: false
+    try {
+      const post = await PostModel.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(id),
+            createdBy: new mongoose.Types.ObjectId(decoded._id),
+            disabled: false,
+          },
         },
-      },
-    ]);
-    if (post.length == 0) {
-      res.json({
-        status: "error",
-        message: "No Post Created By User",
-      });
-    } else {
-      let isVideovalue;
-      if (req.file) {
-        isVideovalue =
-          req.file?.mimetype.split("/")[0] == "video" ? true : false;
+      ]);
+      if (post.length == 0) {
+        return res.json({
+          status: "error",
+          message: "No Post Created By User",
+        });
       } else {
-        isVideovalue = post[0].isVideo;
-      }
+        let isVideovalue;
+        if (req.file) {
+          isVideovalue =
+            req.file?.mimetype.split("/")[0] == "video" ? true : false;
+        } else {
+          isVideovalue = post[0].isVideo;
+        }
 
-      const updatedPost = {
-        ...req.body,
-        description: req.body?.description || post[0].description,
-        media: req.file?.location || post[0].media,
-        mediaType: req.file?.mimetype.split("/")[0] || post[0].mimetype,
-        isVideo: isVideovalue,
-      };
-      const newpost = await PostModel.findByIdAndUpdate(id, updatedPost, {
-        new: true, // Return the updated document
-      });
-      res.json({
-        status: "success",
-        message: "Post Updated Successfully",
+        const updatedPost = {
+          ...req.body,
+          description: req.body?.description || post[0].description,
+          media: req.file?.location || post[0].media,
+          mediaType: req.file?.mimetype.split("/")[0] || post[0].mimetype,
+          isVideo: isVideovalue,
+        };
+        const newpost = await PostModel.findByIdAndUpdate(id, updatedPost, {
+          new: true, // Return the updated document
+        });
+        return res.json({
+          status: "success",
+          message: "Post Updated Successfully",
+        });
+      }
+    } catch (error) {
+      return res.json({
+        status: "error",
+        message: `Failed To Update Event Details ${error.message}`,
       });
     }
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Failed To Update Event Details ${error.message}`,
-    });
-  }
-},
+  },
 );
 
 // Api To Get All Post List For Admin
@@ -277,27 +298,42 @@ PostRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
     const result = await PostModel.aggregate([
       {
         $lookup: {
-          from: "users", localField: "createdBy", foreignField: "_id",
-          pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }]
-          , as: "userdetails"
-        }
-      }
-      , { $lookup: { from: "comments", localField: "_id", foreignField: "postId", pipeline: [{ $project: { postId: 0, CreatedAt: 0, __v: 0 } }], as: "comments" } },
-      { $sort: { CreatedAt: -1 } }]);
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 },
+            },
+          ],
+          as: "userdetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "postId",
+          pipeline: [{ $project: { postId: 0, CreatedAt: 0, __v: 0 } }],
+          as: "comments",
+        },
+      },
+      { $sort: { CreatedAt: -1 } },
+    ]);
 
     if (result.length == 0) {
-      res.json({
+      return res.json({
         status: "error",
         message: "No Post Created By User",
       });
     } else {
-      res.json({
+      return res.json({
         status: "success",
         data: result,
       });
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Get Post Detail's ${error.message}`,
     });
@@ -306,56 +342,84 @@ PostRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
 
 // Api To Get Full Detail Of A Particular Post Created By User For Admin
 
-PostRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => {
-  try {
-    const result = await PostModel.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
-      {
-        $lookup: {
-          from: "users", localField: "createdBy", foreignField: "_id",
-          pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 } }]
-          , as: "userdetails"
-        }
-      }
-      , { $lookup: { from: "comments", localField: "_id", foreignField: "postId", pipeline: [{ $project: { postId: 0, CreatedAt: 0, __v: 0 } }], as: "comments" } },
-      { $sort: { CreatedAt: -1 } }]);
+PostRouter.get(
+  "/detailone/admin/:id",
+  AdminAuthentication,
+  async (req, res) => {
+    try {
+      const result = await PostModel.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "createdBy",
+            foreignField: "_id",
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  email: 1,
+                  profile: 1,
+                  category: 1,
+                },
+              },
+            ],
+            as: "userdetails",
+          },
+        },
+        {
+          $lookup: {
+            from: "comments",
+            localField: "_id",
+            foreignField: "postId",
+            pipeline: [{ $project: { postId: 0, CreatedAt: 0, __v: 0 } }],
+            as: "comments",
+          },
+        },
+        { $sort: { CreatedAt: -1 } },
+      ]);
 
-    if (result.length == 0) {
-      res.json({
+      if (result.length == 0) {
+        return res.json({
+          status: "error",
+          message: "No Post Created By User",
+        });
+      } else {
+        return res.json({
+          status: "success",
+          data: result,
+        });
+      }
+    } catch (error) {
+      return res.json({
         status: "error",
-        message: "No Post Created By User",
-      });
-    } else {
-      res.json({
-        status: "success",
-        data: result,
+        message: `Failed To Get Post Detail's ${error.message}`,
       });
     }
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Failed To Get Post Detail's ${error.message}`,
-    });
-  }
-});
+  },
+);
 
 // Api To Disable A Particular Post Created By User Only For Admin
 
-PostRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => {
-  const { id } = req.params;
-  try {
-    const post = await PostModel.findByIdAndUpdate(id, { disabled: true })
-    res.json({
-      status: "success",
-      message: "Post Disabled Successfully",
-    });
-  } catch (error) {
-    res.json({
-      status: "error",
-      message: `Failed To Disable Event ${error.message}`,
-    });
-  }
-},
+PostRouter.patch(
+  "/disable/admin/:id",
+  AdminAuthentication,
+  async (req, res) => {
+    const { id } = req.params;
+    try {
+      const post = await PostModel.findByIdAndUpdate(id, { disabled: true });
+      return res.json({
+        status: "success",
+        message: "Post Disabled Successfully",
+      });
+    } catch (error) {
+      return res.json({
+        status: "error",
+        message: `Failed To Disable Event ${error.message}`,
+      });
+    }
+  },
 );
 
 // Api To Enable A Particular Post Created By User Only For Admin
@@ -363,19 +427,18 @@ PostRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => 
 PostRouter.patch("/enable/admin/:id", AdminAuthentication, async (req, res) => {
   const { id } = req.params;
   try {
-    const post = await PostModel.findByIdAndUpdate(id, { disabled: false })
-    res.json({
+    const post = await PostModel.findByIdAndUpdate(id, { disabled: false });
+    return res.json({
       status: "success",
       message: "Post Enabled Successfully",
     });
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Enable Event ${error.message}`,
     });
   }
-},
-);
+});
 
 // Api's For Comment
 
@@ -397,12 +460,12 @@ PostRouter.post("/add/comment/:id", UserAuthentication, async (req, res) => {
   });
   try {
     await comment.save();
-    res.json({
+    return res.json({
       status: "success",
       message: `Added Comment Successfully`,
     });
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Add New Comment ${error.message}`,
     });
@@ -424,7 +487,7 @@ PostRouter.patch("/edit/comment/:id", UserAuthentication, async (req, res) => {
     },
   ]);
   if (commentDetails.length == 0) {
-    res.json({
+    return res.json({
       status: "error",
       message: "No Comment Found",
     });
@@ -438,7 +501,7 @@ PostRouter.patch("/edit/comment/:id", UserAuthentication, async (req, res) => {
       updatedData,
       { new: true },
     );
-    res.json({
+    return res.json({
       status: "success",
       message: `Comment Updated Successfully`,
     });
@@ -454,18 +517,18 @@ PostRouter.get("/list/comments/:id", UserAuthentication, async (req, res) => {
       { $match: { postId: new mongoose.Types.ObjectId(id) } },
     ]);
     if (comment.length == 0) {
-      res.json({
+      return res.json({
         status: "error",
         message: "No Comment Found",
       });
     } else {
-      res.json({
+      return res.json({
         status: "success",
         data: comment,
       });
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Add New Comment ${error.message}`,
     });
@@ -493,7 +556,7 @@ PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
         });
 
         await bookmark.save();
-        res.json({
+        return res.json({
           status: "success",
           message: `Added Bookmark Successfully`,
         });
@@ -504,14 +567,14 @@ PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
           postId: id,
         });
 
-        res.json({
+        return res.json({
           status: "success",
           message: `Bookmark Successfully Removed`,
         });
       }
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Add New Comment ${error.message}`,
     });
@@ -565,18 +628,18 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
       },
     ]);
     if (bookmark.length == 0) {
-      res.json({
+      return res.json({
         status: "error",
         message: "No Bookmark Found",
       });
     } else {
-      res.json({
+      return res.json({
         status: "success",
         data: bookmark,
       });
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Get List Of All Bookmarks ${error.message}`,
     });
@@ -682,18 +745,18 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
       { $project: { followerlist: 0 } },
     ]);
     if (result.length == 0) {
-      res.json({
+      return res.json({
         status: "error",
         message: "No Live Post Found",
       });
     } else {
-      res.json({
+      return res.json({
         status: "success",
         data: result,
       });
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Get Live Post Feed's ${error.message}`,
     });
@@ -734,13 +797,28 @@ PostRouter.get("/listall/admin/live", AdminAuthentication, async (req, res) => {
           from: "likes",
           localField: "_id",
           foreignField: "postId",
-          pipeline: [{ $unwind: "$likedBy" }, {
-            $lookup: {
-              from: "users", localField: "likedBy", foreignField: "_id", pipeline: [{
-                $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 },
-              }], as: "userlist"
-            }
-          }],
+          pipeline: [
+            { $unwind: "$likedBy" },
+            {
+              $lookup: {
+                from: "users",
+                localField: "likedBy",
+                foreignField: "_id",
+                pipeline: [
+                  {
+                    $project: {
+                      _id: 1,
+                      name: 1,
+                      email: 1,
+                      category: 1,
+                      profile: 1,
+                    },
+                  },
+                ],
+                as: "userlist",
+              },
+            },
+          ],
           as: "like",
         },
       },
@@ -748,18 +826,18 @@ PostRouter.get("/listall/admin/live", AdminAuthentication, async (req, res) => {
       { $project: { followerlist: 0, disabled: 0 } },
     ]);
     if (result.length == 0) {
-      res.json({
+      return res.json({
         status: "error",
         message: "No Live Post Found",
       });
     } else {
-      res.json({
+      return res.json({
         status: "success",
         data: result,
       });
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Get Live Post Feed's ${error.message}`,
     });
@@ -812,13 +890,12 @@ PostRouter.get("/find", UserAuthentication, async (req, res) => {
     ]);
     result.post = postResult;
     result.user = userResult;
-    console.log("User Result ", userResult);
-    res.json({
+    return res.json({
       status: "success",
       data: result,
     });
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Get Live Post Feed's ${error.message}`,
     });
@@ -836,7 +913,7 @@ PostRouter.get("/like", UserAuthentication, async (req, res) => {
     ]);
     if (postResult.length == 0) {
       if (status == "false") {
-        res.json({
+        return res.json({
           status: "error",
           message: "No Like Found",
         });
@@ -846,7 +923,10 @@ PostRouter.get("/like", UserAuthentication, async (req, res) => {
           postId: postId,
         });
         await like.save();
-        res.json({ status: "success", message: `Post Liked Successfully` });
+        return res.json({
+          status: "success",
+          message: `Post Liked Successfully`,
+        });
       }
     } else {
       const likeResult = await LikeModel.aggregate([
@@ -866,19 +946,19 @@ PostRouter.get("/like", UserAuthentication, async (req, res) => {
             { postId: new mongoose.Types.ObjectId(postId) },
             { $pull: { likedBy: new mongoose.Types.ObjectId(decoded._id) } }, // Add ObjectId to the array
           );
-          res.json({
+          return res.json({
             status: "success",
             message: "Post Disliked Successfully",
           });
         } else {
-          res.json({
+          return res.json({
             status: "success",
             message: "Post Already Liked",
           });
         }
       } else {
         if (status == "false") {
-          res.json({
+          return res.json({
             status: "success",
             message: "Post Already Disliked",
           });
@@ -887,7 +967,7 @@ PostRouter.get("/like", UserAuthentication, async (req, res) => {
             { postId: new mongoose.Types.ObjectId(postId) },
             { $push: { likedBy: new mongoose.Types.ObjectId(decoded._id) } }, // Add ObjectId to the array
           );
-          res.json({
+          return res.json({
             status: "success",
             message: "Post Liked Successfully",
           });
@@ -895,7 +975,7 @@ PostRouter.get("/like", UserAuthentication, async (req, res) => {
       }
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Get Live Post Feed's ${error.message}`,
     });

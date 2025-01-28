@@ -31,10 +31,10 @@ PaymentRouter.post("/checkout", UserAuthentication, async (req, res) => {
           message: `Something Went Wrong ${error}`,
         });
       }
-      res.json({ status: "success", data: order });
+      return res.json({ status: "success", data: order });
     });
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Internal Server Error ${error.message}`,
     });
@@ -90,7 +90,7 @@ PaymentRouter.post("/verification", UserAuthentication, async (req, res) => {
           });
         }
       } catch (error) {
-        res.json({
+        return res.json({
           status: "error",
           message: `Internal Server Error ${error.message}`,
         });
@@ -115,7 +115,7 @@ PaymentRouter.post("/verification", UserAuthentication, async (req, res) => {
       });
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Internal Server Error ${error.message}`,
     });

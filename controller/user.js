@@ -636,6 +636,7 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
             as: "documentdetails",
           },
         },
+        { $project: { password: 0, forgotpasswordtoken: 0, otp: 0 } },
       ]);
       return res.json({
         status: "success",
@@ -678,6 +679,7 @@ UserRouter.get("/me/wallet", UserAuthentication, async (req, res) => {
                 },
               },
             },
+            { $sort: { CreatedAt: -1 } },
           ],
           as: "transactions", // Name of the output array
         },
@@ -1306,7 +1308,14 @@ UserRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
           },
         },
       },
-      { $project: { followerlist: 0 } },
+      {
+        $project: {
+          followerlist: 0,
+          subscription: 0,
+          planExpireAt: 0,
+          resume: 0,
+        },
+      },
     ]);
     if (results.length === 0) {
       return res.json({ status: "error", message: "No user found" });
@@ -1331,7 +1340,14 @@ UserRouter.get(
 
       const results = await UserModel.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(id) } },
-        { $project: { password: 0, CreatedAt: 0 } },
+        {
+          $project: {
+            password: 0,
+            CreatedAt: 0,
+            forgotpasswordtoken: 0,
+            otp: 0,
+          },
+        },
         {
           $lookup: {
             from: "documents",

@@ -15,6 +15,7 @@ const {
   uploadMiddleWare,
   WalletChecker,
   AdminAuthentication,
+  EventCollaborationChecker,
 } = require("../middleware/MiddlewareExport");
 const { default: mongoose } = require("mongoose");
 const {
@@ -28,8 +29,11 @@ const CollabRouter = express.Router();
 
 CollabRouter.post(
   "/add",
-  uploadMiddleWare.single("banner"),
-  ArtistAuthentication,
+  [
+    EventCollaborationChecker,
+    ArtistAuthentication,
+    uploadMiddleWare.single("banner"),
+  ],
   async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
@@ -96,7 +100,11 @@ CollabRouter.post(
 
 CollabRouter.patch(
   "/edit/basic/:id",
-  uploadMiddleWare.single("banner"),
+  [
+    EventCollaborationChecker,
+    ArtistAuthentication,
+    uploadMiddleWare.single("banner"),
+  ],
   ArtistAuthentication,
   async (req, res) => {
     const { id } = req.params;
@@ -163,12 +171,12 @@ CollabRouter.patch(
         new: true, // Return the updated document
       });
 
-      res.json({
+      return res.json({
         status: "success",
         message: `Collaboration Successfully Updated`,
       });
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Failed To update Collaboration Details ${error.message}`,
       });
@@ -178,7 +186,7 @@ CollabRouter.patch(
 
 CollabRouter.post(
   "/add/collaborators/:id",
-  [ArtistAuthentication, WalletChecker],
+  [EventCollaborationChecker, ArtistAuthentication, WalletChecker],
   async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
@@ -189,7 +197,6 @@ CollabRouter.post(
     // Amount Deduction From Wallet Of User Who Has Created The Collaboration Event
     let totalAmount = amount;
     let transactionData = [];
-    // transactionData.push({ amount: totalAmount, userId: decoded._id, type: "Debit", status: "Success", method: "Wallet", from: decoded._id, to: "Admin", eventId: id });
 
     try {
       const collab = await CollabModel.aggregate([
@@ -287,13 +294,13 @@ CollabRouter.post(
 
         const transaction = await TransactionModel.insertMany(transactionData);
 
-        res.json({
+        return res.json({
           status: "success",
           message: "Successfully Sent Collaboration Request To Other User",
         });
       }
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Failed To Sent Collaboration Request To Other User Message :- ${error.message}`,
       });
@@ -319,13 +326,13 @@ CollabRouter.patch(
         result.amount = amount;
         result.status = "Pending";
         await result.save();
-        res.json({
+        return res.json({
           status: "success",
           message: "Successfully Sent Collaboration Request To Other User",
         });
       }
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Failed To Update Collaborator Amount Message :- ${error.message}`,
       });
@@ -345,12 +352,12 @@ CollabRouter.post(
     const fileName = req.file.filename;
     try {
       const details = await EventModel.find({ eventId: id });
-      res.json({
+      return res.json({
         status: "success",
         message: `Collaborators List Successfully Updated`,
       });
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Failed To Update Colalborators List ${error.message}`,
       });
@@ -368,12 +375,15 @@ CollabRouter.get("/list", ArtistAuthentication, async (req, res) => {
       type: "Collaboration",
     });
     if (list.length == 0) {
-      res.json({ status: "error", message: "No Collaboration Event Found" });
+      return res.json({
+        status: "error",
+        message: "No Collaboration Event Found",
+      });
     } else {
-      res.json({ status: "success", data: list });
+      return res.json({ status: "success", data: list });
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Unable To Find Collaboration Events ${error.message}`,
     });
@@ -406,12 +416,15 @@ CollabRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
       },
     ]);
     if (list.length == 0) {
-      res.json({ status: "error", message: "No Collaboration Event Found" });
+      return res.json({
+        status: "error",
+        message: "No Collaboration Event Found",
+      });
     } else {
-      res.json({ status: "success", data: list });
+      return res.json({ status: "success", data: list });
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Unable To Find Collaboration Events ${error.message}`,
     });
@@ -458,12 +471,15 @@ CollabRouter.get(
         },
       ]);
       if (list.length == 0) {
-        res.json({ status: "error", message: "No Collaboration Event Found" });
+        return res.json({
+          status: "error",
+          message: "No Collaboration Event Found",
+        });
       } else {
-        res.json({ status: "success", data: list });
+        return res.json({ status: "success", data: list });
       }
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Find Collaboration Events ${error.message}`,
       });
@@ -561,12 +577,15 @@ CollabRouter.get(
         },
       ]);
       if (list.length == 0) {
-        res.json({ status: "error", message: "No Collaboration Event Found" });
+        return res.json({
+          status: "error",
+          message: "No Collaboration Event Found",
+        });
       } else {
-        res.json({ status: "success", data: list });
+        return res.json({ status: "success", data: list });
       }
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Find Collaboration Events ${error.message}`,
       });
@@ -591,12 +610,15 @@ CollabRouter.get("/request/list", ArtistAuthentication, async (req, res) => {
       },
     ]);
     if (list.length == 0) {
-      res.json({ status: "error", message: "No Collaboration Request Found" });
+      return res.json({
+        status: "error",
+        message: "No Collaboration Request Found",
+      });
     } else {
-      res.json({ status: "success", data: list });
+      return res.json({ status: "success", data: list });
     }
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Unable To Find Collaboration Events Requests ${error.message}`,
     });
@@ -644,15 +666,15 @@ CollabRouter.get(
         },
       ]);
       if (list.length == 0) {
-        res.json({
+        return res.json({
           status: "error",
           message: "No Collaboration Request Found",
         });
       } else {
-        res.json({ status: "success", data: list });
+        return res.json({ status: "success", data: list });
       }
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Find Collaboration Events Requests ${error.message}`,
       });
@@ -702,15 +724,15 @@ CollabRouter.get(
       ]);
 
       if (list.length == 0) {
-        res.json({
+        return res.json({
           status: "error",
           message: "No Collaboration Request Found",
         });
       } else {
-        res.json({ status: "success", data: list });
+        return res.json({ status: "success", data: list });
       }
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Find Collaboration Events Requests ${error.message}`,
       });
@@ -754,15 +776,15 @@ CollabRouter.get(
       ]);
 
       if (list.length == 0) {
-        res.json({
+        return res.json({
           status: "error",
           message: "No Collaboration Request Found",
         });
       } else {
-        res.json({ status: "success", data: list });
+        return res.json({ status: "success", data: list });
       }
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Find Collaboration Events Requests ${error.message}`,
       });
@@ -772,7 +794,7 @@ CollabRouter.get(
 // Get All Collaborator List Whom Request Sent For Collaboration
 CollabRouter.get(
   "/list/artists/:id",
-  ArtistAuthentication,
+  [ArtistAuthentication, EventCollaborationChecker],
   async (req, res) => {
     const { id } = req.params;
     try {
@@ -789,15 +811,15 @@ CollabRouter.get(
         },
       ]);
       if (list.length == 0) {
-        res.json({
+        return res.json({
           status: "error",
           message: "No Collaborators Added In This Event ",
         });
       } else {
-        res.json({ status: "success", data: list });
+        return res.json({ status: "success", data: list });
       }
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Find Collaborators List In This Events ${error.message}`,
       });
@@ -808,7 +830,7 @@ CollabRouter.get(
 // Update Collaborator Status
 CollabRouter.post(
   "/update/collab/status/:id",
-  ArtistAuthentication,
+  [ArtistAuthentication, EventCollaborationChecker],
   async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
@@ -817,17 +839,20 @@ CollabRouter.post(
     try {
       const list = await CollabModel.find({ _id: id, userId: decoded._id });
       if (list.length == 0) {
-        res.json({
+        return res.json({
           status: "error",
           message: "No Collaborators Added In This Event ",
         });
       } else {
         list[0].status = status;
         await list[0].save();
-        res.json({ status: "success", message: "Updated Collaborator Status" });
+        return res.json({
+          status: "success",
+          message: "Updated Collaborator Status",
+        });
       }
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Update Collaborators Status In This Events ${error.message}`,
       });
@@ -888,12 +913,15 @@ CollabRouter.post(
 
       const transaction = await TransactionModel.findByIdAndUpdate(
         id,
-        { status: "Success" },
+        { status: "Success", message: "Event Collaboration Amount Credited" },
         { new: true },
       );
-      res.json({ status: "success", message: "Updated Collaborator Status" });
+      return res.json({
+        status: "success",
+        message: "Updated Collaborator Status",
+      });
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Settle Transaction Amount Of This Event ${error.message}`,
       });
@@ -953,12 +981,18 @@ CollabRouter.post(
 
       const transaction = await TransactionModel.findByIdAndUpdate(
         id,
-        { status: "Declined" },
+        {
+          status: "Declined",
+          message: "Admin Declined Transaction For Event Collaboration",
+        },
         { new: true },
       );
-      res.json({ status: "success", message: "Updated Collaborator Status" });
+      return res.json({
+        status: "success",
+        message: "Updated Collaborator Status",
+      });
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Settle Transaction Amount Of This Event ${error.message}`,
       });
