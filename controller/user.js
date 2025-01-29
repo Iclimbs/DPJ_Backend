@@ -837,14 +837,95 @@ UserRouter.patch(
 );
 
 // Getting List Of All Followers Of an User
+// UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
+//   const token = req.headers.authorization.split(" ")[1];
+//   const decoded = jwt.verify(token, "Authentication");
+//   try {
+//     const user = await FollowModel.aggregate([
+//       {
+//         $match: {
+//           userId: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
+//         },
+//       },
+//       {
+//         $unwind: "$followedBy",
+//       },
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "followedBy",
+//           foreignField: "_id",
+//           pipeline: [
+//             {
+//               $project: {
+//                 _id: 1,
+//                 name: 1,
+//                 profile: 1,
+//                 accountType: 1,
+//                 email: 1,
+//                 category: 1,
+//               },
+//             },
+//             {
+//               $lookup: {
+//                 from: "followers",
+//                 localField: "_id",
+//                 foreignField: "userId",
+//                 pipeline: [
+//                   {
+//                     $addFields: {
+//                       followstatus: {
+//                         $in: [
+//                           new mongoose.Types.ObjectId(decoded._id),
+//                           {
+//                             $reduce: {
+//                               input: "$followedBy",
+//                               initialValue: [],
+//                               in: {
+//                                 $concatArrays: ["$$value", "$$this.userId"],
+//                               }, // Flatten the likedBy arrays
+//                             },
+//                           },
+//                         ],
+//                       },
+//                     },
+//                   },
+//                 ],
+//                 as: "followerdetails",
+//               },
+//             },
+//           ],
+//           as: "userdetails",
+//         },
+//         // },
+//         // {
+//         //   $unwind: "$userdetails", // Unwind userdetails to convert it from an array to an object
+//         // },
+//         // {
+//         //   $project: { userId: 0, CreatedAt: 0, __v: 0, followedBy: 0 },
+//       },
+//     ]);
+
+//     return res.json({
+//       status: "success",
+//       user: user,
+//     });
+//   } catch (error) {
+//     res.json({
+//       status: "error",
+//       message: `Error Found in While Getting User Follower List Section ${error.message}`,
+//     });
+//   }
+// });
 UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
+
   try {
     const user = await FollowModel.aggregate([
       {
         $match: {
-          userId: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
+          userId: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId
         },
       },
       {
@@ -866,16 +947,65 @@ UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
                 category: 1,
               },
             },
+            {
+              $lookup: {
+                from: "followers",
+                localField: "_id",
+                foreignField: "userId",
+                pipeline: [
+                  {
+                    $addFields: {
+                      followstatus: {
+                        $in: [
+                          new mongoose.Types.ObjectId(decoded._id),
+                          { $ifNull: ["$followedBy", []] }, // Ensure followedBy is an array
+                        ],
+                      },
+                    },
+                  },
+                ],
+                as: "followerdetails",
+              },
+            },
           ],
           as: "userdetails",
         },
       },
       {
-        $unwind: "$userdetails", // Unwind userdetails to convert it from an array to an object
+        $unwind: "$userdetails",
       },
       {
-        $project: { userId: 0, CreatedAt: 0, __v: 0, followedBy: 0 },
+        $addFields: {
+          "userdetails.followstatus": {
+            $cond: {
+              if: {
+                $gt: [
+                  {
+                    $size: {
+                      $filter: {
+                        input: {
+                          $ifNull: ["$userdetails.followerdetails", []],
+                        },
+                        as: "follower",
+                        cond: {
+                          $in: [
+                            new mongoose.Types.ObjectId(decoded._id),
+                            { $ifNull: ["$$follower.followedBy", []] },
+                          ],
+                        },
+                      },
+                    },
+                  },
+                  0,
+                ],
+              },
+              then: true,
+              else: false,
+            },
+          },
+        },
       },
+      { $project: { "userdetails.followerdetails": 0 } },
     ]);
 
     return res.json({
@@ -885,7 +1015,7 @@ UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
   } catch (error) {
     res.json({
       status: "error",
-      message: `Error Found in While Getting User Follower List Section ${error.message}`,
+      message: `Error Found While Getting User Follower List: ${error.message}`,
     });
   }
 });
