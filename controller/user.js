@@ -699,12 +699,12 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
     return res.json({
       status: "success",
       message: "Getting User Details",
-      user: user[0] || null, // Ensure response is not undefined
+      user: user[0] || null,
     });
   } catch (error) {
     res.json({
       status: "error",
-      message: `Error Found in Getting User Details: ${error.message}`,
+      message: `Error Found while getting User following list: ${error.message}`,
     });
   }
 });
