@@ -893,6 +893,7 @@ UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
 UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
+
   try {
     const user = await FollowModel.aggregate([
       {
@@ -935,8 +936,12 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
                   if: {
                     $in: [
                       "$$user._id",
-                      { $arrayElemAt: ["$myDetails.followedBy", 0] },
-                      [],
+                      {
+                        $ifNull: [
+                          { $arrayElemAt: ["$myDetails.followedBy", 0] },
+                          [],
+                        ],
+                      }, // Ensure the array is not null
                     ],
                   },
                   then: true,
@@ -965,7 +970,7 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
   } catch (error) {
     res.json({
       status: "error",
-      message: `Error Found while getting User following list Section ${error.message}`,
+      message: `Error Found while getting User following list Section: ${error.message}`,
     });
   }
 });
