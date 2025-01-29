@@ -2,7 +2,6 @@ const jwt = require("jsonwebtoken");
 const { currentDate, currentDateTimeISO } = require("../service/currentDate");
 const { SubscriptionModel, UserModel } = require("../model/ModelExport");
 const { default: mongoose } = require("mongoose");
-const { toolresults_v1beta3 } = require("googleapis");
 
 const EventCollaborationChecker = async (req, res, next) => {
   if (req.headers.authorization) {
@@ -39,7 +38,7 @@ const EventCollaborationChecker = async (req, res, next) => {
               {
                 $match: {
                   name: "EventCollaboration",
-                  status: toolresults_v1beta3,
+                  status: true,
                 },
               },
             ],
