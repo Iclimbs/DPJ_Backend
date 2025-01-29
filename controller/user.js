@@ -936,6 +936,7 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
                     $in: [
                       "$$user._id",
                       { $arrayElemAt: ["$myDetails.followedBy", 0] },
+                      [],
                     ],
                   },
                   then: true,
