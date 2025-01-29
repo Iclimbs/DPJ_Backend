@@ -586,6 +586,7 @@ PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
 PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
+  console.log("decoded", decoded);
   try {
     const bookmark = await BookMarkModel.aggregate([
       {
@@ -624,8 +625,44 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "followers",
+          localField: "bookmarkedBy",
+          foreignField: "userId",
+          as: "followerlist",
+        },
+      },
+      {
+        $addFields: {
+          followedByList: {
+            $reduce: {
+              input: "$followerlist",
+              initialValue: [],
+              in: { $concatArrays: ["$$value", "$$this.followedBy"] }, // Flatten followedBy arrays
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          followstatus: {
+            $cond: {
+              if: {
+                $in: [
+                  { $arrayElemAt: ["$post.createdBy", 0] },
+                  "$followedByList",
+                ], // Check if createdBy is in followedByList
+              },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
         $sort: { CreatedAt: -1 },
       },
+      { $project: { followerlist: 0, followedByList: 0 } },
     ]);
     if (bookmark.length == 0) {
       return res.json({
