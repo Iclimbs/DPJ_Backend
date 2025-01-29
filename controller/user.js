@@ -88,6 +88,7 @@ const {
 } = require("../middleware/MiddlewareExport");
 const { createWallet } = require("./wallet");
 const { currentDate, getDateAfter30Days } = require("../service/currentDate");
+const { pipeline } = require("nodemailer/lib/xoauth2");
 
 const UserRouter = express.Router();
 
@@ -905,7 +906,6 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
           },
         },
       },
-      { $unwind: "$followedBy" },
       {
         $lookup: {
           from: "users",
@@ -918,51 +918,14 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
         },
       },
       {
-        $lookup: {
-          from: "followers",
-          localField: "followedBy",
-          foreignField: "userId",
-          as: "myDetails",
-        },
-      },
-      {
-        $addFields: {
-          followStatus: {
-            $map: {
-              input: "$userDetails",
-              as: "user",
-              in: {
-                $cond: {
-                  if: {
-                    $in: [
-                      "$$user._id",
-                      {
-                        $ifNull: [
-                          { $arrayElemAt: ["$myDetails.followedBy", 0] },
-                          [],
-                        ],
-                      }, // Ensure the array is not null
-                    ],
-                  },
-                  then: true,
-                  else: false,
-                },
-              },
-            },
-          },
-        },
-      },
-      {
         $project: {
-          myDetails: 0,
           __v: 0,
+          followedBy: 0,
           CreatedAt: 0,
           userId: 0,
-          followedBy: 0,
         },
       },
     ]);
-
     return res.json({
       status: "success",
       user: user,
@@ -1508,7 +1471,7 @@ UserRouter.get("/follow", UserAuthentication, async (req, res) => {
 
     if (userIdResult.length == 0) {
       if (status == "false") {
-        res.json({
+        return res.json({
           status: "error",
           message: "No Follow Found",
         });
@@ -1518,7 +1481,7 @@ UserRouter.get("/follow", UserAuthentication, async (req, res) => {
           userId: userId,
         });
         await follow.save();
-        res.json({ status: "success", message: `Started Following` });
+        return res.json({ status: "success", message: `Started Following` });
       }
     } else {
       const followResult = await FollowModel.aggregate([
