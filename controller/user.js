@@ -638,7 +638,61 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
             as: "documentdetails",
           },
         },
-        { $project: { password: 0, forgotpasswordtoken: 0, otp: 0 } },
+        {
+          $lookup: {
+            from: "followers",
+            localField: "_id",
+            foreignField: "userId",
+            as: "followers",
+          },
+        },
+        {
+          $addFields: {
+            followerscount: {
+              $ifNull: [
+                { $size: { $arrayElemAt: ["$followers.followedBy", 0] } },
+                0,
+              ],
+            }, // Count the number of followers correctly
+          },
+        },
+        {
+          $lookup: {
+            from: "followers",
+            localField: "_id",
+            foreignField: "followedBy",
+            as: "followings",
+          },
+        },
+        {
+          $addFields: {
+            followingcount: { $size: "$followings" }, // Get the length of the comments array
+          },
+        },
+        {
+          $lookup: {
+            from: "reviews",
+            localField: "_id",
+            foreignField: "userId",
+            as: "reviews",
+          },
+        },
+        {
+          $addFields: {
+            reviewCount: { $size: "$reviews" }, // Count number of reviews
+            totalRating: { $sum: "$reviews.rating" }, // Sum of rating parameter in reviews
+          },
+        },
+        {
+          $project: {
+            password: 0,
+            forgotpasswordtoken: 0,
+            otp: 0,
+            reviews: 0,
+            followers: 0,
+            followings: 0,
+          },
+        },
       ]);
       return res.json({
         status: "success",
