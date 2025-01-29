@@ -687,10 +687,14 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
 PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-
   try {
     const result = await PostModel.aggregate([
-      { $match: { disabled: false } },
+      {
+        $match: {
+          disabled: false,
+          createdBy: { $ne: new mongoose.Types.ObjectId(decoded._id) }, // Exclude posts created by the user
+        },
+      },
       {
         $lookup: {
           from: "comments",

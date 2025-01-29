@@ -74,6 +74,9 @@ const {
   ForgotPasswordModel,
   TransactionModel,
   SubscriptionLogs,
+  JobAppliedModel,
+  ReviewModel,
+  BookMarkModel,
 } = require("../model/ModelExport");
 
 // Required Middleware For File Upload & User Authentication
@@ -85,7 +88,6 @@ const {
 } = require("../middleware/MiddlewareExport");
 const { createWallet } = require("./wallet");
 const { currentDate, getDateAfter30Days } = require("../service/currentDate");
-const { log } = require("node:console");
 
 const UserRouter = express.Router();
 
@@ -1508,6 +1510,39 @@ UserRouter.get("/follow", UserAuthentication, async (req, res) => {
     res.json({
       status: "error",
       message: `Failed To Get Follow Details Of User's ${error.message}`,
+    });
+  }
+});
+
+UserRouter.get("/stats/artist", ArtistAuthentication, async (req, res) => {
+  // Get Job Applied List, Reviews , View , Bookmarks List
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  console.log("decoded", decoded);
+  try {
+    const jobs = await JobAppliedModel.countDocuments({
+      appliedBy: decoded._id,
+    });
+    const reviews = await ReviewModel.countDocuments({
+      reviewedBy: "collabArtist",
+      reviewedByUserId: decoded._id,
+    });
+    const bookmarks = await BookMarkModel.countDocuments({
+      bookmarkedBy: decoded._id,
+    });
+    const followers = await FollowModel.find({ userId: decoded._id });
+    let followerslength = 0;
+    if (followers.length !== 0) {
+      followerslength = followers[0]?.followedBy.length;
+    }
+    return res.json({
+      status: "success",
+      data: { jobs, reviews, bookmarks, followerslength },
+    });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Fetch Current Status Of Artist ${error.message}`,
     });
   }
 });
