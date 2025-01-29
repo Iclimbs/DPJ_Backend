@@ -260,7 +260,7 @@ UserRouter.post("/login/admin", async (req, res) => {
   } catch (error) {
     res.json({
       status: "error",
-      message: `Error Found in Login ${error.message}`,
+      message: `Error Found in Admin Login ${error.message}`,
     });
   }
 });
@@ -703,7 +703,7 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
   } catch (error) {
     res.json({
       status: "error",
-      message: `Error Found in Login Section ${error.message}`,
+      message: `Error Found in Getting User Details ${error.message}`,
     });
   }
 });
@@ -749,7 +749,7 @@ UserRouter.get("/me/wallet", UserAuthentication, async (req, res) => {
   } catch (error) {
     res.json({
       status: "error",
-      message: `Error Found in Login Section ${error.message}`,
+      message: `Error Found in Getting User Wallet Details Section ${error.message}`,
     });
   }
 });
@@ -883,7 +883,7 @@ UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
   } catch (error) {
     res.json({
       status: "error",
-      message: `Error Found in Login Section ${error.message}`,
+      message: `Error Found in While Getting User Follower List Section ${error.message}`,
     });
   }
 });
@@ -963,7 +963,7 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
   } catch (error) {
     res.json({
       status: "error",
-      message: `Error Found in Login Section ${error.message}`,
+      message: `Error Found while getting User following list Section ${error.message}`,
     });
   }
 });
