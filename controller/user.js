@@ -320,7 +320,7 @@ UserRouter.post("/register", async (req, res) => {
 
 // Forgot Password Step 1 Sending Otp in Email
 
-UserRouter.post("/forgot/web", async (req, res) => {
+UserRouter.post("/forgot", async (req, res) => {
   try {
     const { email } = req.body;
     const userExists = await UserModel.find({ email });
@@ -373,7 +373,7 @@ UserRouter.post("/forgot/web", async (req, res) => {
       }
       let forgotPasswordtemplate = path.join(
         __dirname,
-        "../emailtemplate/forgotPasswordWeb.ejs",
+        "../emailtemplate/forgotPassword.ejs",
       );
       ejs.renderFile(
         forgotPasswordtemplate,
@@ -393,7 +393,7 @@ UserRouter.post("/forgot/web", async (req, res) => {
                 console.log(error);
                 return res.json({
                   status: "error",
-                  message: "Failed to send email",
+                  message: `Failed to send email ${error.message}`,
                   redirect: "/",
                 });
               } else {
@@ -416,148 +416,149 @@ UserRouter.post("/forgot/web", async (req, res) => {
   }
 });
 
-UserRouter.post("/forgot/phone", async (req, res) => {
-  try {
-    const { email } = req.body;
-    const userExists = await UserModel.find({ email });
-    if (userExists.length === 0) {
-      return res.json({
-        status: "error",
-        message: "No User Exists With This Email, Please SignUp First",
-        redirect: "/user/register",
-      });
-    } else {
-      let newotp = otpGenerator.generate(6, {
-        upperCaseAlphabets: false,
-        specialChars: false,
-        lowerCaseAlphabets: false,
-      });
-      let forgotpasswordtoken = jwt.sign(
-        {
-          name: userExists[0].name,
-          email: userExists[0].email,
-          userId: userExists[0]._id,
-          exp: Math.floor(Date.now() / 1000) + 60 * 15,
-        },
-        "ResetPassword",
-      );
-      try {
-        const existstoken = await ForgotPasswordModel.find({
-          userId: userExists[0]._id,
-        });
-        if (existstoken.length !== 0) {
-          return res.json({
-            status: "error",
-            message:
-              "Check Your mailbox You can still use your old otp to reset the password ",
-          });
-        }
-        const ResetPassword = new ForgotPasswordModel({
-          userId: userExists[0]._id,
-          token: forgotpasswordtoken,
-          otp: newotp,
-          expireAt: Date.now() + 15 * 60 * 1000,
-        });
-        await ResetPassword.save();
-      } catch (error) {
-        return res.json({
-          status: "error",
-          message: "Failed To Save Use",
-          redirect: "/",
-        });
-      }
-      let forgotPasswordtemplate = path.join(
-        __dirname,
-        "../emailtemplate/forgotPasswordPhone.ejs",
-      );
-      ejs.renderFile(
-        forgotPasswordtemplate,
-        { otp: newotp },
-        function (err, template) {
-          if (err) {
-            res.json({ status: "error", message: err.message });
-          } else {
-            const mailOptions = {
-              from: process.env.emailuser,
-              to: `${userExists[0].email}`,
-              subject: "Otp To Reset Password ",
-              html: template,
-            };
-            gmailtransporter.sendMail(mailOptions, (error, info) => {
-              if (error) {
-                console.log(error);
-                return res.json({
-                  status: "error",
-                  message: "Failed to send email",
-                  redirect: "/",
-                });
-              } else {
-                return res.json({
-                  status: "success",
-                  message: "Please Check Your Email",
-                  redirect: "/",
-                  token: forgotpasswordtoken,
-                });
-              }
-            });
-          }
-        },
-      );
-    }
-  } catch (error) {
-    return res.json({
-      status: "error",
-      message: `Error Found in Forgot Password ${error.message}`,
-    });
-  }
-});
+// UserRouter.post("/forgot/phone", async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     const userExists = await UserModel.find({ email });
+//     if (userExists.length === 0) {
+//       return res.json({
+//         status: "error",
+//         message: "No User Exists With This Email, Please SignUp First",
+//         redirect: "/user/register",
+//       });
+//     } else {
+//       let newotp = otpGenerator.generate(6, {
+//         upperCaseAlphabets: false,
+//         specialChars: false,
+//         lowerCaseAlphabets: false,
+//       });
+//       let forgotpasswordtoken = jwt.sign(
+//         {
+//           name: userExists[0].name,
+//           email: userExists[0].email,
+//           userId: userExists[0]._id,
+//           exp: Math.floor(Date.now() / 1000) + 60 * 15,
+//         },
+//         "ResetPassword",
+//       );
+//       try {
+//         const existstoken = await ForgotPasswordModel.find({
+//           userId: userExists[0]._id,
+//         });
+//         if (existstoken.length !== 0) {
+//           return res.json({
+//             status: "error",
+//             message:
+//               "Check Your mailbox You can still use your old otp to reset the password ",
+//           });
+//         }
+//         const ResetPassword = new ForgotPasswordModel({
+//           userId: userExists[0]._id,
+//           token: forgotpasswordtoken,
+//           otp: newotp,
+//           expireAt: Date.now() + 15 * 60 * 1000,
+//         });
+//         await ResetPassword.save();
+//       } catch (error) {
+//         return res.json({
+//           status: "error",
+//           message: "Failed To Save Use",
+//           redirect: "/",
+//         });
+//       }
+//       let forgotPasswordtemplate = path.join(
+//         __dirname,
+//         "../emailtemplate/forgotPasswordPhone.ejs",
+//       );
+//       ejs.renderFile(
+//         forgotPasswordtemplate,
+//         { otp: newotp },
+//         function (err, template) {
+//           if (err) {
+//             res.json({ status: "error", message: err.message });
+//           } else {
+//             const mailOptions = {
+//               from: process.env.emailuser,
+//               to: `${userExists[0].email}`,
+//               subject: "Otp To Reset Password ",
+//               html: template,
+//             };
+//             gmailtransporter.sendMail(mailOptions, (error, info) => {
+//               if (error) {
+//                 console.log(error);
+//                 return res.json({
+//                   status: "error",
+//                   message: "Failed to send email",
+//                   redirect: "/",
+//                 });
+//               } else {
+//                 return res.json({
+//                   status: "success",
+//                   message: "Please Check Your Email",
+//                   redirect: "/",
+//                   token: forgotpasswordtoken,
+//                 });
+//               }
+//             });
+//           }
+//         },
+//       );
+//     }
+//   } catch (error) {
+//     return res.json({
+//       status: "error",
+//       message: `Error Found in Forgot Password ${error.message}`,
+//     });
+//   }
+// });
 // Forgot Password Step 2 Change Password
 // For Phone
-UserRouter.post("/changePassword/phone", async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  const { otp, password, cnfpassword } = req.body;
-  try {
-    const decoded = jwt.verify(token, "ResetPassword");
-    const otpkey = await ForgotPasswordModel.aggregate([
-      {
-        $match: { userId: new mongoose.Types.ObjectId(decoded.userId) },
-      },
-    ]);
-    if (otpkey.length === 0) {
-      return res.json({
-        status: "success",
-        message:
-          "Otp Expired, Your Otp is Only Valid For 15 minutes. Please try again",
-      });
-    }
-    if (otp !== otpkey[0].otp) {
-      return res.json({
-        status: "error",
-        message: "Entered Otp is wrong",
-      });
-    }
-    if (password !== cnfpassword) {
-      return res.json({
-        status: "error",
-        message: "Your password & Confirm Password Doesn't Match",
-      });
-    }
-    const user = await UserModel.findByIdAndUpdate(decoded.userId, {
-      password: hash.sha256(password),
-    });
-    return res.json({
-      status: "success",
-      message: "You have Successfully Updated Your Account Password.",
-    });
-  } catch (error) {
-    return res.json({
-      status: "error",
-      message: `Failed To Change Password ${error.message}`,
-    });
-  }
-});
+// UserRouter.post("/changePassword/phone", async (req, res) => {
+//   const token = req.headers.authorization.split(" ")[1];
+//   const { otp, password, cnfpassword } = req.body;
+//   try {
+//     const decoded = jwt.verify(token, "ResetPassword");
+//     const otpkey = await ForgotPasswordModel.aggregate([
+//       {
+//         $match: { userId: new mongoose.Types.ObjectId(decoded.userId) },
+//       },
+//     ]);
+//     if (otpkey.length === 0) {
+//       return res.json({
+//         status: "success",
+//         message:
+//           "Otp Expired, Your Otp is Only Valid For 15 minutes. Please try again",
+//       });
+//     }
+//     if (otp !== otpkey[0].otp) {
+//       return res.json({
+//         status: "error",
+//         message: "Entered Otp is wrong",
+//       });
+//     }
+//     if (password !== cnfpassword) {
+//       return res.json({
+//         status: "error",
+//         message: "Your password & Confirm Password Doesn't Match",
+//       });
+//     }
+//     const user = await UserModel.findByIdAndUpdate(decoded.userId, {
+//       password: hash.sha256(password),
+//     });
+//     return res.json({
+//       status: "success",
+//       message: "You have Successfully Updated Your Account Password.",
+//     });
+//   } catch (error) {
+//     return res.json({
+//       status: "error",
+//       message: `Failed To Change Password ${error.message}`,
+//     });
+//   }
+// });
 // For Website
-UserRouter.post("/changePassword/web", async (req, res) => {
+
+UserRouter.post("/changePassword", async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const { otp, password, cnfpassword } = req.body;
   try {
