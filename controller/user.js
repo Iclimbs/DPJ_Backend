@@ -1485,7 +1485,7 @@ UserRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
           followerlist: 0,
           subscription: 0,
           planExpireAt: 0,
-          resume: 0,
+          // resume: 0,
         },
       },
     ]);
