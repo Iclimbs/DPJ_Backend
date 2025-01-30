@@ -1465,6 +1465,21 @@ UserRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "reviews",
+          localField: "_id",
+          foreignField: "userId",
+          as: "reviews",
+        },
+      },
+      {
+        $addFields: {
+          reviewCount: { $size: { $ifNull: ["$reviews", []] } },
+          totalRating: { $sum: { $ifNull: ["$reviews.rating", []] } },
+        },
+      },
+
+      {
         $project: {
           followerlist: 0,
           subscription: 0,
@@ -1548,15 +1563,15 @@ UserRouter.get("/detailone/extra/:id", UserAuthentication, async (req, res) => {
     {
       $project: {
         _id: 1,
-        jobdetails:1,
-        eventdetails:1,
-        collaborationeventsdetails:1
+        jobdetails: 1,
+        eventdetails: 1,
+        collaborationeventsdetails: 1
 
       },
     },
   ]);
-  return res.json({ status: "success", data: results });
 
+  return res.json({ status: "success", data: results });
 })
 
 // Get Basic Detail Of One User used by Admin
