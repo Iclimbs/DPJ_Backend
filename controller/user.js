@@ -1566,8 +1566,8 @@ UserRouter.get("/detailone/extra/:id", UserAuthentication, async (req, res) => {
         _id: 1,
         jobdetails: 1,
         eventdetails: 1,
-        collaborationeventsdetails: 1
-
+        collaborationeventsdetails: 1,
+        accountType: 1
       },
     },
   ]);
