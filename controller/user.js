@@ -345,7 +345,7 @@ UserRouter.post("/forgot", async (req, res) => {
         },
         "ResetPassword",
       );
-      let link = `${process.env.domainurl}/${newotp}/${forgotpasswordtoken}`;
+      let link = `${process.env.domainurl}/change-password/${newotp}/${forgotpasswordtoken}`;
       try {
         const existstoken = await ForgotPasswordModel.find({
           userId: userExists[0]._id,
@@ -575,7 +575,7 @@ UserRouter.post("/changePassword", async (req, res) => {
           "Otp Expired, Your Otp is Only Valid For 15 minutes. Please try again",
       });
     }
-    if (otp !== otpkey[0].otp) {
+    if (Number(otp) !== otpkey[0].otp) {
       return res.json({
         status: "error",
         message: "Entered Otp is wrong",
