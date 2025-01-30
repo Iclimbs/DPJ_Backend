@@ -1485,6 +1485,80 @@ UserRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
   }
 });
 
+UserRouter.get("/detailone/extra/:id", UserAuthentication, async (req, res) => {
+  const { id } = req.params;
+
+  const results = await UserModel.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(id),
+        disabled: false,
+        verified: true,
+      },
+    },
+    { $project: { password: 0, CreatedAt: 0, } },
+    {
+      $lookup: {
+        from: "events",
+        localField: "_id",
+        foreignField: "createdBy",
+        pipeline: [
+          {
+            $match: {
+              endDate: { $gt: currentDate }, // Filters events with endDate greater than the current date
+              type: "Collaboration"
+            },
+          },
+        ],
+        as: "collaborationeventsdetails"
+      }
+    },
+    {
+      $lookup: {
+        from: "events",
+        localField: "_id",
+        foreignField: "createdBy",
+        pipeline: [
+          {
+            $match: {
+              endDate: { $gt: currentDate }, // Filters events with endDate greater than the current date
+              type: "Event"
+            },
+          },
+        ],
+        as: "eventdetails"
+      }
+    },
+    {
+      $lookup: {
+        from: "jobs",
+        localField: "_id",
+        foreignField: "createdBy",
+        pipeline: [
+          {
+            $match: {
+              endtime: { $gt: currentDate }, // Filters events with endDate greater than the current date
+              status: "Active"
+            },
+          },
+        ],
+        as: "jobdetails"
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        jobdetails:1,
+        eventdetails:1,
+        collaborationeventsdetails:1
+
+      },
+    },
+  ]);
+  return res.json({ status: "success", data: results });
+
+})
+
 // Get Basic Detail Of One User used by Admin
 UserRouter.get(
   "/detailone/admin/:id",

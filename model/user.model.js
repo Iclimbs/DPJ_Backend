@@ -69,15 +69,6 @@ const userschema = mongoose.Schema({
     type: String,
     required: true,
   },
-  otp: {
-    type: Number,
-  },
-  signuptoken: {
-    type: String,
-  },
-  forgotpasswordtoken: {
-    type: String,
-  },
   accountType: {
     type: String,
     enum: ["artist", "professional", "guest", "admin"], // Replace with your allowed values
