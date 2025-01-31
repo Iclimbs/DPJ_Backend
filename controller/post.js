@@ -75,13 +75,39 @@ PostRouter.get("/listall", UserAuthentication, async (req, res) => {
       },
       {
         $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "postId",
+          as: "like",
+        },
+      },
+      {
+        $addFields: {
+          likestatus: {
+            $in: [
+              new mongoose.Types.ObjectId(decoded._id),
+              {
+                $reduce: {
+                  input: "$like",
+                  initialValue: [],
+                  in: { $concatArrays: ["$$value", "$$this.likedBy"] }, // Flatten the likedBy arrays
+                },
+              },
+            ],
+          },
+        },
+      },
+      {
+        $lookup: {
           from: "comments",
           localField: "_id",
           foreignField: "postId",
           as: "comments",
         },
       },
-      { $sort: { CreatedAt: -1 } },
+      {
+        $sort: { createdAt: -1 },
+      },
     ]);
     if (result.length == 0) {
       return res.json({
@@ -576,7 +602,7 @@ PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
           status: "success",
           message: `Bookmark Successfully Removed`,
         });
-      }else{
+      } else {
         return res.json({
           status: "success",
           message: `Already Bookmarked This Post`,
@@ -653,7 +679,7 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
                   ],
                 },
               },
-            },      
+            },
             {
               $lookup: {
                 from: "comments",

@@ -1594,21 +1594,65 @@ UserRouter.get("/register/google", async (req, res) => {
   try {
     const { code } = req.query;
     const googleRes = await oauth2client.getToken(code);
-    console.log("google res", googleRes);
-
     oauth2client.setCredentials(googleRes.tokens);
     const googleresponse = await fetch(
       `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`,
     );
 
     const result = await googleresponse.json();
-    console.log("result google ", result);
-
     const userDetails = await UserModel.find({ email: result.email })
-
     if (userDetails.length === 0) {
-
+      return res.json({ status: "error", name: result.name, email: result.email })
     } else {
+      if (userDetails[0].accountType !== "admin") {
+        let token = jwt.sign(
+          {
+            _id: userDetails[0]._id,
+            name: userDetails[0].name,
+            email: userDetails[0].email,
+            accountType: userDetails[0].accountType,
+            profile: userDetails[0].profile,
+            verified: userDetails[0].verified,
+            subscription: userDetails[0].subscription,
+            planExpireAt: userDetails[0].planExpireAt,
+            exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+          },
+          "Authentication",
+        );
+        if (userDetails[0].dob === undefined || userDetails[0].dob === "") {
+          return res.json({
+            status: "success",
+            message: "Login Successful",
+            token: token,
+            type: userDetails[0].accountType,
+            redirect: "/user/basicprofile",
+          });
+        }
+        if (
+          userDetails[0].profile === undefined ||
+          userDetails[0].profile === ""
+        ) {
+          return res.json({
+            status: "success",
+            message: "Login Successful",
+            token: token,
+            type: userDetails[0].accountType,
+            redirect: "/user/basicprofile",
+          });
+        }
+        return res.json({
+          status: "success",
+          message: "Login Successfully",
+          token: token,
+          type: userDetails[0].accountType,
+        });
+      } else {
+        return res.json({
+          status: "error",
+          message: "You Cannot Login Using Admin Credential's !! ",
+          redirect: "/",
+        });
+      }
 
     }
 
