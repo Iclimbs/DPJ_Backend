@@ -670,11 +670,7 @@ UserRouter.patch(
         banner = req.files.banner[0]?.location || updatedUser?.banner;
       }
 
-      let skills;
-
-      if (updatedUser?.accountType === "artist") {
-        skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
-      }
+      const skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
 
       let companycategory;
       if (updatedUser?.accountType === "professional") {
@@ -1598,69 +1594,30 @@ UserRouter.get("/register/google", async (req, res) => {
   try {
     const { code } = req.query;
     const googleRes = await oauth2client.getToken(code);
+    console.log("google res", googleRes);
+
     oauth2client.setCredentials(googleRes.tokens);
     const googleresponse = await fetch(
       `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`,
     );
-    const result = await googleresponse.json();
-    const { email, name, picture } = result;
-    let user = await UserModel.findOne({ email });
-    if (!user) {
-      user = new UserModel({ name, email, picture });
-      await user.save();
-      let token = jwt.sign(
-        {
-          name: user.name,
-          email: user.email,
-          exp: Math.floor(Date.now() / 1000) + 60 * 60,
-        },
-        "Authentication",
-      );
-      return res.json({
-        status: "success",
-        message: "Registration Successful",
-        token: token,
-      });
-    } else {
-      if (user.dob === undefined || user.dob === "") {
-        return res.json({
-          status: "success",
-          message: "Login Successful",
-          token: token,
-          redirect: "/user/basicprofile",
-        });
-      }
-      if (user.profile === undefined || user.profile === "") {
-        return res.json({
-          status: "success",
-          message: "Login Successful",
-          token: token,
-          redirect: "/user/basicprofile",
-        });
-      }
-      if (user.accountType === undefined || user.accountType === "") {
-        return res.json({
-          status: "success",
-          message: "Login Successful",
-          token: token,
-          redirect: "/user/basicprofile",
-        });
-      }
 
-      let token = jwt.sign(
-        {
-          name: user.name,
-          email: user.email,
-          exp: Math.floor(Date.now() / 1000) + 60 * 60,
-        },
-        "Authentication",
-      );
-      return res.json({
-        status: "success",
-        message: "Login Successful",
-        token: token,
-      });
+    const result = await googleresponse.json();
+    console.log("result google ", result);
+
+    const userDetails = await UserModel.find({ email: result.email })
+
+    if (userDetails.length === 0) {
+
+    } else {
+
     }
+
+
+    return res.json({
+      status: "success",
+      message: "Login Successful",
+      // token: token,
+    });
   } catch (error) {
     return res.json({
       status: "error",
@@ -1951,7 +1908,7 @@ UserRouter.post(
         },
       );
       let newtoken = await generateToken(userDetails[0]._id)
-      
+
       if (newtoken.status === 'success') {
         return res.json({
           status: "success",
