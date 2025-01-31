@@ -405,7 +405,6 @@ UserRouter.post("/forgot", async (req, res) => {
             };
             gmailtransporter.sendMail(mailOptions, (error, info) => {
               if (error) {
-                console.log(error);
                 return res.json({
                   status: "error",
                   message: `Failed to send email ${error.message}`,
@@ -1460,7 +1459,6 @@ UserRouter.post(
       }
       await user.save();
       const newtoken = await generateToken(user._id)
-      console.log("newtoken", newtoken)
       if (newtoken.status === 'success') {
         res.json({
           status: "success",
@@ -1566,7 +1564,6 @@ UserRouter.get("/stats/artist", ArtistAuthentication, async (req, res) => {
   // Get Job Applied List, Reviews , View , Bookmarks List
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  console.log("decoded", decoded);
   try {
     const jobs = await JobAppliedModel.countDocuments({
       appliedBy: decoded._id,
@@ -1953,7 +1950,8 @@ UserRouter.post(
           planExpireAt: planExpireDate,
         },
       );
-      let newtoken = await generateToken(decoded._id)
+      let newtoken = await generateToken(userDetails[0]._id)
+      
       if (newtoken.status === 'success') {
         return res.json({
           status: "success",
