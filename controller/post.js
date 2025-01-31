@@ -546,7 +546,7 @@ PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
   const decoded = jwt.verify(token, "Authentication");
 
   try {
-    const bookmark = await BookMarkModel.find({ postId: id });
+    const bookmark = await BookMarkModel.find({ postId: id, bookmarkedBy: decoded._id });
 
     if (bookmark.length == 0) {
       if (status == true) {
@@ -664,7 +664,7 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
         $sort: { createdAt: -1 },
       },
     ]);
-    
+
 
     if (bookmark.length == 0) {
       return res.json({

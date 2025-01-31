@@ -88,7 +88,6 @@ const {
 } = require("../middleware/MiddlewareExport");
 const { createWallet } = require("./wallet");
 const { currentDate, getDateAfter30Days } = require("../service/currentDate");
-const { pipeline } = require("nodemailer/lib/xoauth2");
 
 const UserRouter = express.Router();
 
@@ -103,6 +102,36 @@ const hash = {
     return crypt.createHash("md5").update(data).digest("hex");
   },
 };
+
+const generateToken = async (props) => {
+  const { id } = props;
+  try {
+
+    const userdetails = await UserModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
+
+    if (userdetails.length === 0) {
+      return { status: "error", message: "No User Found With This Id" }
+    } else {
+      let token = jwt.sign(
+        {
+          _id: userdetails[0]._id,
+          name: userdetails[0].name,
+          email: userdetails[0].email,
+          accountType: userdetails[0].accountType,
+          profile: userdetails[0].profile,
+          verified: userdetails[0].verified,
+          subscription: userdetails[0].subscription,
+          planExpireAt: userdetails[0].planExpireAt,
+          exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+        },
+        "Authentication",
+      );
+      return { status: "success", token: token }
+    }
+  } catch (error) {
+    return { status: "error", message: `${error.message}` }
+  }
+}
 
 // Regular User Login
 
@@ -157,20 +186,6 @@ UserRouter.post("/login", async (req, res) => {
               redirect: "/user/basicprofile",
             });
           }
-
-          // if (
-          //   userExists[0].category === undefined ||
-          //   userExists[0].category === ""
-          // ) {
-          //   return res.json({
-          //     status: "success",
-          //     message: "Login Successful",
-          //     token: token,
-          //     type: userExists[0].accountType,
-          //     redirect: "/user/basicprofile",
-          //   });
-          // }
-
           res.json({
             status: "success",
             message: "Login Successfully",
@@ -415,148 +430,6 @@ UserRouter.post("/forgot", async (req, res) => {
     });
   }
 });
-
-// UserRouter.post("/forgot/phone", async (req, res) => {
-//   try {
-//     const { email } = req.body;
-//     const userExists = await UserModel.find({ email });
-//     if (userExists.length === 0) {
-//       return res.json({
-//         status: "error",
-//         message: "No User Exists With This Email, Please SignUp First",
-//         redirect: "/user/register",
-//       });
-//     } else {
-//       let newotp = otpGenerator.generate(6, {
-//         upperCaseAlphabets: false,
-//         specialChars: false,
-//         lowerCaseAlphabets: false,
-//       });
-//       let forgotpasswordtoken = jwt.sign(
-//         {
-//           name: userExists[0].name,
-//           email: userExists[0].email,
-//           userId: userExists[0]._id,
-//           exp: Math.floor(Date.now() / 1000) + 60 * 15,
-//         },
-//         "ResetPassword",
-//       );
-//       try {
-//         const existstoken = await ForgotPasswordModel.find({
-//           userId: userExists[0]._id,
-//         });
-//         if (existstoken.length !== 0) {
-//           return res.json({
-//             status: "error",
-//             message:
-//               "Check Your mailbox You can still use your old otp to reset the password ",
-//           });
-//         }
-//         const ResetPassword = new ForgotPasswordModel({
-//           userId: userExists[0]._id,
-//           token: forgotpasswordtoken,
-//           otp: newotp,
-//           expireAt: Date.now() + 15 * 60 * 1000,
-//         });
-//         await ResetPassword.save();
-//       } catch (error) {
-//         return res.json({
-//           status: "error",
-//           message: "Failed To Save Use",
-//           redirect: "/",
-//         });
-//       }
-//       let forgotPasswordtemplate = path.join(
-//         __dirname,
-//         "../emailtemplate/forgotPasswordPhone.ejs",
-//       );
-//       ejs.renderFile(
-//         forgotPasswordtemplate,
-//         { otp: newotp },
-//         function (err, template) {
-//           if (err) {
-//             res.json({ status: "error", message: err.message });
-//           } else {
-//             const mailOptions = {
-//               from: process.env.emailuser,
-//               to: `${userExists[0].email}`,
-//               subject: "Otp To Reset Password ",
-//               html: template,
-//             };
-//             gmailtransporter.sendMail(mailOptions, (error, info) => {
-//               if (error) {
-//                 console.log(error);
-//                 return res.json({
-//                   status: "error",
-//                   message: "Failed to send email",
-//                   redirect: "/",
-//                 });
-//               } else {
-//                 return res.json({
-//                   status: "success",
-//                   message: "Please Check Your Email",
-//                   redirect: "/",
-//                   token: forgotpasswordtoken,
-//                 });
-//               }
-//             });
-//           }
-//         },
-//       );
-//     }
-//   } catch (error) {
-//     return res.json({
-//       status: "error",
-//       message: `Error Found in Forgot Password ${error.message}`,
-//     });
-//   }
-// });
-// Forgot Password Step 2 Change Password
-// For Phone
-// UserRouter.post("/changePassword/phone", async (req, res) => {
-//   const token = req.headers.authorization.split(" ")[1];
-//   const { otp, password, cnfpassword } = req.body;
-//   try {
-//     const decoded = jwt.verify(token, "ResetPassword");
-//     const otpkey = await ForgotPasswordModel.aggregate([
-//       {
-//         $match: { userId: new mongoose.Types.ObjectId(decoded.userId) },
-//       },
-//     ]);
-//     if (otpkey.length === 0) {
-//       return res.json({
-//         status: "success",
-//         message:
-//           "Otp Expired, Your Otp is Only Valid For 15 minutes. Please try again",
-//       });
-//     }
-//     if (otp !== otpkey[0].otp) {
-//       return res.json({
-//         status: "error",
-//         message: "Entered Otp is wrong",
-//       });
-//     }
-//     if (password !== cnfpassword) {
-//       return res.json({
-//         status: "error",
-//         message: "Your password & Confirm Password Doesn't Match",
-//       });
-//     }
-//     const user = await UserModel.findByIdAndUpdate(decoded.userId, {
-//       password: hash.sha256(password),
-//     });
-//     return res.json({
-//       status: "success",
-//       message: "You have Successfully Updated Your Account Password.",
-//     });
-//   } catch (error) {
-//     return res.json({
-//       status: "error",
-//       message: `Failed To Change Password ${error.message}`,
-//     });
-//   }
-// });
-// For Website
 
 UserRouter.post("/changePassword", async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
@@ -837,87 +710,7 @@ UserRouter.patch(
   },
 );
 
-// Getting List Of All Followers Of an User
-// UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
-//   const token = req.headers.authorization.split(" ")[1];
-//   const decoded = jwt.verify(token, "Authentication");
-//   try {
-//     const user = await FollowModel.aggregate([
-//       {
-//         $match: {
-//           userId: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
-//         },
-//       },
-//       {
-//         $unwind: "$followedBy",
-//       },
-//       {
-//         $lookup: {
-//           from: "users",
-//           localField: "followedBy",
-//           foreignField: "_id",
-//           pipeline: [
-//             {
-//               $project: {
-//                 _id: 1,
-//                 name: 1,
-//                 profile: 1,
-//                 accountType: 1,
-//                 email: 1,
-//                 category: 1,
-//               },
-//             },
-//             {
-//               $lookup: {
-//                 from: "followers",
-//                 localField: "_id",
-//                 foreignField: "userId",
-//                 pipeline: [
-//                   {
-//                     $addFields: {
-//                       followstatus: {
-//                         $in: [
-//                           new mongoose.Types.ObjectId(decoded._id),
-//                           {
-//                             $reduce: {
-//                               input: "$followedBy",
-//                               initialValue: [],
-//                               in: {
-//                                 $concatArrays: ["$$value", "$$this.userId"],
-//                               }, // Flatten the likedBy arrays
-//                             },
-//                           },
-//                         ],
-//                       },
-//                     },
-//                   },
-//                 ],
-//                 as: "followerdetails",
-//               },
-//             },
-//           ],
-//           as: "userdetails",
-//         },
-//         // },
-//         // {
-//         //   $unwind: "$userdetails", // Unwind userdetails to convert it from an array to an object
-//         // },
-//         // {
-//         //   $project: { userId: 0, CreatedAt: 0, __v: 0, followedBy: 0 },
-//       },
-//     ]);
-
-//     return res.json({
-//       status: "success",
-//       user: user,
-//     });
-//   } catch (error) {
-//     res.json({
-//       status: "error",
-//       message: `Error Found in While Getting User Follower List Section ${error.message}`,
-//     });
-//   }
-// });
+// Getting list Of All Followers Of Users
 UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
@@ -1666,10 +1459,21 @@ UserRouter.post(
         user.banner = req.files.banner[0].location;
       }
       await user.save();
-      res.json({
-        status: "success",
-        message: `Successfully Updated Basic Profile Details`,
-      });
+      const newtoken = await generateToken(user._id)
+      console.log("newtoken", newtoken)
+      if (newtoken.status === 'success') {
+        res.json({
+          status: "success",
+          message: `Successfully Updated Basic Profile Details`,
+          token: newtoken.token
+        });
+
+      } else {
+        res.json({
+          status: "success",
+          message: `Successfully Updated Basic Profile Details`,
+        });
+      }
     } catch (error) {
       res.json({
         status: "error",
@@ -2149,11 +1953,21 @@ UserRouter.post(
           planExpireAt: planExpireDate,
         },
       );
-      console.log("user details ", userUpdatedDetails);
-      return res.json({
-        status: "success",
-        message: "Subscription Plan Purchased Successfully ",
-      });
+      let newtoken = await generateToken(decoded._id)
+      if (newtoken.status === 'success') {
+        return res.json({
+          status: "success",
+          message: "Subscription Plan Purchased Successfully ",
+          token: newtoken.token
+        });
+
+      } else {
+        return res.json({
+          status: "success",
+          message: "Subscription Plan Purchased Successfully ",
+        });
+
+      }
     } catch (error) {
       return res.json({
         status: "error",
