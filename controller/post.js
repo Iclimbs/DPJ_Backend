@@ -644,21 +644,16 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
                   $in: [
                     new mongoose.Types.ObjectId(decoded._id),
                     {
-                      $ifNull: [
-                        {
-                          $reduce: {
-                            input: "$likes",
-                            initialValue: [],
-                            in: { $concatArrays: ["$$value", "$$this.likedBy"] },
-                          },
-                        },
-                        [],
-                      ],
+                      $reduce: {
+                        input: "$like",
+                        initialValue: [],
+                        in: { $concatArrays: ["$$value", "$$this.likedBy"] }, // Flatten the likedBy arrays
+                      },
                     },
                   ],
                 },
               },
-            },
+            },      
             {
               $lookup: {
                 from: "comments",
