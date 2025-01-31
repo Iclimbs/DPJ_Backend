@@ -560,6 +560,11 @@ PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
           status: "success",
           message: `Added Bookmark Successfully`,
         });
+      } else {
+        return res.json({
+          status: "success",
+          message: `You haven't Bookmarked This post`,
+        });
       }
     } else {
       if (status == false) {
@@ -571,12 +576,18 @@ PostRouter.post("/add/bookmark/:id", UserAuthentication, async (req, res) => {
           status: "success",
           message: `Bookmark Successfully Removed`,
         });
+      }else{
+        return res.json({
+          status: "success",
+          message: `Already Bookmarked This Post`,
+        });
+
       }
     }
   } catch (error) {
     return res.json({
       status: "error",
-      message: `Failed To Add New Comment ${error.message}`,
+      message: `Failed To Add New Bookmark ${error.message}`,
     });
   }
 });
