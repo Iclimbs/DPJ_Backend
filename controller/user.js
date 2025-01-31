@@ -1802,6 +1802,7 @@ UserRouter.get("/subscription/list", UserAuthentication, async (req, res) => {
 UserRouter.get("/me/subscription", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
+  console.log("decoded",decoded)
   try {
     const plan = await SubscriptionModel.aggregate([
       {
@@ -1849,6 +1850,7 @@ UserRouter.get("/me/subscription", UserAuthentication, async (req, res) => {
       },
       { $project: { featurelist: 0, __v: 0 } },
     ]);
+    console.log("plan",plan)
     if (plan.length == 0) {
       return res.json({
         status: "error",
