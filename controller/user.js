@@ -62,7 +62,7 @@ const { oauth2client } = require("../service/googleConfig");
 const { transporter, gmailtransporter } = require("../service/transporter");
 
 // Transaction Api
-const { transactionData, subAmountinWallet } = require("./wallet");
+const { transactionData, subAmountinWallet, addAmountinWallet } = require("./wallet");
 
 // Required Models
 const {
@@ -77,6 +77,7 @@ const {
   JobAppliedModel,
   ReviewModel,
   BookMarkModel,
+  ReferModel,
 } = require("../model/ModelExport");
 
 // Required Middleware For File Upload & User Authentication
@@ -88,6 +89,8 @@ const {
 } = require("../middleware/MiddlewareExport");
 const { createWallet } = require("./wallet");
 const { currentDate, getDateAfter30Days } = require("../service/currentDate");
+const generateUniqueId = require('generate-unique-id');
+
 
 const UserRouter = express.Router();
 
@@ -131,6 +134,56 @@ const generateToken = async (props) => {
   } catch (error) {
     return { status: "error", message: `${error.message}` }
   }
+}
+
+const generateReferalCode = async (props) => {
+  try {
+    const newid = new ReferModel({
+      userId: props.userId,
+      referId: generateUniqueId({
+        length: 6,
+        useLetters: true,
+        useNumbers: true
+      }).toUpperCase()
+    })
+    await newid.save()
+    return { status: "success" }
+  } catch (error) {
+    return { status: 'error', message: `${error.message}` }
+  }
+
+
+}
+
+const addReferalCodeBonus = async (props) => {
+  const { code, newUserId } = props;
+  console.log("props ",props)
+  try {
+    const userExists = await ReferModel.aggregate([{ $match: { referId: code } }]);
+    if (userExists.length === 0) {
+      return { status: 'error', message: `No User Found With This Referal Code` }
+    } else {
+      const addingNewUserIdInUserReferModel = await ReferModel.findByIdAndUpdate(
+        userExists._id, // First argument should be the ID directly
+        { registeredBy: newUserId },
+        { new: true } // Optional: Returns the updated document
+      );
+      console.log("adding", addingNewUserIdInUserReferModel)
+      const addingReferalBonusToUserWallet = await addAmountinWallet({ amount: Number(process.env.ReferalAmount), userId: userExists[0]?.userId })
+      if (addingReferalBonusToUserWallet.status === 'error') {
+        return { status: 'error', message: addingReferalBonusToUserWallet?.message }
+      }
+      const addingReferalBonusTransaction = await transactionData({ amount: Number(process.env.ReferalAmount), userId: userExists[0]?.userId, message: 'Adding Referal Bonus To Users Wallet', toUserId: userExists[0]?.userId });
+      if (addingReferalBonusTransaction.status === 'error') {
+        return { status: 'error', message: addingReferalBonusTransaction.message }
+      }
+      return { status: 'success' }
+    }
+
+  } catch (error) {
+    return { status: 'error', message: `${error.message}` }
+  }
+
 }
 
 // Regular User Login
@@ -309,7 +362,27 @@ UserRouter.post("/register", async (req, res) => {
     try {
       const newUser = await user.save();
 
-      const wallet = createWallet({ userId: newUser._id });
+      const newUserReferalCode = await generateReferalCode({ userId: newUser._id })
+
+      if (newUserReferalCode.status === "error") {
+        return res.json({
+          status: "error",
+          message: "Failed To Create Referal Code For New User",
+          redirect: "/",
+        })
+      }
+
+      if (req.body?.referalCode) {
+        const addingReferalBonus = await addReferalCodeBonus({ code: req.body?.referalCode, newUserId: newUser._id });
+
+        if (addingReferalBonus.status === 'error') {
+          return res.json({ status: 'error', message: `Faild To Add Referal Bonus To User Account ${addingReferalBonus?.message}` })
+        }
+
+      }
+
+
+      const wallet = await createWallet({ userId: newUser._id });
 
       if (wallet.status === "error") {
         return res.json({
@@ -1067,17 +1140,17 @@ UserRouter.get("/find/artist", UserAuthentication, async (req, res) => {
     if (!token) {
       return res.status(401).json({ status: "error", message: "Unauthorized: No token provided" });
     }
- 
+
     const decoded = jwt.verify(token, "Authentication");
     const { search } = req.query;
-   
+
     let filter = {
       email: { $ne: decoded.email }, // Exclude logged-in user's profile
       accountType: "artist",
       disabled: false,
       verified: true,
     };
- 
+
     // If search query is provided, apply regex filtering
     if (search) {
       const regex = new RegExp(search, "i");
@@ -1086,21 +1159,21 @@ UserRouter.get("/find/artist", UserAuthentication, async (req, res) => {
         { category: { $regex: regex } },
       ];
     }
- 
+
     const results = await UserModel.find(filter, {
       password: 0,
       CreatedAt: 0,
     });
- 
+
     if (results.length === 0) {
       return res.json({
         status: "error",
         message: "No matching records found",
       });
     }
- 
+
     return res.json({ status: "success", data: results });
- 
+
   } catch (error) {
     return res.status(500).json({
       status: "error",
@@ -1108,7 +1181,7 @@ UserRouter.get("/find/artist", UserAuthentication, async (req, res) => {
     });
   }
 });
- 
+
 
 // Get List of All The Artists From Server User Which needs to be shown in Artist Search Page
 
@@ -1147,17 +1220,17 @@ UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
     if (!token) {
       return res.status(401).json({ status: "error", message: "Unauthorized: No token provided" });
     }
- 
+
     const decoded = jwt.verify(token, "Authentication");
     const { search } = req.query;
-   
+
     let filter = {
       email: { $ne: decoded.email }, // Exclude logged-in user's profile
       accountType: "professional",
       disabled: false,
       verified: true,
     };
- 
+
     // If search query is provided, apply regex filtering
     if (search) {
       const regex = new RegExp(search, "i");
@@ -1166,21 +1239,21 @@ UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
         { category: { $regex: regex } },
       ];
     }
- 
+
     const results = await UserModel.find(filter, {
       password: 0,
       CreatedAt: 0,
     });
- 
+
     if (results.length === 0) {
       return res.json({
         status: "error",
         message: "No matching records found",
       });
     }
- 
+
     return res.json({ status: "success", data: results });
- 
+
   } catch (error) {
     return res.json({
       status: "error",
@@ -1188,7 +1261,7 @@ UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
     });
   }
 });
- 
+
 
 // Get List of All The Verified Professional From Server User Which needs to be shown in Professional Search Page
 
@@ -1834,7 +1907,7 @@ UserRouter.get("/subscription/list", UserAuthentication, async (req, res) => {
 UserRouter.get("/me/subscription", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  console.log("decoded",decoded)
+  console.log("decoded", decoded)
   try {
     const plan = await SubscriptionModel.aggregate([
       {
@@ -1882,7 +1955,7 @@ UserRouter.get("/me/subscription", UserAuthentication, async (req, res) => {
       },
       { $project: { featurelist: 0, __v: 0 } },
     ]);
-    console.log("plan",plan)
+    console.log("plan", plan)
     if (plan.length == 0) {
       return res.json({
         status: "error",

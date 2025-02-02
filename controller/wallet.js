@@ -153,9 +153,9 @@ const transactionData = async (props) => {
       status: "Success",
       method: "Wallet",
       message: props?.message,
-      from: props?.fromUserId || "",
-      to: props?.toUserId || "",
-      eventId: props?.eventId || "",
+      from: props?.fromUserId,
+      to: props?.toUserId,
+      eventId: props?.eventId,
     });
     await transaction.save();
     return {
