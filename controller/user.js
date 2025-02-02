@@ -157,14 +157,14 @@ const generateReferalCode = async (props) => {
 
 const addReferalCodeBonus = async (props) => {
   const { code, newUserId } = props;
-  console.log("props ",props)
+  console.log("props ", props)
   try {
     const userExists = await ReferModel.aggregate([{ $match: { referId: code } }]);
     if (userExists.length === 0) {
       return { status: 'error', message: `No User Found With This Referal Code` }
     } else {
       const addingNewUserIdInUserReferModel = await ReferModel.findByIdAndUpdate(
-        userExists._id, // First argument should be the ID directly
+        userExists[0]._id, // First argument should be the ID directly
         { registeredBy: newUserId },
         { new: true } // Optional: Returns the updated document
       );
@@ -380,7 +380,6 @@ UserRouter.post("/register", async (req, res) => {
         }
 
       }
-
 
       const wallet = await createWallet({ userId: newUser._id });
 
