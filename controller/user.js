@@ -1061,38 +1061,54 @@ UserRouter.get("/me/document/status", UserAuthentication, async (req, res) => {
 // Get List of All The Artists From Server It Will Be Based On Email & Category
 
 UserRouter.get("/find/artist", UserAuthentication, async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
-  const { search } = req.query;
-  const regex = new RegExp(search, "i");
   try {
-    const results = await UserModel.find(
-      {
-        $or: [
-          { email: { $regex: regex, $ne: decoded.email } },
-          { category: { $regex: regex } },
-        ],
-        accountType: "artist",
-        disabled: "false",
-        verified: "true",
-      },
-      { password: 0, verified: 0, disabled: 0, CreatedAt: 0 },
-    );
-
+    // Extract token and decode user details
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ status: "error", message: "Unauthorized: No token provided" });
+    }
+ 
+    const decoded = jwt.verify(token, "Authentication");
+    const { search } = req.query;
+   
+    let filter = {
+      email: { $ne: decoded.email }, // Exclude logged-in user's profile
+      accountType: "artist",
+      disabled: false,
+      verified: true,
+    };
+ 
+    // If search query is provided, apply regex filtering
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filter.$or = [
+        { email: { $regex: regex } },
+        { category: { $regex: regex } },
+      ];
+    }
+ 
+    const results = await UserModel.find(filter, {
+      password: 0,
+      CreatedAt: 0,
+    });
+ 
     if (results.length === 0) {
       return res.json({
         status: "error",
         message: "No matching records found",
       });
     }
+ 
     return res.json({ status: "success", data: results });
+ 
   } catch (error) {
-    return res.json({
+    return res.status(500).json({
       status: "error",
-      message: `Èrror Found While Searching For Artist ${error.message}`,
+      message: `Error while searching for artists: ${error.message}`,
     });
   }
 });
+ 
 
 // Get List of All The Artists From Server User Which needs to be shown in Artist Search Page
 
@@ -1125,38 +1141,54 @@ UserRouter.get("/listall/artist", UserAuthentication, async (req, res) => {
 // Search For Professional Based on Email & Category
 
 UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication");
-  const { search } = req.query;
-  const regex = new RegExp(search, "i");
   try {
-    const results = await UserModel.find(
-      {
-        $or: [
-          { email: { $regex: regex, $ne: decoded.email } },
-          { category: { $regex: regex } },
-        ],
-        accountType: "professional",
-        disabled: "false",
-        verified: "true",
-      },
-      { password: 0, verified: 0, disabled: 0, CreatedAt: 0 },
-    );
-
+    // Extract token and decode user details
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ status: "error", message: "Unauthorized: No token provided" });
+    }
+ 
+    const decoded = jwt.verify(token, "Authentication");
+    const { search } = req.query;
+   
+    let filter = {
+      email: { $ne: decoded.email }, // Exclude logged-in user's profile
+      accountType: "professional",
+      disabled: false,
+      verified: true,
+    };
+ 
+    // If search query is provided, apply regex filtering
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filter.$or = [
+        { email: { $regex: regex } },
+        { category: { $regex: regex } },
+      ];
+    }
+ 
+    const results = await UserModel.find(filter, {
+      password: 0,
+      CreatedAt: 0,
+    });
+ 
     if (results.length === 0) {
       return res.json({
         status: "error",
         message: "No matching records found",
       });
     }
+ 
     return res.json({ status: "success", data: results });
+ 
   } catch (error) {
     return res.json({
       status: "error",
-      message: `Èrror Found While Searching For Professional ${error.message}`,
+      message: `Error while searching for professionals: ${error.message}`,
     });
   }
 });
+ 
 
 // Get List of All The Verified Professional From Server User Which needs to be shown in Professional Search Page
 
