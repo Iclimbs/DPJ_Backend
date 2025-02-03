@@ -803,6 +803,7 @@ UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
                 accountType: 1,
                 email: 1,
                 category: 1,
+                verified: 1,
               },
             },
             {
@@ -900,7 +901,17 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
           localField: "userId",
           foreignField: "_id",
           pipeline: [
-            { $project: { profile: 1, name: 1, email: 1, category: 1 } },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                profile: 1,
+                accountType: 1,
+                email: 1,
+                category: 1,
+                verified: 1,
+              }
+            },
           ],
           as: "userDetails",
         },

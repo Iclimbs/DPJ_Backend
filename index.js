@@ -15,14 +15,10 @@ require("./service/googleAuth")
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.json());
-app.use(cors());
-app.use(function(req, res, next) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  next();
-});
+app.use(cors({
+  origin: 'http://localhost:5173', // Allow requests from this origin
+  credentials: true, // Allow credentials (if needed)
+}));
 app.use(session({ secret: 'cats', resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -63,18 +59,10 @@ app.use(
 );
 
 app.get('/auth/google',
-  passport.authenticate('google', { scope: [ 'email', 'profile' ] }
-));
-
-// app.get( '/auth/google/callback',
-//   passport.authenticate( 'google', {
-//     successRedirect: '/home',
-//     failureRedirect: '/auth/google/failure'
-//   })
-// );
+  passport.authenticate('google', { scope: ['email', 'profile'] }
+  ));
 
 app.route('/auth/google/callback').get(passport.authenticate('google', { failureRedirect: '/', session: false }), (req, res) => {
-  // res.send("done")
   res.json({ user: req.user, success: true, token: req?.user?.token }); // Send token in the response
 })
 
@@ -86,6 +74,6 @@ app.listen(process.env.Port, async () => {
     await connection;
     console.log(`Server is Up & Running At Port ${process.env.Port}`);
   } catch (error) {
-    res.json({status:'error',message:`${error.message}`})
+    res.json({ status: 'error', message: `${error.message}` })
   }
 });

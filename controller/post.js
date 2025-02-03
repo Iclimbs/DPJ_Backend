@@ -744,7 +744,15 @@ PostRouter.get("/listall/live", UserAuthentication, async (req, res) => {
           as: "userdetails",
           pipeline: [
             {
-              $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1 },
+              $project: {
+                _id: 1,
+                name: 1,
+                profile: 1,
+                accountType: 1,
+                email: 1,
+                category: 1,
+                verified: 1,
+              },
             },
           ],
         },
