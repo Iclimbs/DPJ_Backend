@@ -90,6 +90,9 @@ const {
 const { createWallet } = require("./wallet");
 const { currentDate, getDateAfter30Days } = require("../service/currentDate");
 const generateUniqueId = require('generate-unique-id');
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+
 
 
 const UserRouter = express.Router();
@@ -1694,85 +1697,166 @@ UserRouter.get("/stats/artist", ArtistAuthentication, async (req, res) => {
 
 // Register With Google
 
-UserRouter.get("/register/google", async (req, res) => {
-  try {
-    const { code } = req.query;
-    const googleRes = await oauth2client.getToken(code);
-    oauth2client.setCredentials(googleRes.tokens);
-    const googleresponse = await fetch(
-      `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`,
-    );
+// UserRouter.get("/register/google", async (req, res) => {
+//   try {
+//     const { code } = req.query;
+//     const googleRes = await oauth2client.getToken(code);
+//     oauth2client.setCredentials(googleRes.tokens);
+//     const googleresponse = await fetch(
+//       `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`,
+//     );
 
-    const result = await googleresponse.json();
-    const userDetails = await UserModel.find({ email: result.email })
-    if (userDetails.length === 0) {
-      return res.json({ status: "error", name: result.name, email: result.email })
-    } else {
-      if (userDetails[0].accountType !== "admin") {
-        let token = jwt.sign(
-          {
-            _id: userDetails[0]._id,
-            name: userDetails[0].name,
-            email: userDetails[0].email,
-            accountType: userDetails[0].accountType,
-            profile: userDetails[0].profile,
-            verified: userDetails[0].verified,
-            subscription: userDetails[0].subscription,
-            planExpireAt: userDetails[0].planExpireAt,
-            exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-          },
-          "Authentication",
-        );
-        if (userDetails[0].dob === undefined || userDetails[0].dob === "") {
-          return res.json({
-            status: "success",
-            message: "Login Successful",
-            token: token,
-            type: userDetails[0].accountType,
-            redirect: "/user/basicprofile",
-          });
-        }
-        if (
-          userDetails[0].profile === undefined ||
-          userDetails[0].profile === ""
-        ) {
-          return res.json({
-            status: "success",
-            message: "Login Successful",
-            token: token,
-            type: userDetails[0].accountType,
-            redirect: "/user/basicprofile",
-          });
-        }
-        return res.json({
-          status: "success",
-          message: "Login Successfully",
-          token: token,
-          type: userDetails[0].accountType,
-        });
-      } else {
-        return res.json({
-          status: "error",
-          message: "You Cannot Login Using Admin Credential's !! ",
-          redirect: "/",
-        });
-      }
+//     const result = await googleresponse.json();
+//     const userDetails = await UserModel.find({ email: result.email })
+//     if (userDetails.length === 0) {
+//       return res.json({ status: "error", name: result.name, email: result.email })
+//     } else {
+//       if (userDetails[0].accountType !== "admin") {
+//         let token = jwt.sign(
+//           {
+//             _id: userDetails[0]._id,
+//             name: userDetails[0].name,
+//             email: userDetails[0].email,
+//             accountType: userDetails[0].accountType,
+//             profile: userDetails[0].profile,
+//             verified: userDetails[0].verified,
+//             subscription: userDetails[0].subscription,
+//             planExpireAt: userDetails[0].planExpireAt,
+//             exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+//           },
+//           "Authentication",
+//         );
+//         if (userDetails[0].dob === undefined || userDetails[0].dob === "") {
+//           return res.json({
+//             status: "success",
+//             message: "Login Successful",
+//             token: token,
+//             type: userDetails[0].accountType,
+//             redirect: "/user/basicprofile",
+//           });
+//         }
+//         if (
+//           userDetails[0].profile === undefined ||
+//           userDetails[0].profile === ""
+//         ) {
+//           return res.json({
+//             status: "success",
+//             message: "Login Successful",
+//             token: token,
+//             type: userDetails[0].accountType,
+//             redirect: "/user/basicprofile",
+//           });
+//         }
+//         return res.json({
+//           status: "success",
+//           message: "Login Successfully",
+//           token: token,
+//           type: userDetails[0].accountType,
+//         });
+//       } else {
+//         return res.json({
+//           status: "error",
+//           message: "You Cannot Login Using Admin Credential's !! ",
+//           redirect: "/",
+//         });
+//       }
 
-    }
+//     }
 
 
-    return res.json({
-      status: "success",
-      message: "Login Successful",
-      // token: token,
-    });
-  } catch (error) {
-    return res.json({
-      status: "error",
-      message: `Error Found in User Registration ${error}`,
-    });
-  }
-});
+//     return res.json({
+//       status: "success",
+//       message: "Login Successful",
+//       // token: token,
+//     });
+//   } catch (error) {
+//     return res.json({
+//       status: "error",
+//       message: `Error Found in User Registration ${error}`,
+//     });
+//   }
+// });
+// console.log("google",process.env.GOOGLE_CLIENT_ID);
+// console.log("google",process.env.GOOGLE_CLIENT_SECRET);
+
+// UserRouter.get("/register/google", passport.authenticate('google', { failureRedirect: '/login', failureMessage: true }), async (req, res) => {
+
+//   passport.use(new GoogleStrategy(
+//     {
+//       clientID: process.env.GOOGLE_CLIENT_ID, // Use your actual client ID
+//       clientSecret: process.env.GOOGLE_CLIENT_SECRET, // Use your actual client secret
+//       callbackURL: "/auth/google/callback",
+//       scope: ["profile", "email"], // Requesting access to basic profile and email
+//     },
+//     async function (accessToken, refreshToken, profile, done) {
+//       console.log("done ", done);
+//       console.log("accessToken", accessToken);
+//       console.log("refreshToken", refreshToken);
+//       console.log("Profile", profile);
+
+
+
+//       try {
+//         // Check if the user already exists
+//         // let User = await user.findOne({ email: profile._json.email });
+
+//         // if (!User) {
+//         //   // If the user doesn't exist, create a new user
+//         //   let createuser = await user.create({
+//         //     name: profile.displayName,
+//         //     email: profile._json.email,
+//         //     profile_picture: profile._json.picture,
+//         //     signUpBy: "Google", // Mark as signed up via Google,
+//         //     token: "null",
+//         //     phone_number: null,
+//         //     profile_picture: "multerImages/default-picture.png"
+//         //   });
+//         //   const token = await jwt.sign(
+//         //     { id: createuser._id, email: createuser.email },
+//         //     process.env.JWT_SECRET, // Secret for signing JWT
+//         //     { expiresIn: "10d" } // Token expiration (optional)
+//         //   );
+//         //   if (!token) next(new ErrorHandler(500, "Something went wrong while giving you token! please try Again"))
+//         //   createuser.token = token
+//         //   await createuser.save({ validateBeforeSave: false })
+//         //   // Attach the token to the user object
+//         //   // user.token = token;
+//         //   return done(null, { ...createuser.toObject(), token }); // Pass the user object with the token
+//         // }
+
+//         // // Create a JWT token
+//         // const token = await jwt.sign(
+//         //   { id: User._id, email: User.email },
+//         //   process.env.JWT_SECRET, // Secret for signing JWT
+//         //   { expiresIn: "10d" } // Token expiration (optional)
+//         // );
+//         // User.token = token
+//         // await User.save({ validateBeforeSave: false })
+//         return done("testing"); // Pass the user object with the token
+
+
+//         // return done(null, { ...User.toObject(), token }); // Pass the user object with the token
+//       } catch (error) {
+//         console.log("Google Login ",error.message)
+//         return done(new ErrorHandler(error.status, error.message))
+//       }
+//     }
+//   )
+//   );
+
+// });
+
+UserRouter.get('/auth/google',
+  passport.authenticate('google', { scope: [ 'email', 'profile' ] }
+));
+
+UserRouter.get( '/auth/google/callback',
+  passport.authenticate( 'google', {
+    successRedirect: '/protected',
+    failureRedirect: '/auth/google/failure'
+  })
+);
+
 
 UserRouter.get(
   "/basicdetails/update/google",

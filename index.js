@@ -5,13 +5,20 @@ const path = require("node:path");
 const swaggerjsdoc = require("swagger-jsdoc");
 const swaggerui = require("swagger-ui-express");
 const connection = require("./connection/connection");
-const bodyParser = require('body-parser')
+const bodyParser = require('body-parser');
+const passport = require("passport");
+const session = require('express-session');
 const app = express();
 
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.json());
 app.use(cors());
+app.use(session({ secret: 'cats', resave: false, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
+
+
 const options = {
   definition: {
     openapi: "3.0.0",

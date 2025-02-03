@@ -34,8 +34,6 @@ ReferRouter.get("/getlist", async (req, res) => {
             return res.json({ status: "success", data: users[0] })
         } else {
             const newUser = await generateReferenceId({ userId: decoded._id })
-            console.log("new user",newUser);
-            
             if (newUser.status === 'success') {
                 return res.json({ status: "success", data: newUser.data })
             } else {
