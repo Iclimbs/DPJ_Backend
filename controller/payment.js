@@ -24,8 +24,6 @@ PaymentRouter.post("/checkout", UserAuthentication, async (req, res) => {
 
     razorpayInstance.orders.create(options, (error, order) => {
       if (error) {
-        console.log("Error", error);
-
         return res.json({
           status: "error",
           message: `Something Went Wrong ${error}`,

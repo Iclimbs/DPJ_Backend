@@ -127,8 +127,6 @@ ReviewRouter.post("/add/otherArtist", UserAuthentication, async (req, res) => {
   const { userId, eventId } = req.query;
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  console.log("decoed ", decoded._id);
-
   // Seach For Event Creator Artist Review
 
   try {

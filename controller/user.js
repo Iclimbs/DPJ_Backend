@@ -90,10 +90,6 @@ const {
 const { createWallet } = require("./wallet");
 const { currentDate, getDateAfter30Days } = require("../service/currentDate");
 const generateUniqueId = require('generate-unique-id');
-const passport = require("passport");
-const GoogleStrategy = require("passport-google-oauth20").Strategy;
-
-
 
 const UserRouter = express.Router();
 
@@ -160,7 +156,6 @@ const generateReferalCode = async (props) => {
 
 const addReferalCodeBonus = async (props) => {
   const { code, newUserId } = props;
-  console.log("props ", props)
   try {
     const userExists = await ReferModel.aggregate([{ $match: { referId: code } }]);
     if (userExists.length === 0) {
@@ -171,7 +166,6 @@ const addReferalCodeBonus = async (props) => {
         { registeredBy: newUserId },
         { new: true } // Optional: Returns the updated document
       );
-      console.log("adding", addingNewUserIdInUserReferModel)
       const addingReferalBonusToUserWallet = await addAmountinWallet({ amount: Number(process.env.ReferalAmount), userId: userExists[0]?.userId })
       if (addingReferalBonusToUserWallet.status === 'error') {
         return { status: 'error', message: addingReferalBonusToUserWallet?.message }
@@ -1846,16 +1840,7 @@ UserRouter.get("/stats/artist", ArtistAuthentication, async (req, res) => {
 
 // });
 
-UserRouter.get('/auth/google',
-  passport.authenticate('google', { scope: [ 'email', 'profile' ] }
-));
 
-UserRouter.get( '/auth/google/callback',
-  passport.authenticate( 'google', {
-    successRedirect: '/protected',
-    failureRedirect: '/auth/google/failure'
-  })
-);
 
 
 UserRouter.get(
@@ -1990,7 +1975,6 @@ UserRouter.get("/subscription/list", UserAuthentication, async (req, res) => {
 UserRouter.get("/me/subscription", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  console.log("decoded", decoded)
   try {
     const plan = await SubscriptionModel.aggregate([
       {
@@ -2038,7 +2022,6 @@ UserRouter.get("/me/subscription", UserAuthentication, async (req, res) => {
       },
       { $project: { featurelist: 0, __v: 0 } },
     ]);
-    console.log("plan", plan)
     if (plan.length == 0) {
       return res.json({
         status: "error",

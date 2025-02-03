@@ -23,13 +23,6 @@ JobRouter.get("/listall/active", UserAuthentication, async (req, res) => {
         //const activeJobs = await JobModel.aggregate([{ $match: { endtime: { $gte: currentDate } } }])
         const activeJobs = await JobModel.aggregate([{ $match: { createdBy: new mongoose.Types.ObjectId(decoded._id) } }, { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', as: 'ProfessionalDetails' } }])
 
-        console.log("All Job List", activeJobs)
-
-        console.log("All Job List type ", typeof (activeJobs));
-
-        console.log("All Job List Length", activeJobs.lenght);
-
-
         if (activeJobs.lenght > 0) {
             res.json({ status: "success", data: activeJobs })
         } else {

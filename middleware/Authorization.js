@@ -9,9 +9,7 @@ const AdminAuthentication = (req, res, next) => {
             } else {
                 res.json({ status: "error", message: "Admin Permission Not Found In Your Account" })
             }
-        } catch (error) {
-            console.log(error.message);
-            
+        } catch (error) {            
             res.json({ status: "error", message: "Token Expired. Please Login Again" })
         }
     } else {
