@@ -19,6 +19,7 @@ const { SubscriptionModel } = require("./subscription.model");
 const { ForgotPasswordModel } = require("./forgotPassword.model");
 const {SubscriptionLogs} = require("./subscription.log.model")
 const {ReferModel} = require("./refer.model")
+const {BankAccountModel} = require("./bankdetails.model")
 module.exports = {
   BookedTicketModel,
   BookMarkModel,
@@ -41,5 +42,6 @@ module.exports = {
   SubscriptionModel,
   ForgotPasswordModel,
   SubscriptionLogs,
-  ReferModel
+  ReferModel,
+  BankAccountModel
 };

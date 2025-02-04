@@ -18,30 +18,40 @@ app.use(express.json());
 //   origin: ['http://localhost:5173',], // Allow requests from this origin
 //   credentials: true, // Allow credentials (if needed)
 // }));
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://dpjhub.com.s3-website.ap-south-1.amazonaws.com",
-];
+// const allowedOrigins = [
+//   "http://localhost:5173",
+//   "http://dpjhub.com.s3-website.ap-south-1.amazonaws.com",
+// ];
 
 // CORS configuration
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       // Allow requests with no origin (e.g., mobile apps, curl requests)
+//       if (!origin) return callback(null, true);
+
+//       // Check if the origin is in the allowed list
+//       if (allowedOrigins.indexOf(origin) !== -1) {
+//         callback(null, true);
+//       } else {
+//         callback(new Error("Not allowed by CORS"));
+//       }
+//     },
+//     credentials: true, // Allow cookies and credentials
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allowed HTTP methods
+//     allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+//   })
+// );
+
+
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (e.g., mobile apps, curl requests)
-      if (!origin) return callback(null, true);
-
-      // Check if the origin is in the allowed list
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true, // Allow cookies and credentials
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allowed HTTP methods
-    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+    origin: "http://localhost:5173",
+    methods: "GET,POST,PUT,DELETE",
+    credentials: true,
   })
 );
+
 
 app.use(session({ secret: 'cats', resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
@@ -86,11 +96,20 @@ app.get('/auth/google',
   passport.authenticate('google', { scope: ['email', 'profile'] }
   ));
 
-app.route('/auth/google/callback').get(passport.authenticate('google', { failureRedirect: '/', session: false }), (req, res) => {
-  console.log('google response ', res);
-  res.json({ user: req.user, success: true, token: req?.user?.token }); // Send token in the response
-  
-})
+
+  app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", {
+    successRedirect: 'http://localhost:5173',
+    failureRedirect: "/login/failed",
+  })
+);
+
+// app.route('/auth/google/callback').get(passport.authenticate('google', { failureRedirect: '/', session: false }), (req, res) => {
+//   console.log('google response ', res);
+//   res.json({ user: req.user, success: true, token: req?.user?.token }); // Send token in the response
+
+// })
 
 app.use("/api/v1/", require("./routes/routes"));
 app.use('/', express.static(path.join(__dirname, 'public')));
