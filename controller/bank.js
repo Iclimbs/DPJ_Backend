@@ -3,9 +3,10 @@ const jwt = require('jsonwebtoken');
 const BankRouter = express.Router();
 const { BankAccountModel } = require('../model/ModelExport');
 const { default: mongoose } = require('mongoose');
+const { UserAuthentication } = require('../middleware/MiddlewareExport');
 
 
-BankRouter.post("/add", async (req, res) => {
+BankRouter.post("/add", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     const { accountNo, accountName, ifscCode } = req.body
@@ -38,9 +39,7 @@ BankRouter.post("/add", async (req, res) => {
     }
 })
 
-
-
-BankRouter.get("/getdetails", async (req, res) => {
+BankRouter.get("/getdetails", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     try {
@@ -65,8 +64,7 @@ BankRouter.get("/getdetails", async (req, res) => {
     }
 })
 
-
-BankRouter.patch("/updateDetails/:id", async (req, res) => {
+BankRouter.patch("/updateDetails/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params;
     try {
         const bankDetails = await BankAccountModel.findByIdAndUpdate(

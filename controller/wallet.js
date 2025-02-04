@@ -39,7 +39,7 @@ const subAmountinWallet = async (props) => {
   } catch (error) {
     return {
       status: "error",
-      message: `Failed To Add Balance in the Wallet ${error.message}`,
+      message: `Failed To Deduct Balance From the Wallet ${error.message}`,
     };
   }
 };

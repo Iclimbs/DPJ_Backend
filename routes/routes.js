@@ -13,6 +13,7 @@ const { PaymentRouter } = require("../controller/payment");
 const ChatRouter = require("../controller/chat");
 const { ReferRouter } = require("../controller/refer");
 const { BankRouter } = require("../controller/bank");
+const { WithDrawlRouter } = require("../controller/withdrawl");
 
 router
   .use("/user", UserRouter)
@@ -29,5 +30,6 @@ router
   .use("/chat", ChatRouter)
   .use("/refer", ReferRouter)
   .use("/bank", BankRouter)
+  .use("/withdrawl",WithDrawlRouter)
 
 module.exports = router;
