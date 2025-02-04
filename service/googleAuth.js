@@ -11,11 +11,12 @@ passport.use(new GoogleStrategy({
     callbackURL: "http://backend.dpjhub.com/auth/google/callback",
     passReqToCallback: true,
 },
-    function (request, accessToken, refreshToken, profile, done) {
-        console.log("profile ",profile?.user);
+    // function (request, accessToken, refreshToken, profile, done) {
+    //     console.log("profile ",profile?.user);
         
-        return done(null, profile);
-    }));
+    //     return done(null, profile);
+    // })
+));
 
 passport.serializeUser(function (user, done) {
     done(null, user);
