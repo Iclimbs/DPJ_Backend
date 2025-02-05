@@ -14,43 +14,13 @@ const app = express();
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.json());
-// app.use(cors({
-//   origin: ['http://localhost:5173',], // Allow requests from this origin
-//   credentials: true, // Allow credentials (if needed)
-// }));
-// const allowedOrigins = [
-//   "http://localhost:5173",
-//   "http://dpjhub.com.s3-website.ap-south-1.amazonaws.com",
-// ];
-
-// CORS configuration
-// app.use(
-//   cors({
-//     origin: function (origin, callback) {
-//       // Allow requests with no origin (e.g., mobile apps, curl requests)
-//       if (!origin) return callback(null, true);
-
-//       // Check if the origin is in the allowed list
-//       if (allowedOrigins.indexOf(origin) !== -1) {
-//         callback(null, true);
-//       } else {
-//         callback(new Error("Not allowed by CORS"));
-//       }
-//     },
-//     credentials: true, // Allow cookies and credentials
-//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allowed HTTP methods
-//     allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
-//   })
-// );
-
-
 
 app.use(session({ secret: 'cats', resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: `${process.env.CLIENT_URL}`,
     methods: "GET,POST,PUT,PATCH,DELETE",
     credentials: true,
   })
