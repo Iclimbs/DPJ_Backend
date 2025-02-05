@@ -40,17 +40,18 @@ WithDrawlRouter.get("/list/admin", AdminAuthentication, async (req, res) => {
 
                 }
             },
+            { $sort: { CreatedAt: -1 } }
+
         ]);
         if (list.length === 0) {
-            return res.json({ status: 'error', message: 'No WithDrawal Request Found For This User' })
+            return res.json({ status: 'error', message: 'No WithDrawal Request Found' })
         } else {
             return res.json({ status: 'success', data: list })
         }
-        return  res.json({ status: 'success', data: bankDetails, message: 'Successfully Add Bank Account Details' })
     } catch (error) {
-        return  res.json({
+        return res.json({
             status: 'error',
-            message: `Failed To Add Bank Account Details Of User ${error?.message}`
+            message: `Failed To Fetch WithDrawal Request List Of User's ${error?.message}`
         })
     }
 })
@@ -121,7 +122,7 @@ WithDrawlRouter.get("/list", UserAuthentication, async (req, res) => {
                 $match: {
                     userId: new mongoose.Types.ObjectId(decoded._id)
                 }
-            }, 
+            },
             {
                 $lookup: {
                     from: "transactions",
@@ -131,16 +132,17 @@ WithDrawlRouter.get("/list", UserAuthentication, async (req, res) => {
 
                 }
             },
+            { $sort: { CreatedAt: -1 } }
         ]);
         if (list.length === 0) {
             return res.json({ status: 'error', message: 'No WithDrawal Request Found For This User' })
         } else {
-            return    res.json({ status: 'success', data: list })
+            return res.json({ status: 'success', data: list })
         }
     } catch (error) {
-        return   res.json({
+        return res.json({
             status: 'error',
-            message: `Failed To Add Bank Account Details Of User ${error?.message}`
+            message: `Failed To Fetch WithDrawal Requests Created By User ${error?.message}`
         })
     }
 })
@@ -177,7 +179,6 @@ WithDrawlRouter.get("/reject/request", AdminAuthentication, async (req, res) => 
 
     try {
         const list = await WithDrawalModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
-        console.log("list ", list);
 
         if (list.length === 0) {
             return res.json({
