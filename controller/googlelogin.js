@@ -26,21 +26,21 @@ router.get("/google", passport.authenticate("google", ["profile", "email"]));
 router.get('/google/callback', passport.authenticate('google', { failureRedirect: '/', session: false }), (req, res) => {
     if (req.user?.status === 'success') {
         if (req.user?.redirect) {
-            res.redirect(`${process.env.CLIENT_URL}/login/success?type=${req.user.type}&token=${req.user.token}&redirect=${req.user.redirect}`)
+            res.redirect(`${process.env.domainurl}/login/success?type=${req.user.type}&token=${req.user.token}&redirect=${req.user.redirect}`)
         }
-        res.redirect(`${process.env.CLIENT_URL}/login/success?type=${req.user.type}&token=${req.user.token}`)
+        res.redirect(`${process.env.domainurl}/login/success?type=${req.user.type}&token=${req.user.token}`)
 
     } else if (req.user?.status === 'pending') {
-        res.redirect(`${process.env.CLIENT_URL}/signup?name=${req.user.name}&email=${req.user.email}`)
+        res.redirect(`${process.env.domainurl}/signup?name=${req.user.name}&email=${req.user.email}`)
     } else if (req.user?.status === 'error') {
-        res.redirect(`${process.env.CLIENT_URL}/login/error?message=${req.user.message}`)
+        res.redirect(`${process.env.domainurl}/login/error?message=${req.user.message}`)
     }
     // res.json({ user: req.user, success: true, token: req?.user?.token }); // Send token in the response
 })
 
 router.get("/logout", (req, res) => {
     req.logout();
-    res.redirect(process.env.CLIENT_URL);
+    res.redirect(process.env.domainurl);
 });
 
 module.exports = router;

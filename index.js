@@ -20,7 +20,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(
   cors({
-    origin: `${process.env.CLIENT_URL}`,
+    origin: `${process.env.domainurl}`,
     methods: "GET,POST,PUT,PATCH,DELETE",
     credentials: true,
   })
