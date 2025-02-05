@@ -72,6 +72,6 @@ app.listen(process.env.Port, async () => {
     await connection;
     console.log(`Server is Up & Running At Port ${process.env.Port}`);
   } catch (error) {
-    res.json({ status: 'error', message: `${error.message}` })
+    return res.json({ status: 'error', message: `${error.message}` })
   }
 });

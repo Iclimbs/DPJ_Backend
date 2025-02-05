@@ -44,11 +44,11 @@ WithDrawlRouter.get("/list/admin", AdminAuthentication, async (req, res) => {
         if (list.length === 0) {
             return res.json({ status: 'error', message: 'No WithDrawal Request Found For This User' })
         } else {
-            res.json({ status: 'success', data: list })
+            return res.json({ status: 'success', data: list })
         }
-        res.json({ status: 'success', data: bankDetails, message: 'Successfully Add Bank Account Details' })
+        return  res.json({ status: 'success', data: bankDetails, message: 'Successfully Add Bank Account Details' })
     } catch (error) {
-        res.json({
+        return  res.json({
             status: 'error',
             message: `Failed To Add Bank Account Details Of User ${error?.message}`
         })
@@ -135,10 +135,10 @@ WithDrawlRouter.get("/list", UserAuthentication, async (req, res) => {
         if (list.length === 0) {
             return res.json({ status: 'error', message: 'No WithDrawal Request Found For This User' })
         } else {
-            res.json({ status: 'success', data: list })
+            return    res.json({ status: 'success', data: list })
         }
     } catch (error) {
-        res.json({
+        return   res.json({
             status: 'error',
             message: `Failed To Add Bank Account Details Of User ${error?.message}`
         })

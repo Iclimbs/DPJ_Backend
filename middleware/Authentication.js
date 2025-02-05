@@ -6,10 +6,10 @@ const UserAuthentication = (req, res, next) => {
             const decoded = jwt.verify(token, 'Authentication')
             next()
         } catch (error) {
-            res.json({ status: "error", message: "Token Expired. Please Login Again", redirect: "/user/login" })
+            return res.json({ status: "error", message: "Token Expired. Please Login Again", redirect: "/user/login" })
         }
     } else {
-        res.json({ status: "error", message: "No Token Found in Headers." })
+        return res.json({ status: "error", message: "No Token Found in Headers." })
     }
 }
 
@@ -17,17 +17,17 @@ const ArtistAuthentication = (req, res, next) => {
     if (req.headers.authorization) {
         try {
             const token = req.headers.authorization.split(" ")[1]
-            const decoded = jwt.verify(token, 'Authentication')            
+            const decoded = jwt.verify(token, 'Authentication')
             if (decoded.accountType === 'artist') {
                 next()
             } else {
-                res.json({ status: "error", message: "You Don't have required Permissions !!", redirect: "/user/login" })
+                return res.json({ status: "error", message: "You Don't have required Permissions !!", redirect: "/user/login" })
             }
         } catch (error) {
-            res.json({ status: "error", message: "Token Expired. Please Login Again", redirect: "/user/login" })
+            return res.json({ status: "error", message: "Token Expired. Please Login Again", redirect: "/user/login" })
         }
     } else {
-        res.json({ status: "error", message: "No Token Found in Headers." })
+        return res.json({ status: "error", message: "No Token Found in Headers." })
     }
 }
 
@@ -39,13 +39,13 @@ const ProfessionalAuthentication = (req, res, next) => {
             if (decoded.accountType === 'professional') {
                 next()
             } else {
-                res.json({ status: "error", message: "You Don't have required Permissions !!", redirect: "/user/login" })
+                return res.json({ status: "error", message: "You Don't have required Permissions !!", redirect: "/user/login" })
             }
         } catch (error) {
-            res.json({ status: "error", message: "Token Expired. Please Login Again", redirect: "/user/login" })
+            return res.json({ status: "error", message: "Token Expired. Please Login Again", redirect: "/user/login" })
         }
     } else {
-        res.json({ status: "error", message: "No Token Found in Headers." })
+        return res.json({ status: "error", message: "No Token Found in Headers." })
     }
 }
 
@@ -57,13 +57,13 @@ const GuestAuthentication = (req, res, next) => {
             if (decoded.accountType === 'guest') {
                 next()
             } else {
-                res.json({ status: "error", message: "You Don't have required Permissions !!", redirect: "/user/login" })
+                return res.json({ status: "error", message: "You Don't have required Permissions !!", redirect: "/user/login" })
             }
         } catch (error) {
-            res.json({ status: "error", message: "Token Expired. Please Login Again", redirect: "/user/login" })
+            return res.json({ status: "error", message: "Token Expired. Please Login Again", redirect: "/user/login" })
         }
     } else {
-        res.json({ status: "error", message: "No Token Found in Headers." })
+        return res.json({ status: "error", message: "No Token Found in Headers." })
     }
 }
 

@@ -437,49 +437,6 @@ JobRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => {
   }
 });
 
-// // Get Job Details Only For Professional Who has Created This Job Requirement
-
-// JobRouter.get(
-//   "/detailone/professional/:id",
-//   UserAuthentication,
-//   async (req, res) => {
-//     const { id } = req.params;
-//     const token = req.headers.authorization.split(" ")[1];
-//     const decoded = jwt.verify(token, "Authentication");
-//     try {
-//       const JobDetails = await JobModel.aggregate([
-//         {
-//           $match: {
-//             _id: new mongoose.Types.ObjectId(id),
-//             createdBy: new mongoose.Types.ObjectId(decoded._id),
-//           },
-//         },
-//         {
-//           $lookup: {
-//             from: "job_applications",
-//             localField: "_id",
-//             foreignField: "jobId",
-//             as: "applications",
-//           },
-//         },
-//       ]);
-//       if (JobDetails.length !== 0) {
-//         res.json({ status: "success", data: JobDetails });
-//       } else {
-//         res.json({
-//           status: "error",
-//           message: `No Job Post Found with this ID !! `,
-//         });
-//       }
-//     } catch (error) {
-//       res.json({
-//         status: "error",
-//         message: `Failed To GET Job Details ${error.message}`,
-//       });
-//     }
-//   },
-// );
-
 // Get All Job List Created By Professional
 
 JobRouter.get(
@@ -721,7 +678,7 @@ JobRouter.get("/find", UserAuthentication, async (req, res) => {
       });
     }
 
-    res.json({ status: "success", data: results });
+   return res.json({ status: "success", data: results });
   } catch (error) {
     return res.json({
       status: "error",
@@ -771,7 +728,7 @@ JobRouter.get("/find/admin", AdminAuthentication, async (req, res) => {
       });
     }
 
-    res.json({ status: "success", data: results });
+    return res.json({ status: "success", data: results });
   } catch (error) {
     return res.json({
       status: "error",

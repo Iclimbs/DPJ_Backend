@@ -19,7 +19,7 @@ BankRouter.post("/add", UserAuthentication, async (req, res) => {
             },
         ]);
         if (bankDetails.length != 0) {
-            res.json({ status: 'error', message: 'You Cannot Add New Bank Details' })
+            return res.json({ status: 'error', message: 'You Cannot Add New Bank Details' })
         } else {
             const newBankDetails = new BankAccountModel({
                 accountNo: accountNo,
@@ -29,10 +29,10 @@ BankRouter.post("/add", UserAuthentication, async (req, res) => {
             })
 
             await newBankDetails.save()
-            res.json({ status: 'success', message: 'Successfully Add Bank Account Details' })
+            return res.json({ status: 'success', message: 'Successfully Add Bank Account Details' })
         }
     } catch (error) {
-        res.json({
+        return res.json({
             status: 'error',
             message: `Failed To Add Bank Account Details Of User ${error?.message}`
         })
@@ -51,13 +51,13 @@ BankRouter.get("/getdetails", UserAuthentication, async (req, res) => {
             },
         ]);
         if (bankDetails.length == 0) {
-            res.json({ status: 'error', message: 'No Bank Account Details Found For This User' })
+            return res.json({ status: 'error', message: 'No Bank Account Details Found For This User' })
 
         } else {
-            res.json({ status: 'success', data: bankDetails[0] })
+            return res.json({ status: 'success', data: bankDetails[0] })
         }
     } catch (error) {
-        res.json({
+        return res.json({
             status: 'error',
             message: `Failed To Get Bank Account Details Of User ${error?.message}`
         })
@@ -72,9 +72,9 @@ BankRouter.patch("/updateDetails/:id", UserAuthentication, async (req, res) => {
             { accountNo: req.body?.accountNo, accountName: req.body?.accountName, ifscCode: req.body.ifscCode },
             { new: true },
         );
-        res.json({ status: 'success', message: 'Successfully Updated Bank Account Details' })
+      return  res.json({ status: 'success', message: 'Successfully Updated Bank Account Details' })
     } catch (error) {
-        res.json({
+    return    res.json({
             status: 'error',
             message: `Failed To Update Bank Account Details Of User ${error?.message}`
         })

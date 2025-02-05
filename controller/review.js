@@ -30,7 +30,7 @@ ReviewRouter.post("/add/collabArtist/:event", UserAuthentication, async (req, re
         $match: {
           eventId: new mongoose.Types.ObjectId(event),
           reviewedByUserId: new mongoose.Types.ObjectId(decoded._id),
-          userId:null
+          userId: null
         },
       },
     ]);
@@ -176,16 +176,16 @@ ReviewRouter.patch("/edit/:id", UserAuthentication, async (req, res) => {
 
     // Checking If Review Already Exists For The Event
     if (reviewExists.length == 0) {
-      res.json({ status: "error", message: `No Review Found` });
+      return res.json({ status: "error", message: `No Review Found` });
     }
     //Edit Review
     await ReviewModel.findByIdAndUpdate(id, {
       rating: req.body?.rating,
       review: req.body?.review,
     });
-    res.json({ status: "success", message: `Review Successfully Updated` });
+    return res.json({ status: "success", message: `Review Successfully Updated` });
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Edit Review, Error:- ${error.message}`,
     });
@@ -201,16 +201,16 @@ ReviewRouter.patch("/edit/admin/:id", AdminAuthentication, async (req, res) => {
 
     // Checking If Review Already Exists For The Event
     if (reviewExists.length == 0) {
-      res.json({ status: "error", message: `No Review Found` });
+      return res.json({ status: "error", message: `No Review Found` });
     }
     //Edit Review
     await ReviewModel.findByIdAndUpdate(id, {
       rating: req.body?.rating,
       review: req.body?.review,
     });
-    res.json({ status: "success", message: `Review Successfully Updated` });
+    return res.json({ status: "success", message: `Review Successfully Updated` });
   } catch (error) {
-    res.json({
+    return res.json({
       status: "error",
       message: `Failed To Edit Review, Error:- ${error.message}`,
     });

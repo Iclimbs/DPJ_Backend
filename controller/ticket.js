@@ -93,18 +93,18 @@ TicketRouter.post(
 
         await BookedTicketModel.insertMany(ticketData);
 
-        res.json({
+        return   res.json({
           status: "success",
           message: `Ticket Purchased Successfully`,
         });
       } catch (error) {
-        res.json({
+        return res.json({
           status: "error",
           message: `Failed To Purchase Ticket For Event ${error.message}`,
         });
       }
     } else {
-      res.json({
+      return  res.json({
         status: "error",
         message: `Failed To Book Tickets`,
       });
@@ -156,12 +156,12 @@ TicketRouter.get(
         },
       ]);
       if (list.length == 0) {
-        res.json({ status: "error", message: "No Booked Ticket List Found" });
+        return    res.json({ status: "error", message: "No Booked Ticket List Found" });
       } else {
-        res.json({ status: "success", data: list });
+        return    res.json({ status: "success", data: list });
       }
     } catch (error) {
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Get Booked Ticket List ${error.message}`,
       });
@@ -188,7 +188,7 @@ TicketRouter.get(
       ]);
 
       if (me.length == 0 && decoded.accountType !== "admin") {
-        res.json({
+        return   res.json({
           status: "error",
           message: "No Event Found Or You Don't have Required Permission",
         });
@@ -221,12 +221,12 @@ TicketRouter.get(
         },
       ]);
       if (list.length == 0) {
-        res.json({ status: "error", message: "No Booked Ticket List Found" });
+        return   res.json({ status: "error", message: "No Booked Ticket List Found" });
       } else {
-        res.json({ status: "success", data: list });
+        return    res.json({ status: "success", data: list });
       }
     } catch (error) {
-      res.json({
+      return  res.json({
         status: "error",
         message: `Unable To Get Booked Ticket List ${error.message}`,
       });
@@ -285,13 +285,12 @@ TicketRouter.get(
       ]);
 
       if (list.length === 0) {
-        res.json({ status: "error", message: "No Booked Events Found" });
+        return   res.json({ status: "error", message: "No Booked Events Found" });
       } else {
-        res.json({ status: "success", data: list });
+        return   res.json({ status: "success", data: list });
       }
     } catch (error) {
-      console.error(`Error finding booked events: ${error.message}`);
-      res.json({
+      return res.json({
         status: "error",
         message: `Unable To Find Booked Events ${error.message}`,
       });

@@ -56,17 +56,13 @@ ChatRouter.post("/signup", async (req, res) => {
 ChatRouter.post("/login", async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  // const { id: _id, name, image: profile } = decoded;
   const id = decoded._id;
-
-  // const { id } = req.body;
 
   if (!id) {
     return res.json({
       status: "error",
       message: "User Id is Required For Login",
     });
-    // return res.status(400).send("Missing user ID");
   }
 
   try {
@@ -79,8 +75,6 @@ ChatRouter.post("/login", async (req, res) => {
         status: "error",
         message: "You are Unauthorized to access this feature",
       });
-
-      // return res.status(401).send("Unauthorized");
     }
 
     const token = streamChat.createToken(id);
