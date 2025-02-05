@@ -8,9 +8,9 @@ const connection = require("./connection/connection");
 const bodyParser = require('body-parser');
 const passport = require("passport");
 const session = require('express-session');
+const passportStrategy = require("./service/googleAuth");
+const authRoute = require("./controller/googlelogin");
 const app = express();
-
-require("./service/googleAuth")
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.json());
@@ -44,18 +44,18 @@ app.use(express.json());
 // );
 
 
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    methods: "GET,POST,PUT,DELETE",
-    credentials: true,
-  })
-);
-
 
 app.use(session({ secret: 'cats', resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: "GET,POST,PUT,PATCH,DELETE",
+    credentials: true,
+  })
+);
+
 
 const options = {
   definition: {
@@ -92,27 +92,10 @@ app.use(
   swaggerui.setup(openapiSpecification)
 );
 
-app.get('/auth/google',
-  passport.authenticate('google', { scope: ['email', 'profile'] }
-  ));
-
-
-  app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", {
-    successRedirect: 'http://localhost:5173',
-    failureRedirect: "/login/failed",
-  })
-);
-
-// app.route('/auth/google/callback').get(passport.authenticate('google', { failureRedirect: '/', session: false }), (req, res) => {
-//   console.log('google response ', res);
-//   res.json({ user: req.user, success: true, token: req?.user?.token }); // Send token in the response
-
-// })
-
 app.use("/api/v1/", require("./routes/routes"));
 app.use('/', express.static(path.join(__dirname, 'public')));
+app.use("/auth", authRoute);
+
 
 app.listen(process.env.Port, async () => {
   try {
