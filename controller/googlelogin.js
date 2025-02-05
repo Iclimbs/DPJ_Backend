@@ -24,6 +24,12 @@ router.get("/login/failed", (req, res) => {
 router.get("/google", passport.authenticate("google", ["profile", "email"]));
 
 router.get('/google/callback', passport.authenticate('google', { failureRedirect: '/', session: false }), (req, res) => {
+    console.log("query",req.hostname);
+
+    if (req.query?.from === 'app') {
+        res.json({ status: req.user.status, type: req.user.type, token: req.user.token, name: req.user.name, email: req.user.email }); // Send token in the response
+    }
+
     if (req.user?.status === 'success') {
         if (req.user?.redirect) {
             res.redirect(`${process.env.domainurl}/login/success?type=${req.user.type}&token=${req.user.token}&redirect=${req.user.redirect}`)
