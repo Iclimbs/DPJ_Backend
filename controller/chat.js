@@ -259,49 +259,39 @@ ChatRouter.get("/start/messaging/:userId", async (req, res) => {
     });
   }
   try {
-    const existingUsers = await streamChat.queryUsers({ id: userId });
+    // Second User Is the Person Whose Id is passed in Query
+    const secondUser = await streamChat.queryUsers({ id: userId });
 
-    if (existingUsers.users.length > 0) {
+    // First User Is the Person Whose Id is passed in Headers
+    const firstUser = await streamChat.queryUsers({ id });
 
-      const channelType = 'messaging';
-      const channelId = `${user2Details[0]._id}`; // Unique identifier for the channel
-
-      // Define the user IDs of the members to add to the channel
-      const memberIds = [`${id}`, `${userId}`];
-
-      // Create the channel
-      const channel = client.channel(channelType, channelId, {
-        members: memberIds, // Add members to the channel
-        created_by_id: `${id}`, // The user who creates the channel
-      });
-
-      // Create the channel on the server
-      await channel.create();
-
-      return res.json({ status: 'success', message: 'Channl Created Start Chatting', redirct: "/profile/message" })
-    } else {
-      // No User Found Registered In GetStrean With User Id 
+    if (secondUser.users.length === 0) {
       await streamChat.upsertUser({ id: user2Details[0]._id, name: user2Details[0].name, image: user2Details[0].profile });
 
-      // Creating New Channel With Both User's
-      const channelType = 'messaging';
-      const channelId = `${user2Details[0]._id}`; // Unique identifier for the channel
+    }
 
-      // Define the user IDs of the members to add to the channel
-      const memberIds = [`${id}`, `${userId}`];
-
-      // Create the channel
-      const channel = client.channel(channelType, channelId, {
-        members: memberIds, // Add members to the channel
-        created_by_id: `${id}`, // The user who creates the channel
-      });
-
-      // Create the channel on the server
-      await channel.create();
-
-      return res.json({ status: 'success', message: 'Channel Creted', redirct: "/profile/message" })
+    if (firstUser.users.length === 0) {
+      await streamChat.upsertUser({ id, name, image });
 
     }
+
+    // Creating New Channel With Both User's
+    const channelType = 'messaging';
+    const channelId = `${user2Details[0]._id}`; // Unique identifier for the channel
+
+    // Define the user IDs of the members to add to the channel
+    const memberIds = [`${id}`, `${userId}`];
+
+    // Create the channel
+    const channel = client.channel(channelType, channelId, {
+      members: memberIds, // Add members to the channel
+      created_by_id: `${id}`, // The user who creates the channel
+    });
+
+    // Create the channel on the server
+    const channelData = await channel.create();
+    
+    return res.json({ status: 'success', message: 'Channel Creted', redirct: "/profile/message" })
 
   } catch (error) {
     return res.json({
