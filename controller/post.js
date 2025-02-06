@@ -651,6 +651,8 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
                       email: 1,
                       category: 1,
                       profile: 1,
+                      accountType:1,
+                      verified:1
                     },
                   },
                 ],
