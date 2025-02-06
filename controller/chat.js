@@ -2,6 +2,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const ChatRouter = express.Router();
 const { StreamChat } = require("stream-chat"); // Replace with your actual Stream Chat initialization
+const { UserModel } = require("../model/user.model");
 
 const streamChat = StreamChat.getInstance(
   process.env.STREAM_API_KEY,
@@ -41,15 +42,11 @@ ChatRouter.post("/signup", async (req, res) => {
 
     await streamChat.upsertUser({ id, name, image });
     return res.json({ status: "success" });
-    // res.status(201).send(); // Added success response
   } catch (error) {
-    console.error(error);
     return res.json({
       status: "error",
       message: `Stream SignUp Failed  error.message`,
     });
-
-    // res.status(500).send("Internal server error");
   }
 });
 
@@ -244,4 +241,91 @@ ChatRouter.get("/details", async (req, res) => {
     });
   }
 });
+
+ChatRouter.get("/start/messaging/:userId", async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const { userId } = req.params;
+  const client = StreamChat.getInstance(`${process.env.STREAM_API_KEY}`, `${process.env.STREAM_PRIVATE_API_KEY}`);
+
+  const user2Details = await UserModel.find({ _id: userId })
+  console.log("user details ", user2Details);
+
+  if (user2Details.length === 0) {
+    return res.json({ status: 'error', message: 'No User Found With This UserId', redirct: '/profile/message' })
+  }
+
+  const id = decoded._id;
+  const name = decoded.name;
+  const image = decoded.profile;
+
+  if (!id || !name || !image || !userId) {
+    return res.json({
+      status: "error",
+      message: "User Id Required For SignUp",
+    });
+  }
+  try {
+    const existingUsers = await streamChat.queryUsers({ id });
+
+    if (existingUsers.users.length > 0) {
+      // const token = streamChat.createToken(id);
+      // const user = existingUsers.users[0];
+
+      // TOKEN_USER_ID_MAP.set(token, user.id);
+      return res.json({
+        status: "success",
+        // data: { token: token, user: user.name, id: user.id, image: user.image },
+      });
+    } else {
+      // No User Found Registered In GetStrean With User Id 
+      await streamChat.upsertUser({ id: user2Details[0]._id, name: user2Details[0].name, image: user2Details[0].profile });
+
+      // Creating New Channel With Both User's
+      const channelType = 'messaging';
+      const channelId = `${user2Details[0]._id}`; // Unique identifier for the channel
+
+      // Define the user IDs of the members to add to the channel
+      const memberIds = [`${id}`, `${userId}`];
+
+      // Create the channel
+      const channel = client.channel(channelType, channelId, {
+        members: memberIds, // Add members to the channel
+        created_by_id: `${id}`, // The user who creates the channel
+      });
+
+      // Create the channel on the server
+      await channel.create();
+
+      return res.json({ status: 'success', message: 'Channel Creted' })
+
+    }
+
+
+    if (newUsers.users.length > 0) {
+      const token = streamChat.createToken(id);
+      const user = newUsers.users[0];
+
+      TOKEN_USER_ID_MAP.set(token, user.id);
+      return res.json({
+        status: "success",
+        data: { token: token, user: user.name, id: user.id, image: user.image },
+      });
+    }
+    return res.json({ status: 'success' })
+
+  } catch (error) {
+    console.log(error);
+    
+    return res.json({
+      status: "error",
+      message: `Stream SignUp Failed  ${error.message}`,
+    });
+  }
+
+  return res.json({ status: 'success' })
+
+});
+
+
 module.exports = ChatRouter;

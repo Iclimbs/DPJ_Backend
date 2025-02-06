@@ -72,9 +72,9 @@ BankRouter.patch("/updateDetails/:id", UserAuthentication, async (req, res) => {
             { accountNo: req.body?.accountNo, accountName: req.body?.accountName, ifscCode: req.body.ifscCode },
             { new: true },
         );
-      return  res.json({ status: 'success', message: 'Successfully Updated Bank Account Details' })
+        return res.json({ status: 'success', message: 'Successfully Updated Bank Account Details' })
     } catch (error) {
-    return    res.json({
+        return res.json({
             status: 'error',
             message: `Failed To Update Bank Account Details Of User ${error?.message}`
         })

@@ -243,7 +243,7 @@ UserRouter.post("/login", async (req, res) => {
             type: userExists[0].accountType,
           });
         } else {
-          return  res.json({
+          return res.json({
             status: "error",
             message: "You Cannot Login Using Admin Credential's !! ",
             redirect: "/",
@@ -255,14 +255,14 @@ UserRouter.post("/login", async (req, res) => {
           message: "Wrong Password Please Try Again",
         });
       } else if (userExists[0].disabled === true) {
-        return   res.json({
+        return res.json({
           status: "error",
           message: "Your Account has been Temporarily disabled",
         });
       }
     }
   } catch (error) {
-    return  res.json({
+    return res.json({
       status: "error",
       message: `Error Found in Login ${error.message}`,
     });
@@ -298,33 +298,33 @@ UserRouter.post("/login/admin", async (req, res) => {
             "Authentication",
           );
 
-          return  res.json({
+          return res.json({
             status: "success",
             message: "Login Successfully",
             token: token,
             type: userExists[0].accountType,
           });
         } else {
-          return   res.json({
+          return res.json({
             status: "error",
             message: "You Can Login Only Using Admin Credential's !! ",
             redirect: "/",
           });
         }
       } else if (hash.sha256(password) !== userExists[0].password) {
-        return  res.json({
+        return res.json({
           status: "error",
           message: "Wrong Password Please Try Again",
         });
       } else if (userExists[0].disabled === true) {
-        return  res.json({
+        return res.json({
           status: "error",
           message: "Your Account has been Temporarily disabled",
         });
       }
     }
   } catch (error) {
-    return  res.json({
+    return res.json({
       status: "error",
       message: `Error Found in Admin Login ${error.message}`,
     });
@@ -343,7 +343,7 @@ UserRouter.post("/register", async (req, res) => {
   }
   const userExists = await UserModel.find({ email });
   if (userExists.length >= 1) {
-    return    res.json({
+    return res.json({
       status: "error",
       message:
         "User Already Exists with this Email ID. Please Try again with another Email ID",
@@ -387,14 +387,14 @@ UserRouter.post("/register", async (req, res) => {
           redirect: "/",
         });
       } else {
-        return  res.json({
+        return res.json({
           status: "success",
           message: "Registration Successful",
           redirect: "/user/login",
         });
       }
     } catch (error) {
-      return   res.json({
+      return res.json({
         status: "error",
         message: `Failed To Register New User, Error :- ${error.message}`,
       });
@@ -464,7 +464,7 @@ UserRouter.post("/forgot", async (req, res) => {
         { link: link, otp: newotp },
         function (err, template) {
           if (err) {
-            return  res.json({ status: "error", message: err.message });
+            return res.json({ status: "error", message: err.message });
           } else {
             const mailOptions = {
               from: process.env.emailuser,
@@ -645,7 +645,7 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
       user: user[0] || null,
     });
   } catch (error) {
-    return  res.json({
+    return res.json({
       status: "error",
       message: `Error Found while getting User following list: ${error.message}`,
     });
@@ -691,7 +691,7 @@ UserRouter.get("/me/wallet", UserAuthentication, async (req, res) => {
       user: user,
     });
   } catch (error) {
-    return  res.json({
+    return res.json({
       status: "error",
       message: `Error Found in Getting User Wallet Details Section ${error.message}`,
     });
@@ -872,7 +872,7 @@ UserRouter.get("/me/followers", UserAuthentication, async (req, res) => {
       user: user,
     });
   } catch (error) {
-    return  res.json({
+    return res.json({
       status: "error",
       message: `Error Found While Getting User Follower List: ${error.message}`,
     });
@@ -953,7 +953,7 @@ UserRouter.patch(
         message: "User SuccessFully Deactivated ",
       });
     } catch (error) {
-      return   res.json({
+      return res.json({
         status: "error",
         message: `Failed To Disable User ${error.message}`,
       });
@@ -1020,7 +1020,7 @@ UserRouter.post(
         }
       }
     } catch (error) {
-      return  res.json({
+      return res.json({
         status: "error",
         message: `Error Found while trying to upload Documents ${error.message}`,
       });
@@ -1568,14 +1568,14 @@ UserRouter.post(
       await user.save();
       const newtoken = await generateToken(user._id)
       if (newtoken.status === 'success') {
-        return  res.json({
+        return res.json({
           status: "success",
           message: `Successfully Updated Basic Profile Details`,
           token: newtoken.token
         });
 
       } else {
-        return  res.json({
+        return res.json({
           status: "success",
           message: `Successfully Updated Basic Profile Details`,
         });
@@ -1637,14 +1637,14 @@ UserRouter.get("/follow", UserAuthentication, async (req, res) => {
             message: "Stopped Following",
           });
         } else {
-          return  res.json({
+          return res.json({
             status: "success",
             message: "You Already Follow This User",
           });
         }
       } else {
         if (status == "false") {
-          return    res.json({
+          return res.json({
             status: "success",
             message: "You Already Unfollow This User",
           });
@@ -1653,7 +1653,7 @@ UserRouter.get("/follow", UserAuthentication, async (req, res) => {
             { userId: new mongoose.Types.ObjectId(userId) },
             { $push: { followedBy: new mongoose.Types.ObjectId(decoded._id) } }, // Add ObjectId to the array
           );
-          return  res.json({
+          return res.json({
             status: "success",
             message: "Started Following",
           });
@@ -1661,7 +1661,7 @@ UserRouter.get("/follow", UserAuthentication, async (req, res) => {
       }
     }
   } catch (error) {
-    return  res.json({
+    return res.json({
       status: "error",
       message: `Failed To Get Follow Details Of User's ${error.message}`,
     });
@@ -1750,12 +1750,12 @@ UserRouter.get(
         user.banner = req.files.banner[0].location;
       }
       await user.save();
-      return   res.json({
+      return res.json({
         status: "success",
         message: `Successfully Updated Basic Profile Details`,
       });
     } catch (error) {
-      return   res.json({
+      return res.json({
         status: "error",
         message: `Error Found while trying to upload Documents ${error.message}`,
       });
@@ -2005,5 +2005,69 @@ UserRouter.post(
     }
   },
 );
+
+
+// Google Login For Application 
+UserRouter.get("/check/:id", async (req, res) => {
+  const { id } = req.params
+  try {
+    const userDetails = await UserModel.find({ email: id });
+    if (userDetails.length === 0) {
+      return res.json({
+        status: "error",
+        message: "No User Found",
+      });
+    }
+
+      let token = jwt.sign(
+        {
+          _id: userDetails[0]._id,
+          name: userDetails[0].name,
+          email: userDetails[0].email,
+          accountType: userDetails[0].accountType,
+          profile: userDetails[0].profile,
+          verified: userDetails[0].verified,
+          subscription: userDetails[0].subscription,
+          planExpireAt: userDetails[0].planExpireAt,
+          exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+        },
+        "Authentication",
+      );
+      if (userDetails[0].dob === undefined || userDetails[0].dob === "") {
+        return res.json({
+          status: "success",
+          message: "Login Successful",
+          token: token,
+          type: userDetails[0].accountType,
+          redirect: "/user/basicprofile",
+        });
+      }
+      if (
+        userDetails[0].profile === undefined ||
+        userDetails[0].profile === ""
+      ) {
+        return res.json({
+          status: "success",
+          message: "Login Successful",
+          token: token,
+          type: userDetails[0].accountType,
+          redirect: "/user/basicprofile",
+        });
+      }
+      return res.json({
+        status: "success",
+        message: "Login Successfully",
+        token: token,
+        type: userDetails[0].accountType,
+      });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found While Getting Subscription Plans ${error}`,
+    });
+  }
+},
+);
+
 
 module.exports = { UserRouter };
