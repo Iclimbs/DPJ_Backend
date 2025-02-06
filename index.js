@@ -20,7 +20,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 const allowedOrigins = [
  `${process.env.domainurl}`,
- `${process.env.domainurls}`,
+ `${process.env.adminurl}`,
 ];
 
 app.use(
