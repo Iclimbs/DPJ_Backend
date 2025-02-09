@@ -4,12 +4,26 @@ const { AdminAuthentication } = require('../middleware/Authorization');
 const { UserAuthentication } = require('../middleware/Authentication');
 const CategoryRouter = express.Router();
 
+
+CategoryRouter.get('/listall/admin', AdminAuthentication ,async (req, res) => {
+    try {
+        const list = await CategoryModel.find({});                
+        if (list.length === 0) {
+            return res.json({ 'status': 'error', message: 'No List Found Of This Category' })
+        } else {
+            return res.json({ 'status': 'success', data: list })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Fetch Category List ${error.message}` })
+    }
+})
+
 CategoryRouter.get('/listall/:category', UserAuthentication ,async (req, res) => {
     const { category } = req.params;
     try {
 
         const list = await CategoryModel.find({ accountType: category });
-        if (list === 0) {
+        if (list.length === 0) {
             return res.json({ 'status': 'error', message: 'No List Found Of This Category' })
         } else {
             return res.json({ 'status': 'success', data: list })
@@ -18,21 +32,6 @@ CategoryRouter.get('/listall/:category', UserAuthentication ,async (req, res) =>
         return res.json({ status: 'error', message: `Failed To Fetch Category List ${error.message}` })
     }
 })
-
-CategoryRouter.get('/listall/admin', AdminAuthentication ,async (req, res) => {
-    try {
-
-        const list = await CategoryModel.find({});
-        if (list === 0) {
-            return res.json({ 'status': 'error', message: 'No List Found Of This Category' })
-        } else {
-            return res.json({ 'status': 'success', data: list })
-        }
-    } catch (error) {
-        return res.json({ status: 'error', message: `Failed To Fetch Category List ${error.message}` })
-    }
-})
-
 
 CategoryRouter.post('/add', AdminAuthentication, async (req, res) => {
     const { name, type } = req.body;
