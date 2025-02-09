@@ -14,6 +14,7 @@ const ChatRouter = require("../controller/chat");
 const { ReferRouter } = require("../controller/refer");
 const { BankRouter } = require("../controller/bank");
 const { WithDrawlRouter } = require("../controller/withdrawl");
+const { CategoryRouter } = require("../controller/category");
 
 router
   .use("/user", UserRouter)
@@ -31,5 +32,6 @@ router
   .use("/refer", ReferRouter)
   .use("/bank", BankRouter)
   .use("/withdrawl",WithDrawlRouter)
+  .use("/category",CategoryRouter)
 
 module.exports = router;

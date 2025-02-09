@@ -472,7 +472,7 @@ UserRouter.post("/forgot", async (req, res) => {
               subject: "Otp To Reset Password ",
               html: template,
             };
-            gmailtransporter.sendMail(mailOptions, (error, info) => {
+            transporter.sendMail(mailOptions, (error, info) => {
               if (error) {
                 return res.json({
                   status: "error",
