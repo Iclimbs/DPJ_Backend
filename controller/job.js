@@ -716,9 +716,7 @@ JobRouter.get("/find/admin", AdminAuthentication, async (req, res) => {
 });
 
 // Find Job By Search For Admin
-JobRouter.post("/filter", UserAuthentication, async (req, res) => {
-  console.log(req.body);
-  
+JobRouter.post("/filter", UserAuthentication, async (req, res) => {  
   const { salaryMax, salaryMin, experience, employmentType, category, workType } = req.body;
   const query = {};
 
