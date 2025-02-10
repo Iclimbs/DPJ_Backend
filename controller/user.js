@@ -2019,47 +2019,47 @@ UserRouter.get("/check/:id", async (req, res) => {
       });
     }
 
-      let token = jwt.sign(
-        {
-          _id: userDetails[0]._id,
-          name: userDetails[0].name,
-          email: userDetails[0].email,
-          accountType: userDetails[0].accountType,
-          profile: userDetails[0].profile,
-          verified: userDetails[0].verified,
-          subscription: userDetails[0].subscription,
-          planExpireAt: userDetails[0].planExpireAt,
-          exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-        },
-        "Authentication",
-      );
-      if (userDetails[0].dob === undefined || userDetails[0].dob === "") {
-        return res.json({
-          status: "success",
-          message: "Login Successful",
-          token: token,
-          type: userDetails[0].accountType,
-          redirect: "/user/basicprofile",
-        });
-      }
-      if (
-        userDetails[0].profile === undefined ||
-        userDetails[0].profile === ""
-      ) {
-        return res.json({
-          status: "success",
-          message: "Login Successful",
-          token: token,
-          type: userDetails[0].accountType,
-          redirect: "/user/basicprofile",
-        });
-      }
+    let token = jwt.sign(
+      {
+        _id: userDetails[0]._id,
+        name: userDetails[0].name,
+        email: userDetails[0].email,
+        accountType: userDetails[0].accountType,
+        profile: userDetails[0].profile,
+        verified: userDetails[0].verified,
+        subscription: userDetails[0].subscription,
+        planExpireAt: userDetails[0].planExpireAt,
+        exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+      },
+      "Authentication",
+    );
+    if (userDetails[0].dob === undefined || userDetails[0].dob === "") {
       return res.json({
         status: "success",
-        message: "Login Successfully",
+        message: "Login Successful",
         token: token,
         type: userDetails[0].accountType,
+        redirect: "/user/basicprofile",
       });
+    }
+    if (
+      userDetails[0].profile === undefined ||
+      userDetails[0].profile === ""
+    ) {
+      return res.json({
+        status: "success",
+        message: "Login Successful",
+        token: token,
+        type: userDetails[0].accountType,
+        redirect: "/user/basicprofile",
+      });
+    }
+    return res.json({
+      status: "success",
+      message: "Login Successfully",
+      token: token,
+      type: userDetails[0].accountType,
+    });
   } catch (error) {
     return res.json({
       status: "error",
@@ -2068,6 +2068,80 @@ UserRouter.get("/check/:id", async (req, res) => {
   }
 },
 );
+
+
+// Find User By Search For Artist
+UserRouter.get("/filter/artist", UserAuthentication, async (req, res) => {
+  const { country, skills, category, gender } = req.query;
+  const query = {};
+  query.verified = true,
+  query.disabled = false
+  query.accountType='artist'
+  
+  if (category) {
+    query.category = category;
+  }
+  if (gender) {
+    query.gender = gender;
+  }
+
+
+  if (skills && skills.length > 0) {
+    query.skills = { $in: skills }; // Matches any skill in the user's skill set
+  }
+
+  if (country) {
+    query["address.country"] = country;
+  }
+
+  try {
+    const users = await UserModel.find(query);
+    if (users.length === 0) {
+      return res.json({ status: 'error', message: 'No Artist Found ' })
+
+    } else {
+      return res.json({ status: 'success', data: users })
+    }
+  } catch (error) {
+    return res.json({ status: 'error', message: `Failed To Filter Artists ${error.message}` })
+  }
+
+});
+
+// Find User By Search For Professional
+UserRouter.get("/filter/professional", UserAuthentication, async (req, res) => {
+  const { country, skills, category, } = req.query;
+  const query = {};
+  query.verified = true,
+  query.disabled = false
+  query.accountType='professional'
+  
+  if (category) {
+    query.category = category;
+  }
+
+  if (skills && skills.length > 0) {
+    query.skills = { $in: skills }; // Matches any skill in the user's skill set
+  }
+
+  if (country) {
+    query["address.country"] = country;
+  }
+
+  try {
+    const users = await UserModel.find(query);
+    if (users.length === 0) {
+      return res.json({ status: 'error', message: 'No Professionals Found ' })
+
+    } else {
+      return res.json({ status: 'success', data: users })
+    }
+  } catch (error) {
+    return res.json({ status: 'error', message: `Failed To Filter Professionals ${error.message}` })
+  }
+
+});
+
 
 
 module.exports = { UserRouter };
