@@ -258,7 +258,7 @@ ReviewRouter.post("/add/:id", UserAuthentication, async (req, res) => {
       await newReview.save();
       return res.json({ status: 'success', message: 'Review Added Successfully' })
     } else {
-      return res.json({ status: 'success', message: 'You Have Already Reviewed This User' })
+      return res.json({ status: 'error', message: 'You Have Already Reviewed This User' })
     }
 
     // const newReview = await new ReviewModel({ userId: id, rating: rating, review: review, reviewedBy: decoded.accountType, reviewedByUserId: decoded._id })
