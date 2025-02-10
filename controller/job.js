@@ -39,6 +39,7 @@ JobRouter.post(
       experience,
       companyOverview,
       employmentType,
+      category
     } = req.body;
 
     let addressdetails = {
@@ -64,6 +65,7 @@ JobRouter.post(
       createdBy: decoded._id,
       salary: Number(salary),
       role,
+      category,
       workType,
       description,
       education,
@@ -145,8 +147,8 @@ JobRouter.patch(
         ...req.body,
         address: addressdetails,
         benefits: jobBenefits,
-        salary:salary,
-        experience:experience,
+        salary: salary,
+        experience: experience,
         keyResponsibilities: keyResponsibilities,
       };
 
@@ -711,6 +713,49 @@ JobRouter.get("/find/admin", AdminAuthentication, async (req, res) => {
       message: `Failed to Fetch Job Detail's ${error.message}`,
     });
   }
+});
+
+// Find Job By Search For Admin
+JobRouter.get("/filter", UserAuthentication, async (req, res) => {
+  const { salaryMax, salaryMin, experience, employmentType, category,workType } = req.query;
+  const query = {};
+
+  if (category) {
+    query.category = category;
+  }
+
+  if (salaryMin !== undefined && salaryMax !== undefined) {
+    query.salary = { $gte: salaryMin, $lte: salaryMax };
+  } else if (salaryMin !== undefined) {
+    query.salary = { $gte: salaryMin };
+  } else if (salaryMax !== undefined) {
+    query.salary = { $lte: salaryMax };
+  }
+
+  if (experience !== undefined) {
+    query.experience = { $gte: experience };
+  }
+
+  if (employmentType) {
+    query.employmentType = employmentType;
+  }
+
+  if (workType) {
+    query.workType = workType;
+  }
+
+  try {
+    const jobs = await JobModel.find(query);
+    if (jobs.length === 0) {
+      return res.json({ status: 'error', message: 'No Job Found ' })
+
+    } else {
+      return res.json({ status: 'success', data: jobs })
+    }
+  } catch (error) {
+    return res.json({ status: 'error', message: `Failed To Filter Jobs ${error.message}` })
+  }
+
 });
 
 module.exports = { JobRouter };
