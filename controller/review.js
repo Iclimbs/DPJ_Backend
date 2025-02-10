@@ -4,6 +4,8 @@ const { ReviewModel, EventModel } = require("../model/ModelExport");
 const { UserAuthentication, AdminAuthentication } = require("../middleware/MiddlewareExport");
 const { default: mongoose } = require("mongoose");
 const ReviewRouter = express.Router();
+const ObjectId = require('mongodb').ObjectId;
+
 
 // Collab Artist Review the Event In Which He/She Has Participated
 ReviewRouter.post("/add/collabArtist/:event", UserAuthentication, async (req, res) => {
@@ -216,4 +218,47 @@ ReviewRouter.patch("/edit/admin/:id", AdminAuthentication, async (req, res) => {
     });
   }
 });
+
+
+// Review & Rating For User 
+
+ReviewRouter.get("/list/:id", UserAuthentication, async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const reviewList = await ReviewModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(id) } }, {
+      $addFields: {
+        reviewstatus: { $eq: [new ObjectId(decoded._id), "$reviewedByUserId"] }
+      }
+    }])
+    if (reviewList.length === 0) {
+      return res.json({ status: 'error', message: 'No Review Found For This User' })
+    } else {
+      return res.json({ status: 'success', data: reviewList })
+    }
+  } catch (error) {
+    return res.json({ status: 'error', message: `Failed To Fetch Rating Status ${error.message}` })
+  }
+})
+
+ReviewRouter.post("/add/:id", UserAuthentication, async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const { review, rating } = req.body;
+  if (!review || !rating) {
+    return res.json({ status: 'error', message: 'Review & Rating Both Are Required' })
+  }
+  try {
+    const reviewList = await new ReviewModel({ userId: id, rating: rating, review: review })
+    if (reviewList.length === 0) {
+      return res.json({ status: 'error', message: 'No Review Found For This User' })
+    } else {
+      return res.json({ status: 'success', data: reviewList })
+    }
+  } catch (error) {
+    return res.json({ status: 'error', message: `Failed To Fetch Rating Status ${error.message}` })
+  }
+})
 module.exports = { ReviewRouter };

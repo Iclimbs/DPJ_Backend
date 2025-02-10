@@ -21,7 +21,7 @@ const reviewSchema = mongoose.Schema({
     reviewedBy: {
         type: String,
         required: true,
-        enum: ["eventCreator", "collabArtist", "artist"]
+        enum: ["eventCreator", "collabArtist", "artist", "professional", "guest"]
     },
     reviewedByUserId: {
         type: ObjectId,
