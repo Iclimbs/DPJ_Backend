@@ -227,7 +227,8 @@ ReviewRouter.get("/list/:id", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
-    const reviewList = await ReviewModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(id) } }, {
+    const reviewList = await ReviewModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(id) } },
+    { $lookup: { from: 'users', localField: 'reviewedByUserId', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1, verified: 1, accountType: 1 } }], as: 'userdetails' } }, {
       $addFields: {
         reviewstatus: { $eq: [new ObjectId(decoded._id), "$reviewedByUserId"] }
       }
@@ -251,7 +252,12 @@ ReviewRouter.post("/add/:id", UserAuthentication, async (req, res) => {
     return res.json({ status: 'error', message: 'Review & Rating Both Are Required' })
   }
   try {
-    const reviewList = await new ReviewModel({ userId: id, rating: rating, review: review })
+    const reviewList = await ReviewModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(id) } }, {
+      $addFields: {
+        reviewstatus: { $eq: [new ObjectId(decoded._id), "$reviewedByUserId"] }
+      }
+    }])
+    const newReview = await new ReviewModel({ userId: id, rating: rating, review: review, reviewedBy: decoded.accountType, reviewedByUserId: decoded._id })
     if (reviewList.length === 0) {
       return res.json({ status: 'error', message: 'No Review Found For This User' })
     } else {
