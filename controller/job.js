@@ -716,31 +716,33 @@ JobRouter.get("/find/admin", AdminAuthentication, async (req, res) => {
 });
 
 // Find Job By Search For Admin
-JobRouter.get("/filter", UserAuthentication, async (req, res) => {
-  const { salaryMax, salaryMin, experience, employmentType, category,workType } = req.query;
+JobRouter.post("/filter", UserAuthentication, async (req, res) => {
+  console.log(req.body);
+  
+  const { salaryMax, salaryMin, experience, employmentType, category, workType } = req.body;
   const query = {};
 
-  if (category) {
+  if (category !== '') {
     query.category = category;
   }
 
-  if (salaryMin !== undefined && salaryMax !== undefined) {
+  if (salaryMin !== '' && salaryMax !== '') {
     query.salary = { $gte: salaryMin, $lte: salaryMax };
-  } else if (salaryMin !== undefined) {
+  } else if (salaryMin !== '') {
     query.salary = { $gte: salaryMin };
-  } else if (salaryMax !== undefined) {
+  } else if (salaryMax !== '') {
     query.salary = { $lte: salaryMax };
   }
 
-  if (experience !== undefined) {
+  if (experience !== '') {
     query.experience = { $gte: experience };
   }
 
-  if (employmentType) {
+  if (employmentType !== '') {
     query.employmentType = employmentType;
   }
 
-  if (workType) {
+  if (workType !== '') {
     query.workType = workType;
   }
 

@@ -2071,17 +2071,17 @@ UserRouter.get("/check/:id", async (req, res) => {
 
 
 // Find User By Search For Artist
-UserRouter.get("/filter/artist", UserAuthentication, async (req, res) => {
-  const { country, skills, category, gender } = req.query;
+UserRouter.post("/filter/artist", UserAuthentication, async (req, res) => {
+  const { country, skills, category, gender } = req.body;
   const query = {};
   query.verified = true,
-  query.disabled = false
-  query.accountType='artist'
-  
-  if (category) {
+    query.disabled = false
+  query.accountType = 'artist'
+
+  if (category !== '') {
     query.category = category;
   }
-  if (gender) {
+  if (gender !== '') {
     query.gender = gender;
   }
 
@@ -2090,7 +2090,7 @@ UserRouter.get("/filter/artist", UserAuthentication, async (req, res) => {
     query.skills = { $in: skills }; // Matches any skill in the user's skill set
   }
 
-  if (country) {
+  if (country !== '') {
     query["address.country"] = country;
   }
 
@@ -2109,14 +2109,14 @@ UserRouter.get("/filter/artist", UserAuthentication, async (req, res) => {
 });
 
 // Find User By Search For Professional
-UserRouter.get("/filter/professional", UserAuthentication, async (req, res) => {
-  const { country, skills, category, } = req.query;
+UserRouter.post("/filter/professional", UserAuthentication, async (req, res) => {
+  const { country, skills, category, } = req.body;
   const query = {};
   query.verified = true,
-  query.disabled = false
-  query.accountType='professional'
-  
-  if (category) {
+    query.disabled = false
+  query.accountType = 'professional'
+
+  if (category !== '') {
     query.category = category;
   }
 
@@ -2124,7 +2124,7 @@ UserRouter.get("/filter/professional", UserAuthentication, async (req, res) => {
     query.skills = { $in: skills }; // Matches any skill in the user's skill set
   }
 
-  if (country) {
+  if (country !== '') {
     query["address.country"] = country;
   }
 
