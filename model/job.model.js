@@ -24,7 +24,7 @@ const addressSchema = new Schema({
 
 const jobschema = mongoose.Schema({
     createdBy: { type: ObjectId, required: true }, // Save The Professional ID by whom this Job was ceated
-    salary: { type: String, required: true }, // Save Salary in Range Link :- 40k - 50k
+    salary: { type: Number, required: true }, // Save Salary in Range Link :- 40k - 50k
     role: { type: String, required: true }, // Save Role Link :-  Singer, Drummer 
     workType: { // Save Work Type Like WFH, WFO, HYBRID
         type: String, required: true,
@@ -44,14 +44,10 @@ const jobschema = mongoose.Schema({
         type: String,
         required: true
     },
-    // Save Location of the Job
     description: { // Save Detailed Description of Job & basic detail about the job
         type: String,
         required: true
     },
-    // position: { // Save Job Postition Details Like :- Senior, Mid-level, Fresher
-    //     type: String,
-    // },
     education: { // Save Minimum Qualification Needed To Apply For the Job
         type: String,
         required: true
@@ -61,7 +57,7 @@ const jobschema = mongoose.Schema({
         required: true
     },// Save Overview of the Job
     experience: { // Save Minimum Number of Experience a person should have to apply for the Job
-        type: String,
+        type: Number,
         required: true
     },
     endtime: { // Time Period For Which Company is hiring anyone For This Position

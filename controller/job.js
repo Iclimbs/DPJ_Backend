@@ -29,20 +29,6 @@ JobRouter.post(
   async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
-    // Calculating End Date of Job || Job Will be Active For 30 Days
-    // const currentDate = new Date();
-    // const dateObj = new Date(currentDate.setDate(currentDate.getDate() + 30));
-    // // Creating Date
-    // const month =
-    //   dateObj.getUTCMonth() + 1 < 10
-    //     ? String(dateObj.getUTCMonth() + 1).padStart(2, "0")
-    //     : dateObj.getUTCMonth() + 1; // months from 1-12
-    // const day =
-    //   dateObj.getUTCDate() < 10
-    //     ? String(dateObj.getUTCDate()).padStart(2, "0")
-    //     : dateObj.getUTCDate();
-    // const year = dateObj.getUTCFullYear();
-    // const endDate = year + "-" + month + "-" + day;
 
     const {
       salary,
@@ -76,12 +62,12 @@ JobRouter.post(
 
     const newJobPosting = new JobModel({
       createdBy: decoded._id,
-      salary,
+      salary: Number(salary),
       role,
       workType,
       description,
       education,
-      experience,
+      experience: Number(experience),
       companyOverview,
       employmentType,
       address: addressdetails,
@@ -152,11 +138,15 @@ JobRouter.patch(
         keyResponsibilities =
           req.body?.keyResponsibilities || JobDetails[0].keyResponsibilities;
       }
+      let salary = Number(req.body.salary) || JobDetails[0].salary;
+      let experience = Number(req.body.experience) || JobDetails[0].experience;
 
       const updatedData = {
         ...req.body,
         address: addressdetails,
         benefits: jobBenefits,
+        salary:salary,
+        experience:experience,
         keyResponsibilities: keyResponsibilities,
       };
 
@@ -625,21 +615,7 @@ JobRouter.get("/listall/applied", [ArtistAuthentication], async (req, res) => {
 
 JobRouter.get("/find", UserAuthentication, async (req, res) => {
   const { search } = req.query;
-  // const dateObj = new Date();
-  // // Creating Date
-  // const month =
-  //   dateObj.getUTCMonth() + 1 < 10
-  //     ? String(dateObj.getUTCMonth() + 1).padStart(2, "0")
-  //     : dateObj.getUTCMonth() + 1; // months from 1-12
-  // const day =
-  //   dateObj.getUTCDate() < 10
-  //     ? String(dateObj.getUTCDate()).padStart(2, "0")
-  //     : dateObj.getUTCDate();
-  // const year = dateObj.getUTCFullYear();
-  // const date = year + "-" + month + "-" + day;
-
   const regex = new RegExp(search, "i");
-
   try {
     const results = await JobModel.aggregate([
       {
@@ -678,7 +654,7 @@ JobRouter.get("/find", UserAuthentication, async (req, res) => {
       });
     }
 
-   return res.json({ status: "success", data: results });
+    return res.json({ status: "success", data: results });
   } catch (error) {
     return res.json({
       status: "error",

@@ -252,19 +252,18 @@ ReviewRouter.post("/add/:id", UserAuthentication, async (req, res) => {
     return res.json({ status: 'error', message: 'Review & Rating Both Are Required' })
   }
   try {
-    const reviewList = await ReviewModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(id) } }, {
-      $addFields: {
-        reviewstatus: { $eq: [new ObjectId(decoded._id), "$reviewedByUserId"] }
-      }
-    }])
-    const newReview = await new ReviewModel({ userId: id, rating: rating, review: review, reviewedBy: decoded.accountType, reviewedByUserId: decoded._id })
+    const reviewList = await ReviewModel.aggregate([{ $match: { userId: new mongoose.Types.ObjectId(id), reviewedByUserId: new mongoose.Types.ObjectId(decoded._id) } }])
     if (reviewList.length === 0) {
-      return res.json({ status: 'error', message: 'No Review Found For This User' })
+      const newReview = await new ReviewModel({ userId: id, rating: rating, review: review, reviewedBy: decoded.accountType, reviewedByUserId: decoded._id })
+      await newReview.save();
+      return res.json({ status: 'success', message: 'Review Added Successfully' })
     } else {
-      return res.json({ status: 'success', data: reviewList })
+      return res.json({ status: 'success', message: 'You Have Already Reviewed This User' })
     }
+
+    // const newReview = await new ReviewModel({ userId: id, rating: rating, review: review, reviewedBy: decoded.accountType, reviewedByUserId: decoded._id })
   } catch (error) {
-    return res.json({ status: 'error', message: `Failed To Fetch Rating Status ${error.message}` })
+    return res.json({ status: 'error', message: `Failed To Add Rating & Review ${error.message}` })
   }
 })
 module.exports = { ReviewRouter };
