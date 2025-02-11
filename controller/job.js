@@ -724,15 +724,15 @@ JobRouter.post("/filter", UserAuthentication, async (req, res) => {
     query.category = category;
   }
 
-  if (salaryMin !== '' && salaryMax !== '') {
+  if (salaryMin !== 0 && salaryMax !== 0) {
     query.salary = { $gte: salaryMin, $lte: salaryMax };
-  } else if (salaryMin !== '') {
+  } else if (salaryMin !== 0) {
     query.salary = { $gte: salaryMin };
-  } else if (salaryMax !== '') {
+  } else if (salaryMax !== 0) {
     query.salary = { $lte: salaryMax };
   }
 
-  if (experience !== '') {
+  if (experience !== 0) {
     query.experience = { $gte: experience };
   }
 
