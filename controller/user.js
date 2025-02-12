@@ -1337,7 +1337,7 @@ UserRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
         $match: {
           _id: new mongoose.Types.ObjectId(id),
           disabled: false,
-          verified: true,
+          // verified: true,
         },
       },
       { $project: { password: 0, CreatedAt: 0 } },
