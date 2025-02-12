@@ -2072,11 +2072,14 @@ UserRouter.get("/check/:id", async (req, res) => {
 
 // Find User By Search For Artist
 UserRouter.post("/filter/artist", UserAuthentication, async (req, res) => {
-  const { country, skills, category, gender } = req.body;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+const { country, skills, category, gender } = req.body;
   const query = {};
-  query.verified = true,
-    query.disabled = false
+  // query.verified = true,
+  query.disabled = false
   query.accountType = 'artist'
+  query._id = { $ne: decoded._id }
 
   if (category !== '') {
     query.category = category;
@@ -2095,7 +2098,7 @@ UserRouter.post("/filter/artist", UserAuthentication, async (req, res) => {
   }
 
   try {
-    const users = await UserModel.find(query);
+    const users = await UserModel.find(query, { forgotpasswordtoken: 0, otp: 0, password: 0 })
     if (users.length === 0) {
       return res.json({ status: 'error', message: 'No Artist Found ' })
 
@@ -2110,11 +2113,15 @@ UserRouter.post("/filter/artist", UserAuthentication, async (req, res) => {
 
 // Find User By Search For Professional
 UserRouter.post("/filter/professional", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
   const { country, skills, category, } = req.body;
   const query = {};
-  query.verified = true,
-    query.disabled = false
+  // query.verified = true,
+  query.disabled = false
   query.accountType = 'professional'
+  query._id = { $ne: decoded._id }
+
 
   if (category !== '') {
     query.category = category;
@@ -2129,7 +2136,7 @@ UserRouter.post("/filter/professional", UserAuthentication, async (req, res) => 
   }
 
   try {
-    const users = await UserModel.find(query);
+    const users = await UserModel.find(query)
     if (users.length === 0) {
       return res.json({ status: 'error', message: 'No Professionals Found ' })
 
