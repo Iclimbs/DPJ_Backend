@@ -468,18 +468,6 @@ EventRouter.get("/detail/:id", ProfessionalAuthentication, async (req, res) => {
 
 EventRouter.get("/active/list", UserAuthentication, async (req, res) => {
   try {
-    // const dateObj = new Date();
-    // // Creating Date
-    // const month =
-    //   dateObj.getUTCMonth() + 1 < 10
-    //     ? String(dateObj.getUTCMonth() + 1).padStart(2, "0")
-    //     : dateObj.getUTCMonth() + 1; // months from 1-12
-    // const day =
-    //   dateObj.getUTCDate() < 10
-    //     ? String(dateObj.getUTCDate()).padStart(2, "0")
-    //     : dateObj.getUTCDate();
-    // const year = dateObj.getUTCFullYear();
-    // const currentDate = year + "-" + month + "-" + day;
 
     const list = await EventModel.aggregate([
       {
@@ -630,5 +618,46 @@ EventRouter.get("/listall/admin/:id", AdminAuthentication, async (req, res) => {
     });
   }
 });
+
+EventRouter.post("/filter", UserAuthentication, async (req, res) => {
+  try {
+    const { category, city } = req.body;
+
+    // Validate input
+    if (!category && !city) {
+      return res.status(400).json({ message: "Please provide at least one search parameter (category or city)." });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    // Build the query dynamically
+    const query = {
+      endDate: { $gte: today } // Filter events where endDate is greater than or equal to today
+    };
+    if (category) {
+      query.category = { $regex: category, $options: "i" }; // Case-insensitive partial match for category
+    }
+    if (city) {
+      query["address.city"] = { $regex: city, $options: "i" }; // Case-insensitive partial match for city
+    }
+
+    // Fetch matching events
+    const events = await EventModel.find(query);
+
+
+    // Return results
+    if (events.length == 0) {
+      return res.json({ status: "error", message: "No Event Found" });
+    } else {
+      return res.json({ status: "success", data: events });
+    }
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Unable To Find Events Details ${error.message}`,
+    });
+  }
+});
+
 
 module.exports = { EventRouter };

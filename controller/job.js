@@ -461,7 +461,7 @@ JobRouter.get(
 
 JobRouter.post(
   "/apply/:id",
-  [JobApplyChecker, ArtistAuthentication, uploadMiddleWare.single("cv")],
+  [uploadMiddleWare.single("cv")],
   async (req, res) => {
     const { id } = req.params;
     const token = req.headers.authorization.split(" ")[1];
@@ -716,7 +716,7 @@ JobRouter.get("/find/admin", AdminAuthentication, async (req, res) => {
 });
 
 // Find Job By Search For Admin
-JobRouter.post("/filter", UserAuthentication, async (req, res) => {  
+JobRouter.post("/filter", UserAuthentication, async (req, res) => {
   const { salaryMax, salaryMin, experience, employmentType, category, workType } = req.body;
   const query = {};
 
