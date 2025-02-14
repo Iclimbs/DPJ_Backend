@@ -619,6 +619,7 @@ EventRouter.get("/listall/admin/:id", AdminAuthentication, async (req, res) => {
   }
 });
 
+// Filtering Event Based Upon City & Category
 EventRouter.post("/filter", UserAuthentication, async (req, res) => {
   try {
     const { category, city } = req.body;
@@ -658,6 +659,55 @@ EventRouter.post("/filter", UserAuthentication, async (req, res) => {
     });
   }
 });
+
+// Find Event By Search
+
+EventRouter.get("/find", UserAuthentication, async (req, res) => {  
+  const { search } = req.query;
+  const regex = new RegExp(search, "i");  
+  try {
+    const results = await EventModel.aggregate([
+      {
+        $match: {
+          $or: [
+            { category: { $regex: regex } },
+            { "address.location": { $regex: regex } },
+            { "address.state": { $regex: regex } },
+            { "address.city": { $regex: regex } },
+          ],
+          endDate: { $gte: currentDate },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $project: { _id: 1, name: 1, email: 1, profile: 1, category: 1 },
+            },
+          ],
+          as: "professionaldetails",
+        },
+      },
+    ]);
+    if (results.length === 0) {
+      return res.json({
+        status: "error",
+        message: "No matching records found",
+      });
+    }
+
+    return res.json({ status: "success", data: results });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed to Fetch Job Detail's ${error.message}`,
+    });
+  }
+});
+
 
 
 module.exports = { EventRouter };
