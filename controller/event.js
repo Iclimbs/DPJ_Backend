@@ -662,19 +662,21 @@ EventRouter.post("/filter", UserAuthentication, async (req, res) => {
 
 // Find Event By Search
 
-EventRouter.get("/find", UserAuthentication, async (req, res) => {  
+EventRouter.get("/find", UserAuthentication, async (req, res) => {
   const { search } = req.query;
-  const regex = new RegExp(search, "i");  
+  const regex = new RegExp(search, "i");
   try {
     const results = await EventModel.aggregate([
       {
         $match: {
           $or: [
+            { eventType: { $regex: regex } },
             { category: { $regex: regex } },
             { "address.location": { $regex: regex } },
             { "address.state": { $regex: regex } },
             { "address.city": { $regex: regex } },
           ],
+          type:{ $ne: 'Collaboration' },
           endDate: { $gte: currentDate },
         },
       },
