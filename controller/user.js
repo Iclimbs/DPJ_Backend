@@ -2238,6 +2238,7 @@ UserRouter.patch(
   },
 );
 
+// Send Otp To User Account For Email Verification
 UserRouter.get("/otp/send", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
@@ -2315,6 +2316,7 @@ UserRouter.get("/otp/send", UserAuthentication, async (req, res) => {
   }
 })
 
+// Send Otp To Backend To Verify User Email Address
 UserRouter.post("/otp/verify", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication")
