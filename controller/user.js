@@ -78,6 +78,7 @@ const {
   ReviewModel,
   BookMarkModel,
   ReferModel,
+  OtpModel,
 } = require("../model/ModelExport");
 
 // Required Middleware For File Upload & User Authentication
@@ -2074,7 +2075,7 @@ UserRouter.get("/check/:id", async (req, res) => {
 UserRouter.post("/filter/artist", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-const { country, skills, category, gender } = req.body;
+  const { country, skills, category, gender } = req.body;
   const query = {};
   // query.verified = true,
   query.disabled = false
@@ -2236,5 +2237,111 @@ UserRouter.patch(
     }
   },
 );
+
+UserRouter.get("/otp/send", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const userExists = await UserModel.find({ email: decoded.email,emailVerified:false });
+    if (userExists.length === 0) {
+      return res.json({
+        status: "error",
+        message: "No User Exists With This Email, Please SignUp First",
+        redirect: "/user/register",
+      });
+    } else {
+      let newotp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        specialChars: false,
+        lowerCaseAlphabets: false,
+      });
+      const existsotp = await OtpModel.find({
+        userId: userExists[0]._id,
+      });
+      if (existsotp.length !== 0) {
+        return res.json({
+          status: "error",
+          message:
+            "Check Your mailbox You can still use your old otp to reset the password ",
+        });
+      }
+      const VerifyAccount = new OtpModel({
+        userId: userExists[0]._id,
+        otp: newotp,
+        expireAt: Date.now() + 10 * 60 * 1000,
+      });
+      await VerifyAccount.save();
+      let verifyotptemplate = path.join(
+        __dirname,
+        "../emailtemplate/verifyemail.ejs",
+      );
+      ejs.renderFile(
+        verifyotptemplate,
+        { otp: newotp },
+        function (err, template) {
+          if (err) {
+            return res.json({ status: "error", message: err.message });
+          } else {
+            const mailOptions = {
+              from: process.env.emailuser,
+              to: `${userExists[0].email}`,
+              subject: "Otp To Verifiy Email ",
+              html: template,
+            };
+            gmailtransporter.sendMail(mailOptions, (error, info) => {
+              if (error) {
+                return res.json({
+                  status: "error",
+                  message: `Failed to send email ${error.message}`,
+                  redirect: "/",
+                });
+              } else {
+                return res.json({
+                  status: "success",
+                  message: "Please Check Your Email",
+                  redirect: "/",
+                });
+              }
+            });
+          }
+        },
+      );
+    }
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found in Forgot Password`,
+    });
+  }
+})
+
+UserRouter.post("/otp/verify", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication")
+  const { otp } = req.body;
+  if (!otp) {
+    return res.json({status:'error',message:'Otp Is Required To Verify Email Id'})
+  }
+  try {
+    const otpExists = await OtpModel.find({
+      otp: otp,
+      userId: decoded._id
+    })
+    if (otpExists.length === 0) {
+      return res.json({ status: 'error', message: `Email Verification Failed. Unable To Verifiy Otp` })
+    } else {
+
+      const updateuser = await UserModel.findByIdAndUpdate(decoded._id, { emailVerified: true }, { new: true } // Optional: Returns the updated document
+      )
+      if (updateuser !== null) {
+        return res.json({ status: 'success', message: 'User Email Verified' })
+      } else if (updateuser === null) {
+        return res.json({ status: 'error', message: 'User Email Verfication Failed' })
+      }
+    }
+  } catch (error) {
+    return res.json({ status: 'error', message: `Failed To Verify Otp ${error.message}` })
+  }
+})
 
 module.exports = { UserRouter };

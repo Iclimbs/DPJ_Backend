@@ -20,10 +20,10 @@ passport.use(
                 const user = await UserModel.find({ email: profile._json.email })
                 if (user.length === 0) {
                     callback(null, {
-                        status:'pending',
+                        status: 'pending',
                         name: profile.displayName,
                         email: profile._json.email,
-                        redirect:"/signup"
+                        redirect: "/signup"
                     });
                 } else {
                     let token = jwt.sign(
@@ -42,11 +42,11 @@ passport.use(
                     );
                     if (user[0].dob === undefined || user[0].dob === "") {
                         callback(null, {
-                            status:'success',
-                            message:'Login Successful',
-                            token:token,
-                            type:user[0].accountType,
-                            redirect:'/user/basicprofile',
+                            status: 'success',
+                            message: 'Login Successful',
+                            token: token,
+                            type: user[0].accountType,
+                            redirect: '/user/basicprofile',
                         });
                     }
                     if (
@@ -54,22 +54,22 @@ passport.use(
                         user[0].profile === ""
                     ) {
                         callback(null, {
-                            status:'success',
-                            message:'Login Successful',
-                            token:token,
-                            type:user[0].accountType,
-                            redirect:'/user/basicprofile',
+                            status: 'success',
+                            message: 'Login Successful',
+                            token: token,
+                            type: user[0].accountType,
+                            redirect: '/user/basicprofile',
                         });
                     }
                     callback(null, {
-                        status:'success',
-                        message:'Login Successful',
-                        token:token,
-                        type:user[0].accountType,
+                        status: 'success',
+                        message: 'Login Successful',
+                        token: token,
+                        type: user[0].accountType,
                     });
                 }
             } catch (error) {
-                callback(null, {status:'error',message:`${error.message}`});
+                callback(null, { status: 'error', message: `${error.message}` });
             }
         }
     )

@@ -17,12 +17,15 @@ const { FollowModel } = require("./follow.model");
 const { FeaturesModel } = require("./feature.model");
 const { SubscriptionModel } = require("./subscription.model");
 const { ForgotPasswordModel } = require("./forgotPassword.model");
-const {SubscriptionLogs} = require("./subscription.log.model")
-const {ReferModel} = require("./refer.model")
-const {BankAccountModel} = require("./bankdetails.model")
-const {WithDrawalModel} = require("./withdrawl.model")
-const {CategoryModel} = require("./category.model")
+const { SubscriptionLogs } = require("./subscription.log.model")
+const { ReferModel } = require("./refer.model")
+const { BankAccountModel } = require("./bankdetails.model")
+const { WithDrawalModel } = require("./withdrawl.model")
+const { CategoryModel } = require("./category.model")
+const { OtpModel } = require("./otp.model")
+
 module.exports = {
+  OtpModel,
   BookedTicketModel,
   BookMarkModel,
   BookMarkModel,
