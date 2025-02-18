@@ -44,6 +44,9 @@ const jobschema = mongoose.Schema({
         type: String,
         required: true
     },
+    subCategory: {
+        type: String
+    },
     description: { // Save Detailed Description of Job & basic detail about the job
         type: String,
         required: true

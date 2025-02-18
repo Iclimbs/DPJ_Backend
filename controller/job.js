@@ -758,4 +758,21 @@ JobRouter.post("/filter", UserAuthentication, async (req, res) => {
 
 });
 
+// Find Recommended Jobs 
+JobRouter.get("/recommended", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const jobs = await JobModel.find(query);
+    if (jobs.length === 0) {
+      return res.json({ status: 'error', message: 'No Job Found ' })
+
+    } else {
+      return res.json({ status: 'success', data: jobs })
+    }
+  } catch (error) {
+    return res.json({ status: 'error', message: `Failed To Filter Jobs ${error.message}` })
+  }
+
+});
 module.exports = { JobRouter };

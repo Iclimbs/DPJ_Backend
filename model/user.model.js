@@ -86,6 +86,7 @@ const userschema = mongoose.Schema({
   documentType: {
     type: String,
   },
+  
   document: {
     type: String,
   },
