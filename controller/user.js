@@ -2149,6 +2149,92 @@ UserRouter.post("/filter/professional", UserAuthentication, async (req, res) => 
 
 });
 
+// Upgrade Guest Account To Artist || Professional
+UserRouter.patch(
+  "/me/account/upgrade",
+  uploadMiddleWare.fields([
+    { name: "profile", maxCount: 1 },
+    { name: "banner", maxCount: 1 },
+  ]),
+  UserAuthentication,
+  async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
 
+    try {
+      const updatedUser = await UserModel.findOne({ _id: decoded._id });
+
+      let addressdata = {};
+      addressdata.country = req.body?.country || updatedUser?.address?.country;
+      addressdata.state = req.body?.state || updatedUser?.address?.state;
+      addressdata.city = req.body?.city || updatedUser?.address?.city;
+      addressdata.location =
+        req.body?.location || updatedUser?.address?.location;
+
+      let sociallinks = {};
+      sociallinks.facebook =
+        req.body?.facebook || updatedUser?.sociallinks?.facebook;
+      sociallinks.linkdein =
+        req.body?.linkdein || updatedUser?.sociallinks?.linkdein;
+      sociallinks.twitter =
+        req.body?.twitter || updatedUser?.sociallinks?.twitter;
+      sociallinks.instagram =
+        req.body?.instagram || updatedUser?.sociallinks?.instagram;
+
+      let profile;
+      if (!!req?.files.profile) {
+        profile = req.files.profile[0]?.location || updatedUser?.profile;
+      }
+      let banner;
+      if (!!req?.files.banner) {
+        banner = req.files.banner[0]?.location || updatedUser?.banner;
+      }
+
+      const skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
+
+      let companycategory;
+      if (updatedUser?.accountType === "professional") {
+        companycategory =
+          req.body?.companycategory || updatedUser?.companycategory;
+      }
+
+      const updatedData = {
+        ...req.body, // Update other fields if provided
+        banner: banner, // Use the new image if uploaded
+        profile: profile,
+        address: addressdata,
+        sociallinks: sociallinks,
+        skills: skills,
+        companycategory: companycategory,
+      };
+
+      const updatedItem = await UserModel.findByIdAndUpdate(
+        decoded._id,
+        updatedData,
+        {
+          new: true, // Return the updated document
+        },
+      );
+      const newtoken = await generateToken(decoded._id)
+      if (newtoken.status === 'success') {
+        return res.json({
+          status: "success",
+          message: `Successfully Updated User AccountType`,
+          token: newtoken.token
+        });
+      } else {
+        return res.json({
+          status: "success",
+          message: `Successfully Updated User AccountType`,
+        });
+      }
+    } catch (error) {
+      return res.json({
+        status: "error",
+        message: `Failed To Update User AccountType  ${error.message}`,
+      });
+    }
+  },
+);
 
 module.exports = { UserRouter };
