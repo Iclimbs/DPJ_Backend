@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const express = require("express");
 
 // Basic Model Imports
-const { JobModel, JobAppliedModel } = require("../model/ModelExport");
+const { JobModel, JobAppliedModel, UserModel } = require("../model/ModelExport");
 
 // Basic Middleware Imports
 const {
@@ -763,6 +763,10 @@ JobRouter.get("/recommended", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
+    const userExists = await UserModel.find({ _id: decoded._id });
+    if (userExists.length===0) {
+      return res.json({status:'error',message:'User Detail No Foun '})
+    }
     const jobs = await JobModel.find(query);
     if (jobs.length === 0) {
       return res.json({ status: 'error', message: 'No Job Found ' })

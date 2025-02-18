@@ -108,6 +108,7 @@ const hash = {
 
 const generateToken = async (props) => {
   const { id } = props;
+
   try {
 
     const userdetails = await UserModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
@@ -2161,6 +2162,10 @@ UserRouter.patch(
   async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
+    console.log("decoded", decoded);
+    console.log("body", req.body);
+
+
 
     try {
       const updatedUser = await UserModel.findOne({ _id: decoded._id });
@@ -2191,7 +2196,12 @@ UserRouter.patch(
         banner = req.files.banner[0]?.location || updatedUser?.banner;
       }
 
-      const skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
+      let skills;
+      if (req.body.skills) {
+        skills = JSON.parse(req.body?.skills)
+      } else {
+        skills = updatedUser?.skills
+      }
 
       let companycategory;
       if (updatedUser?.accountType === "professional") {
@@ -2207,6 +2217,7 @@ UserRouter.patch(
         sociallinks: sociallinks,
         skills: skills,
         companycategory: companycategory,
+        accountType: req.body?.accountType
       };
 
       const updatedItem = await UserModel.findByIdAndUpdate(
@@ -2216,7 +2227,11 @@ UserRouter.patch(
           new: true, // Return the updated document
         },
       );
-      const newtoken = await generateToken(decoded._id)
+      console.log("updatedItem", updatedItem);
+
+
+      const newtoken = await generateToken({ id: decoded._id })
+
       if (newtoken.status === 'success') {
         return res.json({
           status: "success",
@@ -2243,7 +2258,7 @@ UserRouter.get("/otp/send", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
-    const userExists = await UserModel.find({ email: decoded.email,emailVerified:false });
+    const userExists = await UserModel.find({ email: decoded.email, emailVerified: false });
     if (userExists.length === 0) {
       return res.json({
         status: "error",
@@ -2322,7 +2337,7 @@ UserRouter.post("/otp/verify", UserAuthentication, async (req, res) => {
   const decoded = jwt.verify(token, "Authentication")
   const { otp } = req.body;
   if (!otp) {
-    return res.json({status:'error',message:'Otp Is Required To Verify Email Id'})
+    return res.json({ status: 'error', message: 'Otp Is Required To Verify Email Id' })
   }
   try {
     const otpExists = await OtpModel.find({
