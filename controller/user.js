@@ -2227,8 +2227,6 @@ UserRouter.patch(
           new: true, // Return the updated document
         },
       );
-      console.log("updatedItem", updatedItem);
-
 
       const newtoken = await generateToken({ id: decoded._id })
 
