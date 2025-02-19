@@ -16,10 +16,10 @@ const passwordSchema = mongoose.Schema({
     expireAt: {
         type: Date,
         default: null, // This will be populated only if `shouldExpire` is true
-        index: { expires: '0' } // TTL index based on this field; expires if not null
     },
     CreatedAt: { type: Date, default: Date.now },
 })
+passwordSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
 const ForgotPasswordModel = mongoose.model("ResetPassword", passwordSchema)
 module.exports = { ForgotPasswordModel }

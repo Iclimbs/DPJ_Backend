@@ -7,15 +7,16 @@ const otpSchema = mongoose.Schema({
     },
     otp: {
         type: Number,
-        required: true
+        required: true,
+        unique: true
     },
     expireAt: {
         type: Date,
         default: null, // This will be populated only if `shouldExpire` is true
-        index: { expires: '0' } // TTL index based on this field; expires if not null
     },
     CreatedAt: { type: Date, default: Date.now },
 })
+otpSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
-const OtpModel = mongoose.model("Otp", otpSchema)
+const OtpModel = mongoose.model("EmailVerificationOtp", otpSchema)
 module.exports = { OtpModel }

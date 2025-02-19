@@ -108,9 +108,7 @@ const hash = {
 
 const generateToken = async (props) => {
   const { id } = props;
-
   try {
-
     const userdetails = await UserModel.aggregate([{ $match: { _id: new mongoose.Types.ObjectId(id) } }])
 
     if (userdetails.length === 0) {
@@ -2282,7 +2280,7 @@ UserRouter.get("/otp/send", UserAuthentication, async (req, res) => {
       const VerifyAccount = new OtpModel({
         userId: userExists[0]._id,
         otp: newotp,
-        expireAt: Date.now() + 10 * 60 * 1000,
+        expireAt: Date.now() +  60 * 1000,
       });
       await VerifyAccount.save();
       let verifyotptemplate = path.join(
@@ -2322,6 +2320,8 @@ UserRouter.get("/otp/send", UserAuthentication, async (req, res) => {
       );
     }
   } catch (error) {
+    console.log("eror",error);
+    
     return res.json({
       status: "error",
       message: `Error Found While Sending Otp ${error.message}`,
