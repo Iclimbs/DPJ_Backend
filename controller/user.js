@@ -2324,7 +2324,7 @@ UserRouter.get("/otp/send", UserAuthentication, async (req, res) => {
   } catch (error) {
     return res.json({
       status: "error",
-      message: `Error Found in Forgot Password`,
+      message: `Error Found While Sending Otp ${error.message}`,
     });
   }
 })
