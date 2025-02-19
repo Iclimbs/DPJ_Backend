@@ -2256,7 +2256,7 @@ UserRouter.get("/otp/send", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   try {
-    const userExists = await UserModel.find({ email: decoded.email, emailVerified: false });
+    const userExists = await UserModel.find({ email: decoded.email });
     if (userExists.length === 0) {
       return res.json({
         status: "error",
