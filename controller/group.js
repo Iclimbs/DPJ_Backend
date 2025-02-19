@@ -1,10 +1,12 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const GroupRouter = express.Router();
 const { GroupModel } = require('../model/group.model');
-const { UserAuthentication, uploadMiddleWare } = require('../middleware/MiddlewareExport');
+const { UserAuthentication, uploadMiddleWare, AdminAuthentication } = require('../middleware/MiddlewareExport');
 
 // Create Group
+
 GroupRouter.post("/create", uploadMiddleWare.fields([
     { name: "profile", maxCount: 1 },
     { name: "banner", maxCount: 1 },
@@ -47,6 +49,7 @@ GroupRouter.post("/create", uploadMiddleWare.fields([
 })
 
 // Edit Group Details
+
 GroupRouter.patch("/edit/:id", uploadMiddleWare.fields([
     { name: "profile", maxCount: 1 },
     { name: "banner", maxCount: 1 },
@@ -99,12 +102,77 @@ GroupRouter.patch("/edit/:id", uploadMiddleWare.fields([
 
 // Add New Members in Group
 
+GroupRouter.post("/add/members/:id", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    const { id } = req.params;
+    const { userId } = req.body;
+    try {
+        const groupMemberList = await GroupModel.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(id),
+                    memebers: {
+                        $elemMatch: { $eq: new mongoose.Types.ObjectId(userId) },
+                    },
+                },
+            },
+        ]);
+        if (groupMemberList.length === 0) {
+
+            const group = await GroupModel.updateOne(
+                { _id: new mongoose.Types.ObjectId(id) },
+                { $push: { memebers: new mongoose.Types.ObjectId(userId) } }, // Add ObjectId to the array
+            );
+            console.log("group", group);
+
+            return res.json({ status: 'success', message: 'New Member Added In The Group' })
+        } else {
+            return res.json({ status: 'error', message: 'Member Already Present In The Group' })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Add Member in the Group ${error.message}` })
+    }
+})
+
 // Remove Members From Group
 
+GroupRouter.post("/remove/members/:id", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    const { id } = req.params;
+    const { userId } = req.body;
+    try {
+        const groupMemberList = await GroupModel.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(id),
+                    memebers: {
+                        $elemMatch: { $eq: new mongoose.Types.ObjectId(userId) },
+                    },
+                },
+            },
+        ]);
+        if (groupMemberList.length !== 0) {
+            const group = await GroupModel.updateOne(
+                { _id: new mongoose.Types.ObjectId(id) },
+                { $pull: { memebers: new mongoose.Types.ObjectId(userId) } }, // Add ObjectId to the array
+            );
+            return res.json({ status: 'success', message: 'Member Removed From Group' })
+        } else {
+            return res.json({ status: 'error', message: 'No Such Member Present In The Group' })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Remove Member From Group ${error.message}` })
+    }
+})
 // Get Active Group List 
+
 GroupRouter.get("/listall", UserAuthentication, async (req, res) => {
     try {
-        const groupList = await GroupModel.find({ disabled: false })
+        const groupList = await GroupModel.aggregate([{ $match: { disabled: false } },
+        { $lookup: { from: 'users', localField: "ownerId", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "OwnerDetails" } },
+        { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } }, { $project: { disabled: 0 } }])
         if (groupList.length === 0) {
             return res.json({ status: 'error', message: 'No Group Found' })
         } else {
@@ -117,8 +185,57 @@ GroupRouter.get("/listall", UserAuthentication, async (req, res) => {
 
 // Get Group List Created By Me
 
+GroupRouter.get("/listall/me", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    try {
+        const groupList = await GroupModel.aggregate([{ $match: { disabled: false, ownerId: new mongoose.Types.ObjectId(decoded._id) } },
+        { $lookup: { from: 'users', localField: "ownerId", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "OwnerDetails" } },
+        { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } }, { $project: { disabled: 0 } }])
+        if (groupList.length === 0) {
+            return res.json({ status: 'error', message: 'No Group Found' })
+        } else {
+            return res.json({ status: 'success', data: groupList })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Fetch All Groups List ${error.message}` })
+    }
+})
+
+
 // Get Group List Admin
 
+GroupRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
+    try {
+        const groupList = await GroupModel.aggregate([
+            { $lookup: { from: 'users', localField: "ownerId", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "OwnerDetails" } },
+            { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } }])
+        if (groupList.length === 0) {
+            return res.json({ status: 'error', message: 'No Group Found' })
+        } else {
+            return res.json({ status: 'success', data: groupList })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Fetch All Groups List ${error.message}` })
+    }
+})
+
+
 // Disable Group Admin
+
+GroupRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const disalbeGroup = await GroupModel.findByIdAndUpdate(id, { disabled: true }, { new: true })
+        if (disalbeGroup === null) {
+            return res.json({ status: 'error', message: 'Failed To Disable Group' })
+        } else {
+            return res.json({ status: 'success', message: 'Successfully Disabled A Group' })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Disable A Groups  ${error.message}` })
+    }
+})
+
 
 module.exports = { GroupRouter }
