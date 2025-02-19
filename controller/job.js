@@ -715,47 +715,51 @@ JobRouter.get("/find/admin", AdminAuthentication, async (req, res) => {
   }
 });
 
-// Find Job By Search For Admin
+// Find Job By Search For User
 JobRouter.post("/filter", UserAuthentication, async (req, res) => {
   const { salaryMax, salaryMin, experience, employmentType, category, workType } = req.body;
-  const query = {};
+
+  // Build the match stage dynamically based on the provided filters
+  const matchStage = {};
 
   if (category !== '') {
-    query.category = category;
+    matchStage.category = category;
   }
 
   if (salaryMin !== 0 && salaryMax !== 0) {
-    query.salary = { $gte: salaryMin, $lte: salaryMax };
+    matchStage.salary = { $gte: salaryMin, $lte: salaryMax };
   } else if (salaryMin !== 0) {
-    query.salary = { $gte: salaryMin };
+    matchStage.salary = { $gte: salaryMin };
   } else if (salaryMax !== 0) {
-    query.salary = { $lte: salaryMax };
+    matchStage.salary = { $lte: salaryMax };
   }
 
   if (experience !== 0) {
-    query.experience = { $gte: experience };
+    matchStage.experience = { $gte: experience };
   }
 
   if (employmentType !== '') {
-    query.employmentType = employmentType;
+    matchStage.employmentType = employmentType;
   }
 
   if (workType !== '') {
-    query.workType = workType;
+    matchStage.workType = workType;
   }
 
   try {
-    const jobs = await JobModel.find(query);
-    if (jobs.length === 0) {
-      return res.json({ status: 'error', message: 'No Job Found ' })
+    const jobs = await JobModel.aggregate([
+      { $match: matchStage },
+      { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1, verified: 1 } }], as: 'userDetails' } }
+    ]);
 
+    if (jobs.length === 0) {
+      return res.json({ status: 'error', message: 'No Job Found' });
     } else {
-      return res.json({ status: 'success', data: jobs })
+      return res.json({ status: 'success', data: jobs });
     }
   } catch (error) {
-    return res.json({ status: 'error', message: `Failed To Filter Jobs ${error.message}` })
+    return res.json({ status: 'error', message: `Failed To Filter Jobs: ${error.message}` });
   }
-
 });
 
 // Find Recommended Jobs 
@@ -767,7 +771,8 @@ JobRouter.get("/recommended", UserAuthentication, async (req, res) => {
     if (userExists.length === 0) {
       return res.json({ status: 'error', message: 'User Detail Not Found ' })
     }
-    const jobs = await JobModel.find({ subCategory: userExists[0].category });
+    const jobs = await JobModel.aggregate([{ $match: { subCategory: userExists[0].category } }, { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1, verified: 1 } }], as: 'userDetails' } }
+    ]);
     if (jobs.length === 0) {
       return res.json({ status: 'error', message: 'No Job Found ' })
     } else {
