@@ -764,18 +764,17 @@ JobRouter.get("/recommended", UserAuthentication, async (req, res) => {
   const decoded = jwt.verify(token, "Authentication");
   try {
     const userExists = await UserModel.find({ _id: decoded._id });
-    if (userExists.length===0) {
-      return res.json({status:'error',message:'User Detail No Foun '})
+    if (userExists.length === 0) {
+      return res.json({ status: 'error', message: 'User Detail Not Found ' })
     }
-    const jobs = await JobModel.find(query);
+    const jobs = await JobModel.find({ subCategory: userExists[0].category });
     if (jobs.length === 0) {
       return res.json({ status: 'error', message: 'No Job Found ' })
-
     } else {
       return res.json({ status: 'success', data: jobs })
     }
   } catch (error) {
-    return res.json({ status: 'error', message: `Failed To Filter Jobs ${error.message}` })
+    return res.json({ status: 'error', message: `Failed To Find Recommended Jobs ${error.message}` })
   }
 
 });
