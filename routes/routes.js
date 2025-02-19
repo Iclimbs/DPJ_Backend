@@ -15,6 +15,7 @@ const { ReferRouter } = require("../controller/refer");
 const { BankRouter } = require("../controller/bank");
 const { WithDrawlRouter } = require("../controller/withdrawl");
 const { CategoryRouter } = require("../controller/category");
+const { GroupRouter } = require("../controller/group");
 
 router
   .use("/user", UserRouter)
@@ -31,7 +32,8 @@ router
   .use("/chat", ChatRouter)
   .use("/refer", ReferRouter)
   .use("/bank", BankRouter)
-  .use("/withdrawl",WithDrawlRouter)
-  .use("/category",CategoryRouter)
+  .use("/withdrawl", WithDrawlRouter)
+  .use("/category", CategoryRouter)
+  .use("/group", GroupRouter)
 
 module.exports = router;
