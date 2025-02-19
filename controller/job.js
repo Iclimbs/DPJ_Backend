@@ -749,7 +749,7 @@ JobRouter.post("/filter", UserAuthentication, async (req, res) => {
   try {
     const jobs = await JobModel.aggregate([
       { $match: matchStage },
-      { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1, verified: 1 } }], as: 'userDetails' } }
+      { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1, verified: 1 } }], as: 'professionaldetails' } }
     ]);
 
     if (jobs.length === 0) {
@@ -771,7 +771,7 @@ JobRouter.get("/recommended", UserAuthentication, async (req, res) => {
     if (userExists.length === 0) {
       return res.json({ status: 'error', message: 'User Detail Not Found ' })
     }
-    const jobs = await JobModel.aggregate([{ $match: { subCategory: userExists[0].category } }, { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1, verified: 1 } }], as: 'userDetails' } }
+    const jobs = await JobModel.aggregate([{ $match: { subCategory: userExists[0].category } }, { $lookup: { from: 'users', localField: 'createdBy', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, category: 1, profile: 1, verified: 1 } }], as: 'professionaldetails' } }
     ]);
     if (jobs.length === 0) {
       return res.json({ status: 'error', message: 'No Job Found ' })
