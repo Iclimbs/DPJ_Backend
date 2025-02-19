@@ -238,4 +238,43 @@ GroupRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) =>
 })
 
 
+// Search Groups
+GroupRouter.get("/filter", UserAuthentication, async (req, res) => {
+    const { search } = req.query;
+    try {
+        const regex = new RegExp(search, "i");
+
+        const results = await GroupModel.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { name: { $regex: regex } },
+                        { "address.location": { $regex: regex } },
+                        { "address.state": { $regex: regex } },
+                        { "address.city": { $regex: regex } },
+                    ],
+                    disabled:false
+                },
+            },
+            { $lookup: { from: 'users', localField: "ownerId", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "OwnerDetails" } },
+            { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } },
+            { $project: { disabled: 0 } }])
+
+        if (results.length === 0) {
+            return res.json({
+                status: "error",
+                message: "No matching records found",
+            });
+        }else{
+            return res.json({
+                status:'success',
+                data:results
+            })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Find Group ${error.message}` })
+    }
+
+})
+
 module.exports = { GroupRouter }
