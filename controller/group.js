@@ -107,6 +107,9 @@ GroupRouter.post("/add/members/:id", UserAuthentication, async (req, res) => {
     const decoded = jwt.verify(token, "Authentication");
     const { id } = req.params;
     const { userId } = req.body;
+    if (decoded._id === userId) {
+        return res.json({ status: 'error', message: 'You Cannot Add Yourself As an Member' })
+    }
     try {
         const groupMemberList = await GroupModel.aggregate([
             {
@@ -166,11 +169,87 @@ GroupRouter.post("/remove/members/:id", UserAuthentication, async (req, res) => 
         return res.json({ status: 'error', message: `Failed To Remove Member From Group ${error.message}` })
     }
 })
+
+// Exit From Group
+
+GroupRouter.post("/exit/:id", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    const { id } = req.params;
+    try {
+        const groupMemberList = await GroupModel.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(id),
+                    memebers: {
+                        $elemMatch: { $eq: new mongoose.Types.ObjectId(decoded._id) },
+                    },
+                },
+            },
+        ]);
+        if (groupMemberList.length !== 0) {
+            const group = await GroupModel.updateOne(
+                { _id: new mongoose.Types.ObjectId(id) },
+                { $pull: { memebers: new mongoose.Types.ObjectId(decoded._id) } }, // Add ObjectId to the array
+            );
+            return res.json({ status: 'success', message: 'Exit From Group Successful' })
+        } else {
+            return res.json({ status: 'error', message: 'Group Not Found' })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Exit From Group`, error: error.message })
+    }
+})
+
 // Get Active Group List 
 
 GroupRouter.get("/listall", UserAuthentication, async (req, res) => {
     try {
         const groupList = await GroupModel.aggregate([{ $match: { disabled: false } },
+        { $lookup: { from: 'users', localField: "ownerId", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "OwnerDetails" } },
+        { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } }, { $project: { disabled: 0 } }])
+        if (groupList.length === 0) {
+            return res.json({ status: 'error', message: 'No Group Found' })
+        } else {
+            return res.json({ status: 'success', data: groupList })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Fetch All Groups List ${error.message}` })
+    }
+})
+
+// Get List Of All Groupds in which you are a member
+
+GroupRouter.get("/listall/members", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    try {
+        const groupMembership = await GroupModel.aggregate([
+            {
+                $match: {
+                    memebers: {
+                        $elemMatch: { $eq: new mongoose.Types.ObjectId(decoded._id) },
+                    },
+                },
+            },
+            { $project: { disabled: 0 } }
+        ]);
+        if (groupMembership.length === 0) {
+            return res.json({ status: 'error', message: 'No Group Found' })
+        } else {
+            return res.json({ status: 'success', data: groupMembership })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Fetch All Groups List ${error.message}` })
+    }
+})
+
+// Get A Particular Group Details
+
+GroupRouter.get("/listall/:id", UserAuthentication, async (req, res) => {
+    const { id } = req.params
+    try {
+        const groupList = await GroupModel.aggregate([{ $match: { disabled: false, _id: new mongoose.Types.ObjectId(id) } },
         { $lookup: { from: 'users', localField: "ownerId", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "OwnerDetails" } },
         { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } }, { $project: { disabled: 0 } }])
         if (groupList.length === 0) {
@@ -202,7 +281,6 @@ GroupRouter.get("/listall/me", UserAuthentication, async (req, res) => {
     }
 })
 
-
 // Get Group List Admin
 
 GroupRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
@@ -220,7 +298,6 @@ GroupRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
     }
 })
 
-
 // Disable Group Admin
 
 GroupRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => {
@@ -237,7 +314,6 @@ GroupRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) =>
     }
 })
 
-
 // Search Groups
 GroupRouter.get("/filter", UserAuthentication, async (req, res) => {
     const { search } = req.query;
@@ -253,7 +329,7 @@ GroupRouter.get("/filter", UserAuthentication, async (req, res) => {
                         { "address.state": { $regex: regex } },
                         { "address.city": { $regex: regex } },
                     ],
-                    disabled:false
+                    disabled: false
                 },
             },
             { $lookup: { from: 'users', localField: "ownerId", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "OwnerDetails" } },
@@ -265,10 +341,10 @@ GroupRouter.get("/filter", UserAuthentication, async (req, res) => {
                 status: "error",
                 message: "No matching records found",
             });
-        }else{
+        } else {
             return res.json({
-                status:'success',
-                data:results
+                status: 'success',
+                data: results
             })
         }
     } catch (error) {
