@@ -218,7 +218,7 @@ GroupRouter.get("/listall", UserAuthentication, async (req, res) => {
     }
 })
 
-// Get List Of All Groupds in which you are a member
+// Get List Of All Groups in which you are a member
 
 GroupRouter.get("/listall/members", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
