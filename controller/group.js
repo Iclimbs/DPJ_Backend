@@ -246,7 +246,7 @@ GroupRouter.get("/listall/members", UserAuthentication, async (req, res) => {
 
 // Get A Particular Group Details
 
-GroupRouter.get("/listall/:id", UserAuthentication, async (req, res) => {
+GroupRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
     const { id } = req.params
     try {
         const groupList = await GroupModel.aggregate([{ $match: { disabled: false, _id: new mongoose.Types.ObjectId(id) } },
@@ -264,7 +264,7 @@ GroupRouter.get("/listall/:id", UserAuthentication, async (req, res) => {
 
 // Get Group List Created By Me
 
-GroupRouter.get("/listall/me", UserAuthentication, async (req, res) => {
+GroupRouter.get("/list/me", UserAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     try {
