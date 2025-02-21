@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const GroupRouter = express.Router();
-const { GroupModel, EnquiryModel, } = require('../model/ModelExport');
+const { GroupModel, EnquiryModel, ReviewModel, } = require('../model/ModelExport');
 const { UserAuthentication, uploadMiddleWare, AdminAuthentication } = require('../middleware/MiddlewareExport');
 
 // Create Group
@@ -207,7 +207,13 @@ GroupRouter.get("/listall", UserAuthentication, async (req, res) => {
     try {
         const groupList = await GroupModel.aggregate([{ $match: { disabled: false } },
         { $lookup: { from: 'users', localField: "ownerId", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "OwnerDetails" } },
-        { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } }, { $project: { disabled: 0 } }])
+        { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } },
+        {
+            $lookup: {
+                from: 'reviews', localField: "_id", foreignField: "groupId", pipeline: [{ $project: { _id: 1, review: 1, rating: 1, reviewedByUserId: 1 } },
+                { $lookup: { from: 'users', localField: 'reviewedByUserId', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, verified: 1, category: 1, profile: 1 } }], as: 'userdetails' } }], as: "ReviewDetails"
+            }
+        }, { $project: { disabled: 0 } }])
         if (groupList.length === 0) {
             return res.json({ status: 'error', message: 'No Group Found' })
         } else {
@@ -251,7 +257,14 @@ GroupRouter.get("/detailone/:id", UserAuthentication, async (req, res) => {
     try {
         const groupList = await GroupModel.aggregate([{ $match: { disabled: false, _id: new mongoose.Types.ObjectId(id) } },
         { $lookup: { from: 'users', localField: "ownerId", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "OwnerDetails" } },
-        { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } }, { $project: { disabled: 0 } }])
+        { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } },
+        {
+            $lookup: {
+                from: 'reviews', localField: "_id", foreignField: "groupId", pipeline: [{ $project: { _id: 1, review: 1, rating: 1, reviewedByUserId: 1 } },
+                { $lookup: { from: 'users', localField: 'reviewedByUserId', foreignField: '_id', pipeline: [{ $project: { _id: 1, name: 1, email: 1, verified: 1, category: 1, profile: 1 } }], as: 'userdetails' } }], as: "ReviewDetails"
+            }
+        },
+        { $project: { disabled: 0 } }])
         if (groupList.length === 0) {
             return res.json({ status: 'error', message: 'No Group Found' })
         } else {
@@ -420,5 +433,84 @@ GroupRouter.get("/enquiry/list/:id", UserAuthentication, async (req, res) => {
     }
 }
 )
+
+// Add Review For Group
+GroupRouter.post("/review/add/:id", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, 'Authentication')
+    const { id } = req.params;
+    const { rating, review } = req.body;
+    if (!id) {
+        return res.json({ status: 'error', message: 'Id Is Required' })
+    }
+    try {
+        const reviewExists = await ReviewModel.aggregate([{
+            $match: {
+                groupId: new mongoose.Types.ObjectId(id),
+                reviewedByUserId: new mongoose.Types.ObjectId(decoded._id)
+            }
+        }])
+
+        if (reviewExists.length !== 0) {
+            return res.json({ status: 'error', message: 'Review Already Exists For This Group' })
+        }
+
+        const newReview = await ReviewModel.create({
+            groupId: id,
+            review: review,
+            rating: rating,
+            reviewedByUserId: decoded._id,
+            reviewedBy: decoded.accountType
+        })
+
+        return res.json({ status: 'success', message: 'Successfully Added Review For Group' })
+
+    } catch (error) {
+        return res.json({ status: 'error', message: 'Failed To Add Review in Group', error: error.message })
+    }
+})
+
+
+// Edit Review For Group
+GroupRouter.patch("/review/edit/:id", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, 'Authentication')
+    const { id } = req.params;
+    if (!id) {
+        return res.json({ status: 'error', message: 'Id Is Required' })
+    }
+    try {
+        const reviewExists = await ReviewModel.aggregate([{
+            $match: {
+                _id: new mongoose.Types.ObjectId(id),
+                reviewedByUserId: new mongoose.Types.ObjectId(decoded._id)
+            }
+        }])
+
+        if (reviewExists.length === 0) {
+            return res.json({ status: 'error', message: 'No Review Present For This Group' })
+        }
+        const updatedData = {
+            rating: req.body?.rating || reviewExists[0].rating,
+            review: req.body?.review || reviewExists[0].review
+        };
+
+        const updateReview = await ReviewModel.findByIdAndUpdate(id, { rating: updatedData.rating, review: updatedData.review }, { new: true })
+
+        if (updateReview !== null) {
+            return res.json({ status: 'success', message: 'Successfully Updated Review For Group' })
+
+        } else {
+            return res.json({ status: 'error', message: 'Failed To Update Review For Group' })
+
+        }
+
+    } catch (error) {
+        return res.json({ status: 'error', message: 'Failed To Add Review in Group', error: error.message })
+    }
+})
+
+
+
 
 module.exports = { GroupRouter }

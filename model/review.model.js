@@ -7,6 +7,9 @@ const reviewSchema = mongoose.Schema({
     eventId: {
         type: ObjectId,
     },
+    groupId: {
+        type: ObjectId
+    },
     userId: {
         type: ObjectId,
     },
