@@ -421,9 +421,11 @@ GroupRouter.get("/enquiry/list/:id", UserAuthentication, async (req, res) => {
                     _id: new mongoose.Types.ObjectId(id),
                     ownerId: new mongoose.Types.ObjectId(decoded._id)
                 }
-            }, {
+            },
+            {
                 $lookup: { from: 'enquiries', localField: "_id", foreignField: "groupId", as: "EnquiryList" }
-            }
+            },
+            { $sort: { CreatedAt: -1 } }
         ])
         return res.json({ status: 'success', message: 'Enquiry List', data: enquiryList })
     } catch (error) {
