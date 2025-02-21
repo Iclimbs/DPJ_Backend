@@ -23,8 +23,12 @@ const { BankAccountModel } = require("./bankdetails.model")
 const { WithDrawalModel } = require("./withdrawl.model")
 const { CategoryModel } = require("./category.model")
 const { OtpModel } = require("./otp.model")
+const { EnquiryModel } = require("./enquiry.model")
+const {GroupModel} = require("./group.model")
 
 module.exports = {
+  GroupModel,
+  EnquiryModel,
   OtpModel,
   BookedTicketModel,
   BookMarkModel,

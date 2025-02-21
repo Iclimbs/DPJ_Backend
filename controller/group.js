@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const GroupRouter = express.Router();
-const { GroupModel } = require('../model/group.model');
+const { GroupModel, EnquiryModel, } = require('../model/ModelExport');
 const { UserAuthentication, uploadMiddleWare, AdminAuthentication } = require('../middleware/MiddlewareExport');
 
 // Create Group
@@ -352,5 +352,73 @@ GroupRouter.get("/filter", UserAuthentication, async (req, res) => {
     }
 
 })
+
+// Create Groups Enquiry
+GroupRouter.post("/enquiry/:id", UserAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    const { id } = req.params;
+    try {
+        const enquiryPermission = await GroupModel.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(id),
+                    memebers: {
+                        $elemMatch: { $eq: new mongoose.Types.ObjectId(decoded._id) },
+                    },
+                    ownerId: new mongoose.Types.ObjectId(decoded._id)
+                }
+            },
+        ])
+        if (enquiryPermission.length !== 0) {
+            return res.json({ status: 'error', message: 'You Are Not Allowed To Create Enquiry For This Group' })
+
+        }
+        const newEnquiry = await EnquiryModel.create({
+            userId: decoded._id,
+            name: decoded.name,
+            email: decoded.email,
+            profile: decoded.profile,
+            accountType: decoded.accountType,
+            verified: decoded.verified,
+            phone: req.body?.phone,
+            message: req.body?.message,
+            groupId: id
+        })
+        return res.json({ status: 'success', message: 'Enquiry Created Successfully' })
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Create Enquiry Of Group`, error: error.message })
+    }
+
+})
+
+// Get Enquiry List Of A Group
+GroupRouter.get("/enquiry/list/:id", UserAuthentication, async (req, res) => {
+    const { id } = req.params;
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    if (!id) {
+        return res.json({ status: 'error', message: 'Group Id Is Required' })
+    }
+
+    try {
+        const enquiryList = await GroupModel.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(id),
+                    ownerId: new mongoose.Types.ObjectId(decoded._id)
+                }
+            }, {
+                $lookup: { from: 'enquiries', localField: "_id", foreignField: "groupId", as: "EnquiryList" }
+            }
+        ])
+        return res.json({ status: 'success', message: 'Enquiry List', data: enquiryList })
+    } catch (error) {
+
+        return res.json({ status: 'error', message: `Failed To Fetch Enquiry List ${error.message}` })
+
+    }
+}
+)
 
 module.exports = { GroupRouter }
