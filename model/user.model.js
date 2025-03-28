@@ -72,7 +72,6 @@ const userschema = mongoose.Schema({
   },
   phoneno: {
     type: Number,
-    required: true
   },
   password: {
     type: String,
