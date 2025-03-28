@@ -74,7 +74,7 @@ ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication,
 },
 );
 
-ProfessionalDetailsRouter.post("/edit/ownerdetails/:id", [ProfessionalAuthentication, uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "resume", maxCount: 1 }])], async (req, res) => {
+ProfessionalDetailsRouter.patch("/edit/ownerdetails/:id", [ProfessionalAuthentication, uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "resume", maxCount: 1 }])], async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     const { id } = req.params;

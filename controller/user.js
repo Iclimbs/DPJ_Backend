@@ -749,6 +749,17 @@ UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: "profile", maxCo
     }
 
     let phoneno = req.body?.phoneno || updatedUser?.phoneno
+    // Artist Company & Designation
+    let artistcompany;
+    if (updatedUser?.accountType === "artist") {
+      artistcompany = req.body?.company || updatedUser?.company || "";
+    }
+    let artistdesignation;
+    if (updatedUser?.accountType === "artist") {
+      artistdesignation = req.body?.designation || updatedUser?.designation || "";
+    }
+
+
 
     const updatedData = {
       ...req.body, // Update other fields if provided
@@ -758,7 +769,9 @@ UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: "profile", maxCo
       sociallinks: sociallinks,
       skills: skills,
       companycategory: companycategory,
-      phoneno:phoneno
+      phoneno: phoneno,
+      company:artistcompany,
+      designation:artistdesignation
     };
 
     const updatedItem = await UserModel.findByIdAndUpdate(
