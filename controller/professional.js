@@ -40,9 +40,7 @@ ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication,
     if (ownerdetailsexists.length !== 0) {
         return res.json({ status: 'error', message: 'Owner Details Already Exists !!' })
     }
-
-
-
+    
     const ownerdetails = new CompanyOwnerDetailsModel({
         fname,
         lname,

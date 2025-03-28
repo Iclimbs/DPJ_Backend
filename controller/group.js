@@ -85,7 +85,8 @@ GroupRouter.patch("/edit/:id", uploadMiddleWare.fields([
             description: req.body?.description || groupExists[0].description,
             profile: profile,
             banner: banner,
-            address: addressdata
+            address: addressdata,
+            groupCategory: req.body?.groupCategory || groupExists[0].groupCategory
         }
         const updateGroup = await GroupModel.findByIdAndUpdate(id, updatedData, { new: true })
         if (updateGroup === null) {

@@ -106,6 +106,12 @@ const userschema = mongoose.Schema({
   resume: {
     type: String,
   },
+  company:{
+    type:String,
+  },
+  designation:{
+    type:String
+  },
 
   // Professional Specific Details
   companycategory: {

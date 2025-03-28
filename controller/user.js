@@ -707,79 +707,72 @@ UserRouter.get("/me/wallet", UserAuthentication, async (req, res) => {
 });
 // Updating User Detail's in the Database.
 
-UserRouter.patch(
-  "/me/update",
-  uploadMiddleWare.fields([
-    { name: "profile", maxCount: 1 },
-    { name: "banner", maxCount: 1 },
-  ]),
-  UserAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
+UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "banner", maxCount: 1 }]), UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
 
-    try {
-      const updatedUser = await UserModel.findOne({ _id: decoded._id });
+  try {
+    const updatedUser = await UserModel.findOne({ _id: decoded._id });
 
-      let addressdata = {};
-      addressdata.country = req.body?.country || updatedUser?.address?.country;
-      addressdata.state = req.body?.state || updatedUser?.address?.state;
-      addressdata.city = req.body?.city || updatedUser?.address?.city;
-      addressdata.location =
-        req.body?.location || updatedUser?.address?.location;
+    let addressdata = {};
+    addressdata.country = req.body?.country || updatedUser?.address?.country;
+    addressdata.state = req.body?.state || updatedUser?.address?.state;
+    addressdata.city = req.body?.city || updatedUser?.address?.city;
+    addressdata.location =
+      req.body?.location || updatedUser?.address?.location;
 
-      let sociallinks = {};
-      sociallinks.facebook =
-        req.body?.facebook || updatedUser?.sociallinks?.facebook;
-      sociallinks.linkdein =
-        req.body?.linkdein || updatedUser?.sociallinks?.linkdein;
-      sociallinks.twitter =
-        req.body?.twitter || updatedUser?.sociallinks?.twitter;
-      sociallinks.instagram =
-        req.body?.instagram || updatedUser?.sociallinks?.instagram;
+    let sociallinks = {};
+    sociallinks.facebook =
+      req.body?.facebook || updatedUser?.sociallinks?.facebook;
+    sociallinks.linkdein =
+      req.body?.linkdein || updatedUser?.sociallinks?.linkdein;
+    sociallinks.twitter =
+      req.body?.twitter || updatedUser?.sociallinks?.twitter;
+    sociallinks.instagram =
+      req.body?.instagram || updatedUser?.sociallinks?.instagram;
 
-      let profile;
-      if (!!req?.files.profile) {
-        profile = req.files.profile[0]?.location || updatedUser?.profile;
-      }
-      let banner;
-      if (!!req?.files.banner) {
-        banner = req.files.banner[0]?.location || updatedUser?.banner;
-      }
-
-      const skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
-
-      let companycategory;
-      if (updatedUser?.accountType === "professional") {
-        companycategory =
-          req.body?.companycategory || updatedUser?.companycategory;
-      }
-
-      const updatedData = {
-        ...req.body, // Update other fields if provided
-        banner: banner, // Use the new image if uploaded
-        profile: profile,
-        address: addressdata,
-        sociallinks: sociallinks,
-        skills: skills,
-        companycategory: companycategory,
-      };
-
-      const updatedItem = await UserModel.findByIdAndUpdate(
-        decoded._id,
-        updatedData,
-        {
-          new: true, // Return the updated document
-        },
-      );
-      return res.json({ status: "success", message: "User Details Updated" });
-    } catch (error) {
-      return res.json({
-        status: "error",
-        message: `Failed To Update User Detail's  ${error.message}`,
-      });
+    let profile;
+    if (!!req?.files.profile) {
+      profile = req.files.profile[0]?.location || updatedUser?.profile;
     }
-  },
+    let banner;
+    if (!!req?.files.banner) {
+      banner = req.files.banner[0]?.location || updatedUser?.banner;
+    }
+
+    const skills = JSON.parse(req.body?.skills) || updatedUser?.skills;
+
+    let companycategory;
+    if (updatedUser?.accountType === "professional") {
+      companycategory =
+        req.body?.companycategory || updatedUser?.companycategory;
+    }
+
+    const updatedData = {
+      ...req.body, // Update other fields if provided
+      banner: banner, // Use the new image if uploaded
+      profile: profile,
+      address: addressdata,
+      sociallinks: sociallinks,
+      skills: skills,
+      companycategory: companycategory,
+    };
+
+    const updatedItem = await UserModel.findByIdAndUpdate(
+      decoded._id,
+      updatedData,
+      {
+        new: true, // Return the updated document
+      },
+    );
+    return res.json({ status: "success", message: "User Details Updated" });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Update User Detail's  ${error.message}`,
+    });
+  }
+},
 );
 
 // Getting list Of All Followers Of Users
@@ -947,177 +940,163 @@ UserRouter.get("/me/following", UserAuthentication, async (req, res) => {
 
 // Disable Any User By Admin
 
-UserRouter.patch(
-  "/disable/admin/:id",
-  AdminAuthentication,
-  async (req, res) => {
-    const { id } = req.params;
-    try {
-      const updatedUser = await UserModel.findByIdAndUpdate(id, {
-        disabled: true,
-      });
-      return res.json({
-        status: "success",
-        message: "User SuccessFully Deactivated ",
-      });
-    } catch (error) {
-      return res.json({
-        status: "error",
-        message: `Failed To Disable User ${error.message}`,
-      });
-    }
-  },
+UserRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const updatedUser = await UserModel.findByIdAndUpdate(id, {
+      disabled: true,
+    });
+    return res.json({
+      status: "success",
+      message: "User SuccessFully Deactivated ",
+    });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Disable User ${error.message}`,
+    });
+  }
+},
 );
 
 // Step 1 Uploading Documents For Account Verifications
 
-UserRouter.post(
-  "/documentupload",
-  uploadMiddleWare.single("document"),
-  UserAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
+UserRouter.post("/documentupload", uploadMiddleWare.single("document"), UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
 
-    if (!req.file) {
-      return res.json({
-        status: "error",
-        error: "please upload a Document",
+  if (!req.file) {
+    return res.json({
+      status: "error",
+      error: "please upload a Document",
+    });
+  }
+  try {
+    const userDocuments = await DocumentModel.find({ userId: decoded._id });
+
+    if (userDocuments.length == 0) {
+      const newDocument = new DocumentModel({
+        document: req.file?.location,
+        documentType: req.body?.documentType,
+        userId: decoded._id,
       });
-    }
-    try {
-      const userDocuments = await DocumentModel.find({ userId: decoded._id });
-
-      if (userDocuments.length == 0) {
-        const newDocument = new DocumentModel({
-          document: req.file?.location,
-          documentType: req.body?.documentType,
-          userId: decoded._id,
-        });
-        await newDocument.save();
+      await newDocument.save();
+      return res.json({
+        status: "success",
+        message:
+          "Document Uploaded Successfully Please Wait For 48 Hours Untill Admin Verify Your Document",
+      });
+    } else {
+      if (userDocuments[0].status === "Rejected") {
+        userDocuments[0].document = req.file?.location;
+        userDocuments[0].documentType =
+          req.body?.documentType || userDocuments[0].documentType;
+        userDocuments[0].status = "Pending";
+        await DocumentModel.findByIdAndUpdate(
+          userDocuments[0]._id,
+          userDocuments[0],
+        );
         return res.json({
           status: "success",
           message:
-            "Document Uploaded Successfully Please Wait For 48 Hours Untill Admin Verify Your Document",
+            "Document ReUploaded For Verification Please Wait For 48 Hours Untill Admin Verify Your Document",
         });
-      } else {
-        if (userDocuments[0].status === "Rejected") {
-          userDocuments[0].document = req.file?.location;
-          userDocuments[0].documentType =
-            req.body?.documentType || userDocuments[0].documentType;
-          userDocuments[0].status = "Pending";
-          await DocumentModel.findByIdAndUpdate(
-            userDocuments[0]._id,
-            userDocuments[0],
-          );
-          return res.json({
-            status: "success",
-            message:
-              "Document ReUploaded For Verification Please Wait For 48 Hours Untill Admin Verify Your Document",
-          });
-        } else if (userDocuments[0].status === "Approved") {
-          return res.json({
-            status: "success",
-            message: "Document Already Approved",
-          });
-        } else if (userDocuments[0].status === "Pending") {
-          return res.json({
-            status: "error",
-            message: "Document Already In Pending",
-          });
-        }
+      } else if (userDocuments[0].status === "Approved") {
+        return res.json({
+          status: "success",
+          message: "Document Already Approved",
+        });
+      } else if (userDocuments[0].status === "Pending") {
+        return res.json({
+          status: "error",
+          message: "Document Already In Pending",
+        });
       }
-    } catch (error) {
-      return res.json({
-        status: "error",
-        message: `Error Found while trying to upload Documents ${error.message}`,
-      });
     }
-  },
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found while trying to upload Documents ${error.message}`,
+    });
+  }
+},
 );
 
 // Resume Upload For Artist
 
-UserRouter.post(
-  "/resumeupload",
-  uploadMiddleWare.single("resume"),
-  ArtistAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
+UserRouter.post("/resumeupload", uploadMiddleWare.single("resume"), ArtistAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
 
-    if (!req.file) {
-      return res.json({
-        status: "error",
-        error: "please upload a Document",
-      });
-    }
-    try {
-      const userDocuments = await UserModel.findByIdAndUpdate(decoded._id, {
-        resume: req.file?.location || "",
-      });
-      return res.json({
-        status: "success",
-        message: `Resume Uploaded Successfully`,
-      });
-    } catch (error) {
-      return res.json({
-        status: "error",
-        message: `Error Found while trying to upload Resume ${error.message}`,
-      });
-    }
-  },
+  if (!req.file) {
+    return res.json({
+      status: "error",
+      error: "please upload a Document",
+    });
+  }
+  try {
+    const userDocuments = await UserModel.findByIdAndUpdate(decoded._id, {
+      resume: req.file?.location || "",
+    });
+    return res.json({
+      status: "success",
+      message: `Resume Uploaded Successfully`,
+    });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found while trying to upload Resume ${error.message}`,
+    });
+  }
+},
 );
 
 // Step 2 Verifying Documents Status For Account Verifications
 
-UserRouter.post(
-  "/document/verification/:id",
-  AdminAuthentication,
-  async (req, res) => {
-    const { id } = req.params;
-    try {
-      const userDocuments = await DocumentModel.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(id) } },
-      ]);
-      if (userDocuments.length == 0) {
-        return res.json({
-          status: "error",
-          message: "No Document Found For This User",
-        });
-      } else {
-        if (req.body.status == "Approved") {
-          await UserModel.findByIdAndUpdate(userDocuments[0].userId, {
-            verified: true,
-          });
-          await DocumentModel.findByIdAndUpdate(userDocuments[0]._id, {
-            status: "Approved",
-          });
-          return res.json({
-            status: "success",
-            message: "Document Approved Successfully",
-          });
-        } else if (req.body.status == "Rejected") {
-          await UserModel.findByIdAndUpdate(userDocuments[0].userId, {
-            verified: false,
-          });
-          await DocumentModel.findByIdAndUpdate(userDocuments[0]._id, {
-            status: "Rejected",
-            message: req.body?.message || "Document Rejected By Admin",
-          });
-          return res.json({
-            status: "success",
-            message: "Document Rejected Successfully",
-          });
-        }
-      }
-    } catch (error) {
+UserRouter.post("/document/verification/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const userDocuments = await DocumentModel.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+    ]);
+    if (userDocuments.length == 0) {
       return res.json({
         status: "error",
-        message: `Error Found while trying to Update Document Status ${error.message}`,
+        message: "No Document Found For This User",
       });
+    } else {
+      if (req.body.status == "Approved") {
+        await UserModel.findByIdAndUpdate(userDocuments[0].userId, {
+          verified: true,
+        });
+        await DocumentModel.findByIdAndUpdate(userDocuments[0]._id, {
+          status: "Approved",
+        });
+        return res.json({
+          status: "success",
+          message: "Document Approved Successfully",
+        });
+      } else if (req.body.status == "Rejected") {
+        await UserModel.findByIdAndUpdate(userDocuments[0].userId, {
+          verified: false,
+        });
+        await DocumentModel.findByIdAndUpdate(userDocuments[0]._id, {
+          status: "Rejected",
+          message: req.body?.message || "Document Rejected By Admin",
+        });
+        return res.json({
+          status: "success",
+          message: "Document Rejected Successfully",
+        });
+      }
     }
-  },
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found while trying to Update Document Status ${error.message}`,
+    });
+  }
+},
 );
 
 // Get Document Details Current Status
@@ -1530,7 +1509,7 @@ UserRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => 
 UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "banner", maxCount: 1 },]), UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  const { gender, country, state, city, dob, category } = req.body;
+  const { gender, country, state, city, dob, category, phoneno } = req.body;
 
   if (!req?.files?.profile) {
     return res.json({
@@ -1551,6 +1530,7 @@ UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: "profil
     user.gender = gender;
     user.dob = dob;
     user.category = category || "";
+    user.phoneno = phoneno || 0;
 
     if (!user.address) {
       user.address = {}; // Initialize address if it doesn't exist
