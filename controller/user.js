@@ -748,6 +748,8 @@ UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: "profile", maxCo
         req.body?.companycategory || updatedUser?.companycategory;
     }
 
+    let phoneno = req.body?.phoneno || updatedUser?.phoneno
+
     const updatedData = {
       ...req.body, // Update other fields if provided
       banner: banner, // Use the new image if uploaded
@@ -756,6 +758,7 @@ UserRouter.patch("/me/update", uploadMiddleWare.fields([{ name: "profile", maxCo
       sociallinks: sociallinks,
       skills: skills,
       companycategory: companycategory,
+      phoneno:phoneno
     };
 
     const updatedItem = await UserModel.findByIdAndUpdate(
