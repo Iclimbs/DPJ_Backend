@@ -16,6 +16,7 @@ const { BankRouter } = require("../controller/bank");
 const { WithDrawlRouter } = require("../controller/withdrawl");
 const { CategoryRouter } = require("../controller/category");
 const { GroupRouter } = require("../controller/group");
+const { ProfessionalDetailsRouter } = require("../controller/professional");
 
 router
   .use("/user", UserRouter)
@@ -35,5 +36,7 @@ router
   .use("/withdrawl", WithDrawlRouter)
   .use("/category", CategoryRouter)
   .use("/group", GroupRouter)
+  .use("/professional", ProfessionalDetailsRouter)
+
 
 module.exports = router;
