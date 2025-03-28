@@ -2150,103 +2150,96 @@ UserRouter.post("/filter/professional", UserAuthentication, async (req, res) => 
 });
 
 // Upgrade Guest Account To Artist || Professional
-UserRouter.patch(
-  "/me/account/upgrade",
-  uploadMiddleWare.fields([
-    { name: "profile", maxCount: 1 },
-    { name: "banner", maxCount: 1 },
-  ]),
-  UserAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    console.log("decoded", decoded);
-    console.log("body", req.body);
+UserRouter.patch("/me/account/upgrade", uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "banner", maxCount: 1 }]), UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  console.log("decoded", decoded);
+  console.log("body", req.body);
 
 
 
-    try {
-      const updatedUser = await UserModel.findOne({ _id: decoded._id });
+  try {
+    const updatedUser = await UserModel.findOne({ _id: decoded._id });
 
-      let addressdata = {};
-      addressdata.country = req.body?.country || updatedUser?.address?.country;
-      addressdata.state = req.body?.state || updatedUser?.address?.state;
-      addressdata.city = req.body?.city || updatedUser?.address?.city;
-      addressdata.location =
-        req.body?.location || updatedUser?.address?.location;
+    let addressdata = {};
+    addressdata.country = req.body?.country || updatedUser?.address?.country;
+    addressdata.state = req.body?.state || updatedUser?.address?.state;
+    addressdata.city = req.body?.city || updatedUser?.address?.city;
+    addressdata.location =
+      req.body?.location || updatedUser?.address?.location;
 
-      let sociallinks = {};
-      sociallinks.facebook =
-        req.body?.facebook || updatedUser?.sociallinks?.facebook;
-      sociallinks.linkdein =
-        req.body?.linkdein || updatedUser?.sociallinks?.linkdein;
-      sociallinks.twitter =
-        req.body?.twitter || updatedUser?.sociallinks?.twitter;
-      sociallinks.instagram =
-        req.body?.instagram || updatedUser?.sociallinks?.instagram;
+    let sociallinks = {};
+    sociallinks.facebook =
+      req.body?.facebook || updatedUser?.sociallinks?.facebook;
+    sociallinks.linkdein =
+      req.body?.linkdein || updatedUser?.sociallinks?.linkdein;
+    sociallinks.twitter =
+      req.body?.twitter || updatedUser?.sociallinks?.twitter;
+    sociallinks.instagram =
+      req.body?.instagram || updatedUser?.sociallinks?.instagram;
 
-      let profile;
-      if (!!req?.files.profile) {
-        profile = req.files.profile[0]?.location || updatedUser?.profile;
-      }
-      let banner;
-      if (!!req?.files.banner) {
-        banner = req.files.banner[0]?.location || updatedUser?.banner;
-      }
+    let profile;
+    if (!!req?.files.profile) {
+      profile = req.files.profile[0]?.location || updatedUser?.profile;
+    }
+    let banner;
+    if (!!req?.files.banner) {
+      banner = req.files.banner[0]?.location || updatedUser?.banner;
+    }
 
-      let skills;
-      if (req.body.skills) {
-        skills = JSON.parse(req.body?.skills)
-      } else {
-        skills = updatedUser?.skills
-      }
+    let skills;
+    if (req.body.skills) {
+      skills = JSON.parse(req.body?.skills)
+    } else {
+      skills = updatedUser?.skills
+    }
 
-      let companycategory;
-      if (updatedUser?.accountType === "professional") {
-        companycategory =
-          req.body?.companycategory || updatedUser?.companycategory;
-      }
+    let companycategory;
+    if (updatedUser?.accountType === "professional") {
+      companycategory =
+        req.body?.companycategory || updatedUser?.companycategory;
+    }
 
-      const updatedData = {
-        ...req.body, // Update other fields if provided
-        banner: banner, // Use the new image if uploaded
-        profile: profile,
-        address: addressdata,
-        sociallinks: sociallinks,
-        skills: skills,
-        companycategory: companycategory,
-        accountType: req.body?.accountType
-      };
+    const updatedData = {
+      ...req.body, // Update other fields if provided
+      banner: banner, // Use the new image if uploaded
+      profile: profile,
+      address: addressdata,
+      sociallinks: sociallinks,
+      skills: skills,
+      companycategory: companycategory,
+      accountType: req.body?.accountType
+    };
 
-      const updatedItem = await UserModel.findByIdAndUpdate(
-        decoded._id,
-        updatedData,
-        {
-          new: true, // Return the updated document
-        },
-      );
+    const updatedItem = await UserModel.findByIdAndUpdate(
+      decoded._id,
+      updatedData,
+      {
+        new: true, // Return the updated document
+      },
+    );
 
-      const newtoken = await generateToken({ id: decoded._id })
+    const newtoken = await generateToken({ id: decoded._id })
 
-      if (newtoken.status === 'success') {
-        return res.json({
-          status: "success",
-          message: `Successfully Updated User AccountType`,
-          token: newtoken.token
-        });
-      } else {
-        return res.json({
-          status: "success",
-          message: `Successfully Updated User AccountType`,
-        });
-      }
-    } catch (error) {
+    if (newtoken.status === 'success') {
       return res.json({
-        status: "error",
-        message: `Failed To Update User AccountType  ${error.message}`,
+        status: "success",
+        message: `Successfully Updated User AccountType`,
+        token: newtoken.token
+      });
+    } else {
+      return res.json({
+        status: "success",
+        message: `Successfully Updated User AccountType`,
       });
     }
-  },
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Update User AccountType  ${error.message}`,
+    });
+  }
+},
 );
 
 // Send Otp To User Account For Email Verification
@@ -2280,7 +2273,7 @@ UserRouter.get("/otp/send", UserAuthentication, async (req, res) => {
       const VerifyAccount = new OtpModel({
         userId: userExists[0]._id,
         otp: newotp,
-        expireAt: Date.now() +  60 * 1000,
+        expireAt: Date.now() + 60 * 1000,
       });
       await VerifyAccount.save();
       let verifyotptemplate = path.join(
@@ -2320,8 +2313,8 @@ UserRouter.get("/otp/send", UserAuthentication, async (req, res) => {
       );
     }
   } catch (error) {
-    console.log("eror",error);
-    
+    console.log("eror", error);
+
     return res.json({
       status: "error",
       message: `Error Found While Sending Otp ${error.message}`,
@@ -2358,5 +2351,94 @@ UserRouter.post("/otp/verify", UserAuthentication, async (req, res) => {
     return res.json({ status: 'error', message: `Failed To Verify Otp ${error.message}` })
   }
 })
+
+
+
+// Send Otp To User Account For Mobile Verification
+UserRouter.get("/otp/send/phoneno", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const userExists = await UserModel.find({ email: decoded.email });
+    if (userExists.length === 0) {
+      return res.json({
+        status: "error",
+        message: "No User Exists With This Email, Please SignUp First",
+        redirect: "/user/register",
+      });
+    } else {
+      let newotp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        specialChars: false,
+        lowerCaseAlphabets: false,
+      });
+      const existsotp = await OtpModel.find({
+        userId: userExists[0]._id,
+      });
+      if (existsotp.length !== 0) {
+        return res.json({
+          status: "error",
+          message:
+            "Check Your mailbox You can still use your old otp to reset the password ",
+        });
+      }
+      const VerifyAccount = new OtpModel({
+        userId: userExists[0]._id,
+        otp: newotp,
+        expireAt: Date.now() + 60 * 1000,
+      });
+      await VerifyAccount.save();
+
+      // Send Otp To Phone 
+      fetch(`https://2factor.in/API/V1/${process.env.twofactorkey}/SMS/${userExists[0].phoneno}/${VerifyAccount.otp}/Airpax`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === 'Success') {
+            return res.json({ status: "success", message: "Otp Sent to User Successfully",})
+          } else {
+            return res.json({ status: "error", message: "Failed to Send OTP. PLease Try again Aftersome Time", })
+          }
+        });
+    }
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found While Sending Otp ${error.message}`,
+    });
+  }
+})
+
+// Send Otp To Backend To Verify User MobileNo
+UserRouter.post("/otp/verify/phoneno", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication")
+  const { otp } = req.body;
+  if (!otp) {
+    return res.json({ status: 'error', message: 'Otp Is Required To Verify Email Id' })
+  }
+  try {
+    const otpExists = await OtpModel.find({
+      otp: otp,
+      userId: decoded._id
+    })
+    if (otpExists.length === 0) {
+      return res.json({ status: 'error', message: `Email Verification Failed. Unable To Verifiy Otp` })
+    } else {
+
+      const updateuser = await UserModel.findByIdAndUpdate(decoded._id, { phonenoVerified: true }, { new: true } // Optional: Returns the updated document
+      )
+      if (updateuser !== null) {
+        return res.json({ status: 'success', message: 'User PhoneNo Verified Successfully' })
+      } else if (updateuser === null) {
+        return res.json({ status: 'error', message: 'User PhoneNo Verfication Failed' })
+      }
+    }
+  } catch (error) {
+    return res.json({ status: 'error', message: `Failed To Verify Otp ${error.message}` })
+  }
+})
+
+
+
 
 module.exports = { UserRouter };

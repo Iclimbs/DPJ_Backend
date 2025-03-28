@@ -42,6 +42,10 @@ const userschema = mongoose.Schema({
     type: Boolean,
     default: false
   },
+  phonenoVerified: {
+    type: Boolean,
+    default: false
+  },
   disabled: {
     type: Boolean,
     default: false,
@@ -68,6 +72,7 @@ const userschema = mongoose.Schema({
   },
   phoneno: {
     type: Number,
+    required: true
   },
   password: {
     type: String,
@@ -86,7 +91,7 @@ const userschema = mongoose.Schema({
   documentType: {
     type: String,
   },
-  
+
   document: {
     type: String,
   },

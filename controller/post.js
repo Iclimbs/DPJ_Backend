@@ -1,6 +1,7 @@
 // Basic Required Modules
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const { default: mongoose } = require("mongoose");
 
 // Basic Model Imports
 const {
@@ -18,47 +19,43 @@ const {
   UserAuthentication,
   PostCreationChecker,
 } = require("../middleware/MiddlewareExport");
-const { default: mongoose } = require("mongoose");
 
 const PostRouter = express.Router();
 
 // Api's For Post
 
 // Api To Add New Post
-PostRouter.post(
-  "/add",
-  [PostCreationChecker, UserAuthentication, uploadMiddleWare.single("media")],
-  async (req, res) => {
-    if (!req?.file) {
-      return res.json({
-        status: "error",
-        message: `Please Upload Image Or Video For Post`,
-      });
-    }
-
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    const { description } = req.body;
-    const post = new PostModel({
-      media: req.file.location,
-      description: description,
-      createdBy: decoded._id,
-      mediaType: req.file.mimetype.split("/")[0],
-      isVideo: req.file.mimetype.split("/")[0] == "video" ? true : false,
+PostRouter.post("/add", [PostCreationChecker, UserAuthentication, uploadMiddleWare.single("media")], async (req, res) => {
+  if (!req?.file) {
+    return res.json({
+      status: "error",
+      message: `Please Upload Image Or Video For Post`,
     });
-    try {
-      await post.save();
-      return res.json({
-        status: "success",
-        message: `Post Created Successfully`,
-      });
-    } catch (error) {
-      return res.json({
-        status: "error",
-        message: `Failed To Add  ${error.message}`,
-      });
-    }
-  },
+  }
+
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const { description } = req.body;
+  const post = new PostModel({
+    media: req.file.location,
+    description: description,
+    createdBy: decoded._id,
+    mediaType: req.file.mimetype.split("/")[0],
+    isVideo: req.file.mimetype.split("/")[0] == "video" ? true : false,
+  });
+  try {
+    await post.save();
+    return res.json({
+      status: "success",
+      message: `Post Created Successfully`,
+    });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Add  ${error.message}`,
+    });
+  }
+},
 );
 
 // Api To Get All Post List Created By User
@@ -130,191 +127,185 @@ PostRouter.get("/listall", UserAuthentication, async (req, res) => {
 
 // Api To Get All Detail Of A Particular Post Created By User
 
-PostRouter.get(
-  "/details/:id",
-  [UserAuthentication, PostCreationChecker],
-  async (req, res) => {
-    const { id } = req.params;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
+PostRouter.get("/details/:id", [UserAuthentication, PostCreationChecker], async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
 
-    try {
-      const post = await PostModel.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(id), disabled: false } },
-        {
-          $lookup: {
-            from: "comments",
-            localField: "_id",
-            foreignField: "postId",
-            as: "comments",
+  try {
+    const post = await PostModel.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id), disabled: false } },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "postId",
+          as: "comments",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "userdetails",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                email: 1,
+                category: 1,
+                profile: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $lookup: {
+          from: "bookmarks",
+          localField: "_id",
+          foreignField: "postId",
+          as: "bookmarks",
+        },
+      },
+      {
+        $addFields: {
+          bookmark: {
+            $in: [
+              new mongoose.Types.ObjectId(decoded._id),
+              "$bookmarks.bookmarkedBy",
+            ],
           },
         },
-        {
-          $lookup: {
-            from: "users",
-            localField: "createdBy",
-            foreignField: "_id",
-            as: "userdetails",
-            pipeline: [
+      },
+      {
+        $lookup: {
+          from: "followers",
+          localField: "createdBy",
+          foreignField: "userId",
+          as: "followerlist",
+        },
+      },
+      {
+        $addFields: {
+          followstatus: {
+            $in: [
+              new mongoose.Types.ObjectId(decoded._id),
               {
-                $project: {
-                  _id: 1,
-                  name: 1,
-                  email: 1,
-                  category: 1,
-                  profile: 1,
+                $reduce: {
+                  input: "$followerlist",
+                  initialValue: [],
+                  in: { $concatArrays: ["$$value", "$$this.followedBy"] }, // Flatten the likedBy arrays
                 },
               },
             ],
           },
         },
-        {
-          $lookup: {
-            from: "bookmarks",
-            localField: "_id",
-            foreignField: "postId",
-            as: "bookmarks",
-          },
+      },
+      {
+        $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "postId",
+          as: "like",
         },
-        {
-          $addFields: {
-            bookmark: {
-              $in: [
-                new mongoose.Types.ObjectId(decoded._id),
-                "$bookmarks.bookmarkedBy",
-              ],
-            },
-          },
-        },
-        {
-          $lookup: {
-            from: "followers",
-            localField: "createdBy",
-            foreignField: "userId",
-            as: "followerlist",
-          },
-        },
-        {
-          $addFields: {
-            followstatus: {
-              $in: [
-                new mongoose.Types.ObjectId(decoded._id),
-                {
-                  $reduce: {
-                    input: "$followerlist",
-                    initialValue: [],
-                    in: { $concatArrays: ["$$value", "$$this.followedBy"] }, // Flatten the likedBy arrays
-                  },
+      },
+      {
+        $addFields: {
+          likestatus: {
+            $in: [
+              new mongoose.Types.ObjectId(decoded._id),
+              {
+                $reduce: {
+                  input: "$like",
+                  initialValue: [],
+                  in: { $concatArrays: ["$$value", "$$this.likedBy"] }, // Flatten the likedBy arrays
                 },
-              ],
-            },
+              },
+            ],
           },
         },
-        {
-          $lookup: {
-            from: "likes",
-            localField: "_id",
-            foreignField: "postId",
-            as: "like",
-          },
-        },
-        {
-          $addFields: {
-            likestatus: {
-              $in: [
-                new mongoose.Types.ObjectId(decoded._id),
-                {
-                  $reduce: {
-                    input: "$like",
-                    initialValue: [],
-                    in: { $concatArrays: ["$$value", "$$this.likedBy"] }, // Flatten the likedBy arrays
-                  },
-                },
-              ],
-            },
-          },
-        },
-        {
-          $project: { followerlist: 0 },
-        },
-        { $sort: { CreatedAt: -1 } },
-      ]);
-      if (post.length == 0) {
-        return res.json({
-          status: "error",
-          message: "No Post Created By User",
-        });
-      } else {
-        return res.json({
-          status: "success",
-          data: post,
-        });
-      }
-    } catch (error) {
+      },
+      {
+        $project: { followerlist: 0 },
+      },
+      { $sort: { CreatedAt: -1 } },
+    ]);
+    if (post.length == 0) {
       return res.json({
         status: "error",
-        message: `Failed To Get Details Of A Particular Event ${error.message}`,
+        message: "No Post Created By User",
+      });
+    } else {
+      return res.json({
+        status: "success",
+        data: post,
       });
     }
-  },
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Get Details Of A Particular Event ${error.message}`,
+    });
+  }
+},
 );
 
 // Api To Edit Detail's Of A Particular Post Created By User
 
-PostRouter.patch(
-  "/edit/:id",
-  [PostCreationChecker, UserAuthentication, uploadMiddleWare.single("media")],
-  async (req, res) => {
-    const { id } = req.params;
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
+PostRouter.patch("/edit/:id", [PostCreationChecker, UserAuthentication, uploadMiddleWare.single("media")], async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
 
-    try {
-      const post = await PostModel.aggregate([
-        {
-          $match: {
-            _id: new mongoose.Types.ObjectId(id),
-            createdBy: new mongoose.Types.ObjectId(decoded._id),
-            disabled: false,
-          },
+  try {
+    const post = await PostModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+          createdBy: new mongoose.Types.ObjectId(decoded._id),
+          disabled: false,
         },
-      ]);
-      if (post.length == 0) {
-        return res.json({
-          status: "error",
-          message: "No Post Created By User",
-        });
-      } else {
-        let isVideovalue;
-        if (req.file) {
-          isVideovalue =
-            req.file?.mimetype.split("/")[0] == "video" ? true : false;
-        } else {
-          isVideovalue = post[0].isVideo;
-        }
-
-        const updatedPost = {
-          ...req.body,
-          description: req.body?.description || post[0].description,
-          media: req.file?.location || post[0].media,
-          mediaType: req.file?.mimetype.split("/")[0] || post[0].mimetype,
-          isVideo: isVideovalue,
-        };
-        const newpost = await PostModel.findByIdAndUpdate(id, updatedPost, {
-          new: true, // Return the updated document
-        });
-        return res.json({
-          status: "success",
-          message: "Post Updated Successfully",
-        });
-      }
-    } catch (error) {
+      },
+    ]);
+    if (post.length == 0) {
       return res.json({
         status: "error",
-        message: `Failed To Update Event Details ${error.message}`,
+        message: "No Post Created By User",
+      });
+    } else {
+      let isVideovalue;
+      if (req.file) {
+        isVideovalue =
+          req.file?.mimetype.split("/")[0] == "video" ? true : false;
+      } else {
+        isVideovalue = post[0].isVideo;
+      }
+
+      const updatedPost = {
+        ...req.body,
+        description: req.body?.description || post[0].description,
+        media: req.file?.location || post[0].media,
+        mediaType: req.file?.mimetype.split("/")[0] || post[0].mimetype,
+        isVideo: isVideovalue,
+      };
+      const newpost = await PostModel.findByIdAndUpdate(id, updatedPost, {
+        new: true, // Return the updated document
+      });
+      return res.json({
+        status: "success",
+        message: "Post Updated Successfully",
       });
     }
-  },
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Update Event Details ${error.message}`,
+    });
+  }
+},
 );
 
 // Api To Get All Post List For Admin
@@ -368,84 +359,78 @@ PostRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
 
 // Api To Get Full Detail Of A Particular Post Created By User For Admin
 
-PostRouter.get(
-  "/detailone/admin/:id",
-  AdminAuthentication,
-  async (req, res) => {
-    try {
-      const result = await PostModel.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
-        {
-          $lookup: {
-            from: "users",
-            localField: "createdBy",
-            foreignField: "_id",
-            pipeline: [
-              {
-                $project: {
-                  _id: 1,
-                  name: 1,
-                  email: 1,
-                  profile: 1,
-                  category: 1,
-                },
+PostRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => {
+  try {
+    const result = await PostModel.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                email: 1,
+                profile: 1,
+                category: 1,
               },
-            ],
-            as: "userdetails",
-          },
+            },
+          ],
+          as: "userdetails",
         },
-        {
-          $lookup: {
-            from: "comments",
-            localField: "_id",
-            foreignField: "postId",
-            pipeline: [{ $project: { postId: 0, CreatedAt: 0, __v: 0 } }],
-            as: "comments",
-          },
+      },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "postId",
+          pipeline: [{ $project: { postId: 0, CreatedAt: 0, __v: 0 } }],
+          as: "comments",
         },
-        { $sort: { CreatedAt: -1 } },
-      ]);
+      },
+      { $sort: { CreatedAt: -1 } },
+    ]);
 
-      if (result.length == 0) {
-        return res.json({
-          status: "error",
-          message: "No Post Created By User",
-        });
-      } else {
-        return res.json({
-          status: "success",
-          data: result,
-        });
-      }
-    } catch (error) {
+    if (result.length == 0) {
       return res.json({
         status: "error",
-        message: `Failed To Get Post Detail's ${error.message}`,
+        message: "No Post Created By User",
+      });
+    } else {
+      return res.json({
+        status: "success",
+        data: result,
       });
     }
-  },
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Get Post Detail's ${error.message}`,
+    });
+  }
+},
 );
 
 // Api To Disable A Particular Post Created By User Only For Admin
 
-PostRouter.patch(
-  "/disable/admin/:id",
-  AdminAuthentication,
-  async (req, res) => {
-    const { id } = req.params;
-    try {
-      const post = await PostModel.findByIdAndUpdate(id, { disabled: true });
-      return res.json({
-        status: "success",
-        message: "Post Disabled Successfully",
-      });
-    } catch (error) {
-      return res.json({
-        status: "error",
-        message: `Failed To Disable Event ${error.message}`,
-      });
-    }
-  },
+PostRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const post = await PostModel.findByIdAndUpdate(id, { disabled: true });
+    return res.json({
+      status: "success",
+      message: "Post Disabled Successfully",
+    });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Disable Event ${error.message}`,
+    });
+  }
+},
 );
 
 // Api To Enable A Particular Post Created By User Only For Admin
@@ -651,8 +636,8 @@ PostRouter.get("/listall/bookmark", UserAuthentication, async (req, res) => {
                       email: 1,
                       category: 1,
                       profile: 1,
-                      accountType:1,
-                      verified:1
+                      accountType: 1,
+                      verified: 1
                     },
                   },
                 ],
