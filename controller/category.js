@@ -22,7 +22,7 @@ CategoryRouter.get('/listall/:category', UserAuthentication ,async (req, res) =>
     const { category } = req.params;
     try {
 
-        const list = await CategoryModel.find({ accountType: category });
+        const list = await CategoryModel.find({ category: category });
         if (list.length === 0) {
             return res.json({ 'status': 'error', message: 'No List Found Of This Category' })
         } else {

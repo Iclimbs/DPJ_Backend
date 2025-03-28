@@ -58,7 +58,8 @@ ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication,
         country,
         userId: decoded._id,
         website: req.body?.website || "",
-        resume: req.file?.location || ""
+        resume: req.files.resume[0]?.location || "",
+        profile: req.files.profile[0]?.location || "",
     });
     try {
         await ownerdetails.save();
@@ -100,7 +101,8 @@ ProfessionalDetailsRouter.post("/edit/ownerdetails/:id", [ProfessionalAuthentica
         state: req.body?.state || ownerdetailsexists[0].state,
         country: req.body?.country || ownerdetailsexists[0].country,
         website: req.body?.website || ownerdetailsexists[0].website,
-        resume: req.file?.location || ownerdetailsexists[0].resume
+        resume: req.files?.resume[0]?.location || ownerdetailsexists[0].resume,
+        profile:req.files?.profile[0]?.location || ownerdetailsexists[0].profile
     }
     try {
         const updatedetails = await CompanyOwnerDetailsModel.findByIdAndUpdate(id, data, { new: true });

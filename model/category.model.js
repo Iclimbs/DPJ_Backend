@@ -1,12 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const categorySchema = mongoose.Schema({
-    name: {
+    category: {
         type: String,
         required: true,
     },
-    accountType: {
+    subCategory: {
         type: String,
+        required:true
     }
 })
 
