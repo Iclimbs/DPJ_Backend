@@ -16,7 +16,7 @@ const ProfessionalDetailsRouter = express.Router();
 // Updating Professional User Details
 
 
-ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication, uploadMiddleWare.single('resume')], async (req, res) => {
+ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication, uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "resume", maxCount: 1 }])], async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
 
@@ -75,7 +75,7 @@ ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication,
 },
 );
 
-ProfessionalDetailsRouter.post("/edit/ownerdetails/:id", [ProfessionalAuthentication, uploadMiddleWare.single('resume')], async (req, res) => {
+ProfessionalDetailsRouter.post("/edit/ownerdetails/:id", [ProfessionalAuthentication, uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "resume", maxCount: 1 }])], async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
     const { id } = req.params;

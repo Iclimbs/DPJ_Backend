@@ -29,6 +29,10 @@ const companyOwnerDetailSchema = mongoose.Schema({
     webiste:{
         type:String
     },
+    profile:{
+        type:String,
+        required:true
+    },
     resume:{
         type:String
     },

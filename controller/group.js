@@ -22,7 +22,7 @@ GroupRouter.post("/create", uploadMiddleWare.fields([
     }
     try {
 
-        const { name, description, country, state, city, location } = req.body
+        const { name, description, country, state, city, location, groupCategory } = req.body
 
         const addressdata = {
             country: country,
@@ -37,7 +37,8 @@ GroupRouter.post("/create", uploadMiddleWare.fields([
             ownerId: decoded._id,
             profile: req.files.profile[0]?.location,
             banner: req.files.banner[0]?.location,
-            address: addressdata
+            address: addressdata,
+            groupCategory: groupCategory
         })
         await newGroup.save()
         return res.json({ status: 'success', message: 'Group Created Successfully' })

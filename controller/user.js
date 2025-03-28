@@ -622,6 +622,14 @@ UserRouter.get("/me", UserAuthentication, async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "companyownerdetails",
+          localField: "_id",
+          foreignField: "userId",
+          as: "companyownerdetails",
+        },
+      },
+      {
         $addFields: {
           reviewCount: { $size: { $ifNull: ["$reviews", []] } },
           totalRating: { $sum: { $ifNull: ["$reviews.rating", []] } },
@@ -1519,75 +1527,68 @@ UserRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => 
 
 // Add Basic Profile Details
 
-UserRouter.post(
-  "/basicdetails/update",
-  uploadMiddleWare.fields([
-    { name: "profile", maxCount: 1 },
-    { name: "banner", maxCount: 1 },
-  ]),
-  UserAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    const { gender, country, state, city, dob, category } = req.body;
+UserRouter.post("/basicdetails/update", uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "banner", maxCount: 1 },]), UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const { gender, country, state, city, dob, category } = req.body;
 
-    if (!req?.files?.profile) {
-      return res.json({
-        status: "error",
-        error: "please upload a Profile Image",
-      });
+  if (!req?.files?.profile) {
+    return res.json({
+      status: "error",
+      error: "please upload a Profile Image",
+    });
+  }
+
+  if (!req?.files?.banner) {
+    return res.json({
+      status: "error",
+      error: "please upload a Banner Image",
+    });
+  }
+
+  try {
+    const user = await UserModel.findOne({ _id: decoded._id });
+    user.gender = gender;
+    user.dob = dob;
+    user.category = category || "";
+
+    if (!user.address) {
+      user.address = {}; // Initialize address if it doesn't exist
     }
 
-    if (!req?.files?.banner) {
+    // Safely update address fields
+    user.address.country = country || user.address.country;
+    user.address.state = state || user.address.state;
+    user.address.city = city || user.address.city;
+
+    if (!!req?.files.profile) {
+      user.profile = req.files.profile[0].location;
+    }
+    if (!!req?.files.banner) {
+      user.banner = req.files.banner[0].location;
+    }
+    await user.save();
+    const newtoken = await generateToken(user._id)
+    if (newtoken.status === 'success') {
       return res.json({
-        status: "error",
-        error: "please upload a Banner Image",
+        status: "success",
+        message: `Successfully Updated Basic Profile Details`,
+        token: newtoken.token
+      });
+
+    } else {
+      return res.json({
+        status: "success",
+        message: `Successfully Updated Basic Profile Details`,
       });
     }
-
-    try {
-      const user = await UserModel.findOne({ _id: decoded._id });
-      user.gender = gender;
-      user.dob = dob;
-      user.category = category || "";
-
-      if (!user.address) {
-        user.address = {}; // Initialize address if it doesn't exist
-      }
-
-      // Safely update address fields
-      user.address.country = country || user.address.country;
-      user.address.state = state || user.address.state;
-      user.address.city = city || user.address.city;
-
-      if (!!req?.files.profile) {
-        user.profile = req.files.profile[0].location;
-      }
-      if (!!req?.files.banner) {
-        user.banner = req.files.banner[0].location;
-      }
-      await user.save();
-      const newtoken = await generateToken(user._id)
-      if (newtoken.status === 'success') {
-        return res.json({
-          status: "success",
-          message: `Successfully Updated Basic Profile Details`,
-          token: newtoken.token
-        });
-
-      } else {
-        return res.json({
-          status: "success",
-          message: `Successfully Updated Basic Profile Details`,
-        });
-      }
-    } catch (error) {
-      return res.json({
-        status: "error",
-        message: `Error Found while trying to upload Documents ${error.message}`,
-      });
-    }
-  },
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found while trying to upload Documents ${error.message}`,
+    });
+  }
+},
 );
 
 // Follow Each Other

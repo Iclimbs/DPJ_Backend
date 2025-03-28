@@ -30,6 +30,10 @@ const groupSchema = mongoose.Schema({
         type: ObjectId,
         required: true
     },
+    groupCategory: {
+        type: String,
+        required: true
+    },
     memebers: {
         type: [ObjectId],
     },
