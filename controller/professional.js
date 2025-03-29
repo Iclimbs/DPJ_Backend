@@ -41,6 +41,16 @@ ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication,
         return res.json({ status: 'error', message: 'Owner Details Already Exists !!' })
     }
     
+    let resumefile = "";
+    if (req.files?.resume) {
+        resumefile = req.files?.resume[0]?.location;
+    }
+
+    let profilefile = "";
+    if (req.files?.resume) {
+        profilefile = req.files?.profile[0]?.location;
+    }
+
     const ownerdetails = new CompanyOwnerDetailsModel({
         fname,
         lname,
@@ -56,8 +66,8 @@ ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication,
         country,
         userId: decoded._id,
         website: req.body?.website || "",
-        resume: req.files.resume[0]?.location || "",
-        profile: req.files.profile[0]?.location || "",
+        resume: resumefile,
+        profile: profilefile,
     });
     try {
         await ownerdetails.save();
