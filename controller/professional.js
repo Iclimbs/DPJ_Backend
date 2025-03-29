@@ -40,14 +40,14 @@ ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication,
     if (ownerdetailsexists.length !== 0) {
         return res.json({ status: 'error', message: 'Owner Details Already Exists !!' })
     }
-    
+
     let resumefile = "";
     if (req.files?.resume) {
         resumefile = req.files?.resume[0]?.location;
     }
 
     let profilefile = "";
-    if (req.files?.resume) {
+    if (req.files?.profile) {
         profilefile = req.files?.profile[0]?.location;
     }
 
@@ -95,6 +95,16 @@ ProfessionalDetailsRouter.patch("/edit/ownerdetails/:id", [ProfessionalAuthentic
         return res.json({ status: 'error', message: 'No Owner Details Found For THis ' })
     }
 
+    let resumefile;
+    if (req.files?.resume) {
+        resumefile = req.files?.resume[0]?.location || ownerdetailsexists[0]?.resume || "";
+    }
+
+    let profilefile;
+    if (req.files?.profile) {
+        profilefile = req.files?.profile[0]?.location || ownerdetailsexists[0]?.profile || "";
+    }
+
     const data = {
         fname: req.body?.fname || ownerdetailsexists[0].fname,
         lname: req.body?.lname || ownerdetailsexists[0].lname,
@@ -109,8 +119,8 @@ ProfessionalDetailsRouter.patch("/edit/ownerdetails/:id", [ProfessionalAuthentic
         state: req.body?.state || ownerdetailsexists[0].state,
         country: req.body?.country || ownerdetailsexists[0].country,
         website: req.body?.website || ownerdetailsexists[0].website,
-        resume: req.files?.resume[0]?.location || ownerdetailsexists[0]?.resume,
-        profile:req.files?.profile[0]?.location || ownerdetailsexists[0]?.profile
+        resume: resumefile,
+        profile: profilefile
     }
     try {
         const updatedetails = await CompanyOwnerDetailsModel.findByIdAndUpdate(id, data, { new: true });
