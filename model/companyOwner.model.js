@@ -14,6 +14,15 @@ const companyOwnerDetailSchema = mongoose.Schema({
         type: String,
         required: true,
     },
+    about: {
+        type: String,
+        required: true
+    },
+    gender: {
+        type: String,
+        required: true,
+        enum: ['Male', 'Female', 'Others']
+    },
     phoneno: {
         type: Number,
         required: true,
@@ -26,14 +35,14 @@ const companyOwnerDetailSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    webiste:{
-        type:String
+    website: {
+        type: String
     },
-    profile:{
-        type:String,
+    profile: {
+        type: String,
     },
-    resume:{
-        type:String
+    resume: {
+        type: String
     },
     position: {
         type: String,
