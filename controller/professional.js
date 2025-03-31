@@ -32,7 +32,9 @@ ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication,
         location,
         city,
         state,
-        country
+        country,
+        gender,
+        about
     } = req.body;
 
     const ownerdetailsexists = await CompanyOwnerDetailsModel.find({ userId: decoded._id });
@@ -68,6 +70,8 @@ ProfessionalDetailsRouter.post("/add/ownerdetails", [ProfessionalAuthentication,
         website: req.body?.website || "",
         resume: resumefile,
         profile: profilefile,
+        gender,
+        about
     });
     try {
         await ownerdetails.save();
@@ -110,6 +114,8 @@ ProfessionalDetailsRouter.patch("/edit/ownerdetails/:id", [ProfessionalAuthentic
         lname: req.body?.lname || ownerdetailsexists[0].lname,
         phoneno: req.body?.phoneno || ownerdetailsexists[0].phoneno,
         email: req.body?.email || ownerdetailsexists[0].email,
+        about: req.body?.about || ownerdetailsexists[0].about,
+        gender: req.body?.gender || ownerdetailsexists[0].gender,
         dob: req.body?.dob || ownerdetailsexists[0].dob,
         position: req.body?.position || ownerdetailsexists[0].position,
         industryCategory: req.body?.industryCategory || ownerdetailsexists[0].industryCategory,

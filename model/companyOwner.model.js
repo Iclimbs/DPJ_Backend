@@ -27,10 +27,19 @@ const companyOwnerDetailSchema = mongoose.Schema({
         type: Number,
         required: true,
     },
+    phonenoverification: {
+        type: Boolean,
+        default: false
+    },
     email: {
         type: String,
         required: true
     },
+    emailverification: {
+        type: Boolean,
+        default: false
+    },
+
     dob: {
         type: String,
         required: true
