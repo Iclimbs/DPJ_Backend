@@ -208,8 +208,8 @@ ProfessionalDetailsRouter.post("/email/send", ProfessionalAuthentication, async 
                                     redirect: "/",
                                 });
                             } else {
-                                console.log("info",info);
-                                
+                                console.log("info", info);
+
                                 return res.json({
                                     status: "success",
                                     message: "Please Check Your Email",
@@ -222,8 +222,6 @@ ProfessionalDetailsRouter.post("/email/send", ProfessionalAuthentication, async 
             );
         }
     } catch (error) {
-        console.log("eror", error);
-
         return res.json({
             status: "error",
             message: `Error Found While Sending Otp ${error.message}`,
@@ -231,74 +229,37 @@ ProfessionalDetailsRouter.post("/email/send", ProfessionalAuthentication, async 
     }
 });
 
-ProfessionalDetailsRouter.post("/email/verify/", [ProfessionalAuthentication, uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "resume", maxCount: 1 }])], async (req, res) => {
+ProfessionalDetailsRouter.post("/email/verify/", ProfessionalAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-
-    const {
-        fname,
-        lname,
-        phoneno,
-        email,
-        dob,
-        position,
-        industryCategory,
-        education,
-        location,
-        city,
-        state,
-        country,
-        gender,
-        about
-    } = req.body;
-
-    const ownerdetailsexists = await CompanyOwnerDetailsModel.find({ userId: decoded._id });
-
-    if (ownerdetailsexists.length !== 0) {
-        return res.json({ status: 'error', message: 'Owner Details Already Exists !!' })
+    const decoded = jwt.verify(token, "Authentication")
+    console.log("req",req.body);
+    
+    const { otp } = req.body;
+    if (!otp) {
+        return res.json({ status: 'error', message: 'Otp Is Required To Verify Email Id' })
     }
-
-    let resumefile = "";
-    if (req.files?.resume) {
-        resumefile = req.files?.resume[0]?.location;
-    }
-
-    let profilefile = "";
-    if (req.files?.profile) {
-        profilefile = req.files?.profile[0]?.location;
-    }
-
-    const ownerdetails = new CompanyOwnerDetailsModel({
-        fname,
-        lname,
-        phoneno,
-        email,
-        dob,
-        position,
-        industryCategory,
-        education,
-        location,
-        city,
-        state,
-        country,
-        userId: decoded._id,
-        website: req.body?.website || "",
-        resume: resumefile,
-        profile: profilefile,
-        gender,
-        about
-    });
     try {
-        await ownerdetails.save();
-        return res.json({
-            status: "success",
-            message: `Updated Company Owner Details !!`,
-        });
+        const otpExists = await OtpModel.find({
+            otp: otp,
+            userId: decoded._id
+        })
+        console.log(otpExists);
+        
+        if (otpExists.length === 0) {
+            return res.json({ status: 'error', message: `Email Verification Failed. Unable To Verifiy Otp` })
+        } else {
+
+            const updateuser = await CompanyOwnerDetailsModel.find({ userId: decoded._id })
+            if (updateuser.length === 0) {
+                return res.json({ status: 'success', message: 'OwnerShip Detail Not Found. Email Verification Failed' })
+            } else {
+                updateuser[0].emailverification = true;
+                await updateuser[0].save();
+                return res.json({ status: 'success', message: 'Owner Email Verified Successfully!' })
+            }
+        }
     } catch (error) {
-        return res.json({
-            status: "error",
-            message: `Failed To Add Company Owner Details ${error.message}`,
-        });
+        return res.json({ status: 'error', message: `Failed To Verify Otp ${error.message}` })
     }
 },
 );
