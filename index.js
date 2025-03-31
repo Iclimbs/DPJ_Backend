@@ -10,6 +10,8 @@ const passport = require("passport");
 const session = require('express-session');
 const passportStrategy = require("./service/googleAuth");
 const authRoute = require("./controller/googlelogin");
+const serveIndex = require('serve-index');
+
 const app = express();
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -70,6 +72,8 @@ app.use(
 app.use("/api/v1/", require("./routes/routes"));
 app.use('/', express.static(path.join(__dirname, 'public')));
 app.use("/auth", authRoute);
+app.use('/.well-known', express.static('.well-known'), serveIndex('.well-known'));
+
 
 
 app.listen(process.env.Port, async () => {
