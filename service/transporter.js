@@ -1,8 +1,9 @@
 require("dotenv").config();
 const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
-  host: "smtp-mail.outlook.com",
+  host: "smtp.office365.com",
   port: 587,
+  tls:true,
   // secure: true, // true for port 465, false for other ports
   auth: {
     user:process.env.emailuser,
