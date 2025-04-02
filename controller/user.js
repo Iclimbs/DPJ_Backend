@@ -2394,19 +2394,18 @@ UserRouter.get("/otp/send/phoneno", UserAuthentication, async (req, res) => {
       const options = {
         method: 'POST',
         headers: {
-          clientId: 'NU0VF2X9313KH10U6XRPHO3THVBBY51S',
-          clientSecret: 'h3zjo239rb2skpfjrubmsjtn4npclcgr',
+          clientId:process.env.clientId,
+          clientSecret:process.env.clientSecret,
           'Content-Type': 'application/json'
         },
-        body: '{"phoneNumber":"+15551234567","expiry":30,"otpLength":4,"channels":["WHATSAPP","SMS"],"metadata":{"key1":"Data1","key2":"Data2"}}'
+        body: '{"phoneNumber":"+919091390251","expiry":30,"otpLength":6,"channels":["SMS"]}'
       };
-
+      // metadata":{"key1":"Data1","key2":"Data2"}
 
       fetch('https://auth.otpless.app/auth/v1/initiate/otp', options)
         .then(response => response.json())
         .then(response => console.log(response))
         .catch(err => console.error(err));
-
     }
   } catch (error) {
     return res.json({
