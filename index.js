@@ -25,9 +25,27 @@ const allowedOrigins = [
  `${process.env.adminurl}`,
 ];
 
+// app.use(
+//   cors({
+//     origin: allowedOrigins,
+//     methods: "GET,POST,PUT,PATCH,DELETE",
+//     credentials: true,
+//   })
+// );
+
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      const allowedOrigins = [
+        process.env.domainurl,
+        process.env.adminurl,
+      ];
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: "GET,POST,PUT,PATCH,DELETE",
     credentials: true,
   })
