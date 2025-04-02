@@ -33,24 +33,24 @@ const allowedOrigins = [
 //   })
 // );
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      const allowedOrigins = [
-        process.env.domainurl,
-        process.env.adminurl,
-      ];
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: "GET,POST,PUT,PATCH,DELETE",
-    credentials: true,
-  })
-);
-
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       const allowedOrigins = [
+//         process.env.domainurl,
+//         process.env.adminurl,
+//       ];
+//       if (!origin || allowedOrigins.includes(origin)) {
+//         callback(null, true);
+//       } else {
+//         callback(new Error("Not allowed by CORS"));
+//       }
+//     },
+//     methods: "GET,POST,PUT,PATCH,DELETE",
+//     credentials: true,
+//   })
+// );
+app.use(cors());
 
 const options = {
   definition: {
