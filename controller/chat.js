@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const ChatRouter = express.Router();
 const { StreamChat } = require("stream-chat"); // Replace with your actual Stream Chat initialization
 const { UserModel } = require("../model/user.model");
+const { UserAuthentication } = require("../middleware/Authentication");
 
 const streamChat = StreamChat.getInstance(
   process.env.STREAM_API_KEY,
@@ -15,7 +16,7 @@ const TOKEN_USER_ID_MAP = new Map();
 
 ChatRouter.use(express.json());
 
-ChatRouter.post("/signup", async (req, res) => {
+ChatRouter.post("/signup", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   const id = decoded._id;
@@ -50,7 +51,7 @@ ChatRouter.post("/signup", async (req, res) => {
   }
 });
 
-ChatRouter.post("/login", async (req, res) => {
+ChatRouter.post("/login",UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   const id = decoded._id;
@@ -92,7 +93,7 @@ ChatRouter.post("/login", async (req, res) => {
   }
 });
 
-ChatRouter.post("/logout", async (req, res) => {
+ChatRouter.post("/logout",UserAuthentication, async (req, res) => {
   const { token } = req.body;
 
   if (!token) {
@@ -136,7 +137,7 @@ ChatRouter.post("/logout", async (req, res) => {
   }
 });
 
-ChatRouter.post("/startchat", async (req, res) => {
+ChatRouter.post("/startchat",UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   const id = decoded._id;
@@ -186,7 +187,7 @@ ChatRouter.post("/startchat", async (req, res) => {
   }
 });
 
-ChatRouter.get("/details", async (req, res) => {
+ChatRouter.get("/details",UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   const id = decoded._id;
@@ -236,7 +237,7 @@ ChatRouter.get("/details", async (req, res) => {
   }
 });
 
-ChatRouter.get("/start/messaging/:userId", async (req, res) => {
+ChatRouter.get("/start/messaging/:userId",UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   const { userId } = req.params;
@@ -290,7 +291,7 @@ ChatRouter.get("/start/messaging/:userId", async (req, res) => {
 
     // Create the channel on the server
     const channelData = await channel.create();
-    
+
     return res.json({ status: 'success', message: 'Channel Creted', redirct: "/profile/message" })
 
   } catch (error) {
