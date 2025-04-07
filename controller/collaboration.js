@@ -223,6 +223,7 @@ CollabRouter.post(
             from: decoded._id,
             to: collaborators[index]._id,
             eventId: id,
+            display:collaborators[index]._id
           });
         }
       } else {
@@ -245,6 +246,8 @@ CollabRouter.post(
             from: decoded._id,
             to: collaborators[index]._id,
             eventId: id,
+            display:collaborators[index]._id
+
           });
         }
       }
