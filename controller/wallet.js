@@ -156,6 +156,7 @@ const transactionData = async (props) => {
       from: props?.fromUserId,
       to: props?.toUserId,
       eventId: props?.eventId,
+      display:props?.userId || 'null'
     });
     await transaction.save();
     return {
