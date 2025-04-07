@@ -3,8 +3,6 @@ const SubscriptionRouter = express.Router();
 const { SubscriptionModel } = require("../model/ModelExport");
 
 SubscriptionRouter.post("/create", async (req, res) => {
-    console.log("req.body",req.body);
-    
     try {
         const subscription = new SubscriptionModel(req.body);
         await subscription.save();
@@ -32,9 +30,7 @@ SubscriptionRouter.get("/:id", async (req, res) => {
     }
 });
 
-SubscriptionRouter.patch("/:id", async (req, res) => {
-    console.log("rea",req.body);
-    
+SubscriptionRouter.patch("/:id", async (req, res) => {    
     try {
         const updatedData = await SubscriptionModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
         console.log("updated datað",updatedData);
