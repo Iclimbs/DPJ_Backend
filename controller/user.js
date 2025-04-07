@@ -1078,7 +1078,7 @@ UserRouter.post("/document/verification/:id", AdminAuthentication, async (req, r
   const { id } = req.params;
   try {
     const userDocuments = await DocumentModel.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      { $match: { userId: new mongoose.Types.ObjectId(id) } },
     ]);
     if (userDocuments.length == 0) {
       return res.json({
@@ -1316,7 +1316,7 @@ UserRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
         email: { $ne: decoded.email },
       },
       { password: 0, CreatedAt: 0 },
-    );
+    ).sort({CreatedAt:-1})
 
     if (results.length === 0) {
       return res.json({ status: "error", message: "No Professional found" });
