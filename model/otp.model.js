@@ -7,8 +7,12 @@ const otpSchema = mongoose.Schema({
     },
     otp: {
         type: Number,
-        required: true,
+        // required: true,
         unique: true
+    },
+    requestId: {
+        type: String,
+        trim: true
     },
     expireAt: {
         type: Date,
@@ -18,5 +22,5 @@ const otpSchema = mongoose.Schema({
 })
 otpSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
-const OtpModel = mongoose.model("EmailVerificationOtp", otpSchema)
+const OtpModel = mongoose.model("VerificationOtp", otpSchema)
 module.exports = { OtpModel }

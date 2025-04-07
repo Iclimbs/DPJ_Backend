@@ -91,6 +91,7 @@ const {
 const { createWallet } = require("./wallet");
 const { currentDate, getDateAfter30Days } = require("../service/currentDate");
 const generateUniqueId = require('generate-unique-id');
+const { SendOtp, VerifyOtp } = require("../service/otpService");
 
 const UserRouter = express.Router();
 
@@ -114,20 +115,9 @@ const generateToken = async (props) => {
     if (userdetails.length === 0) {
       return { status: "error", message: "No User Found With This Id" }
     } else {
-      let token = jwt.sign(
-        {
-          _id: userdetails[0]._id,
-          name: userdetails[0].name,
-          email: userdetails[0].email,
-          accountType: userdetails[0].accountType,
-          profile: userdetails[0].profile,
-          verified: userdetails[0].verified,
-          subscription: userdetails[0].subscription,
-          planExpireAt: userdetails[0].planExpireAt,
-          exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-        },
-        "Authentication",
-      );
+      let token = jwt.sign({
+        _id: userdetails[0]._id, name: userdetails[0].name, email: userdetails[0].email, phoneno: userdetails[0].phoneno, accountType: userdetails[0].accountType, profile: userdetails[0].profile, verified: userdetails[0].verified, subscription: userdetails[0].subscription, planExpireAt: userdetails[0].planExpireAt, exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+      }, "Authentication",);
       return { status: "success", token: token }
     }
   } catch (error) {
@@ -150,8 +140,6 @@ const generateReferalCode = async (props) => {
   } catch (error) {
     return { status: 'error', message: `${error.message}` }
   }
-
-
 }
 
 const addReferalCodeBonus = async (props) => {
@@ -183,6 +171,22 @@ const addReferalCodeBonus = async (props) => {
 
 }
 
+// Save OTP 
+const saveOtp = async (props) => {
+  const VerifyAccount = new OtpModel({
+    userId: props?.userId,
+    otp: props?.newotp,
+    requestId: props?.requestId,
+    expireAt: Date.now() + 2 * 60 * 1000,
+  });
+  try {
+    await VerifyAccount.save();
+    return { status: 'success' }
+  } catch (error) {
+    return { status: 'error', message: error.message }
+  }
+}
+
 // Regular User Login
 
 UserRouter.post("/login", async (req, res) => {
@@ -206,6 +210,7 @@ UserRouter.post("/login", async (req, res) => {
               _id: userExists[0]._id,
               name: userExists[0].name,
               email: userExists[0].email,
+              phoneno: userExists[0].phoneno,
               accountType: userExists[0].accountType,
               profile: userExists[0].profile,
               verified: userExists[0].verified,
@@ -1890,111 +1895,108 @@ UserRouter.get("/me/subscription", UserAuthentication, async (req, res) => {
 });
 
 // Purchase Subscription
-UserRouter.post(
-  "/subscription/purchase/:id",
-  UserAuthentication,
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    try {
-      const userDetails = await UserModel.find({ _id: decoded._id });
-      if (userDetails.length === 0) {
-        return res.json({
-          status: "error",
-          message: "No User Found",
-        });
-      }
-      const planDetails = await SubscriptionModel.find({
-        _id: req.params.id,
-        accountType: decoded.accountType,
-      });
-      if (planDetails.length === 0) {
-        return res.json({
-          status: "error",
-          message: "No Subscription Plan Detail found",
-        });
-      }
-
-      const walletDetails = await WalletModel.find({ userId: decoded._id });
-
-      if (planDetails[0].amount > walletDetails[0].balance) {
-        return res.json({
-          status: "error",
-          message:
-            "You Don't have enough balance in your wallet. Please Recharge To Purchase This Subscription Plan",
-        });
-      }
-      const subscribetransaction = new TransactionModel({
-        amount: planDetails[0].amount,
-        type: "Debit",
-        message: "Subscibing To New Plan",
-        userId: decoded._id,
-        status: "Success",
-        paymentId: "Subscription Purchase",
-      });
-      await subscribetransaction.save();
-      const walletupdate = await subAmountinWallet({
-        amount: planDetails[0].amount,
-        userId: decoded._id,
-      });
-      if (walletupdate.status === "error") {
-        return res.json({
-          status: "error",
-          message: walletupdate.message,
-        });
-      }
-
-      const subscriptionlog = new SubscriptionLogs({
-        userId: decoded._id,
-        planId: req.params.id,
-        purchaseDate: currentDate,
-        expireDate: userDetails[0]?.planExpireAt
-          ? getDateAfter30Days(userDetails[0]?.planExpireAt)
-          : getDateAfter30Days(currentDate),
-      });
-      await subscriptionlog.save();
-
-      let newSubscriptionPlan = userDetails[0]?.subscription
-        ? userDetails[0].planExpireAt >= currentDate
-          ? userDetails[0]?.subscription
-          : req.params.id
-        : req.params.id;
-      let planExpireDate = userDetails[0]?.planExpireAt
-        ? userDetails[0].planExpireAt >= currentDate
-          ? getDateAfter30Days(userDetails[0]?.planExpireAt)
-          : getDateAfter30Days(currentDate)
-        : getDateAfter30Days(currentDate);
-
-      const userUpdatedDetails = await UserModel.findByIdAndUpdate(
-        decoded._id,
-        {
-          subscription: newSubscriptionPlan,
-          planExpireAt: planExpireDate,
-        },
-      );
-      let newtoken = await generateToken(userDetails[0]._id)
-
-      if (newtoken.status === 'success') {
-        return res.json({
-          status: "success",
-          message: "Subscription Plan Purchased Successfully ",
-          token: newtoken.token
-        });
-
-      } else {
-        return res.json({
-          status: "success",
-          message: "Subscription Plan Purchased Successfully ",
-        });
-
-      }
-    } catch (error) {
+UserRouter.post("/subscription/purchase/:id", UserAuthentication, async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  try {
+    const userDetails = await UserModel.find({ _id: decoded._id });
+    if (userDetails.length === 0) {
       return res.json({
         status: "error",
-        message: `Error Found While Getting Subscription Plans ${error}`,
+        message: "No User Found",
       });
     }
-  },
+    const planDetails = await SubscriptionModel.find({
+      _id: req.params.id,
+      accountType: decoded.accountType,
+    });
+    if (planDetails.length === 0) {
+      return res.json({
+        status: "error",
+        message: "No Subscription Plan Detail found",
+      });
+    }
+
+    const walletDetails = await WalletModel.find({ userId: decoded._id });
+
+    if (planDetails[0].amount > walletDetails[0].balance) {
+      return res.json({
+        status: "error",
+        message:
+          "You Don't have enough balance in your wallet. Please Recharge To Purchase This Subscription Plan",
+      });
+    }
+    const subscribetransaction = new TransactionModel({
+      amount: planDetails[0].amount,
+      type: "Debit",
+      message: "Subscibing To New Plan",
+      userId: decoded._id,
+      status: "Success",
+      paymentId: "Subscription Purchase",
+    });
+    await subscribetransaction.save();
+    const walletupdate = await subAmountinWallet({
+      amount: planDetails[0].amount,
+      userId: decoded._id,
+    });
+    if (walletupdate.status === "error") {
+      return res.json({
+        status: "error",
+        message: walletupdate.message,
+      });
+    }
+
+    const subscriptionlog = new SubscriptionLogs({
+      userId: decoded._id,
+      planId: req.params.id,
+      purchaseDate: currentDate,
+      expireDate: userDetails[0]?.planExpireAt
+        ? getDateAfter30Days(userDetails[0]?.planExpireAt)
+        : getDateAfter30Days(currentDate),
+    });
+    await subscriptionlog.save();
+
+    let newSubscriptionPlan = userDetails[0]?.subscription
+      ? userDetails[0].planExpireAt >= currentDate
+        ? userDetails[0]?.subscription
+        : req.params.id
+      : req.params.id;
+    let planExpireDate = userDetails[0]?.planExpireAt
+      ? userDetails[0].planExpireAt >= currentDate
+        ? getDateAfter30Days(userDetails[0]?.planExpireAt)
+        : getDateAfter30Days(currentDate)
+      : getDateAfter30Days(currentDate);
+
+    const userUpdatedDetails = await UserModel.findByIdAndUpdate(
+      decoded._id,
+      {
+        subscription: newSubscriptionPlan,
+        planExpireAt: planExpireDate,
+      },
+    );
+    let newtoken = await generateToken(userDetails[0]._id)
+
+    if (newtoken.status === 'success') {
+      return res.json({
+        status: "success",
+        message: "Subscription Plan Purchased Successfully ",
+        token: newtoken.token
+      });
+
+    } else {
+      return res.json({
+        status: "success",
+        message: "Subscription Plan Purchased Successfully ",
+      });
+
+    }
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Error Found While Getting Subscription Plans ${error}`,
+    });
+  }
+},
 );
 
 
@@ -2144,11 +2146,6 @@ UserRouter.post("/filter/professional", UserAuthentication, async (req, res) => 
 UserRouter.patch("/me/account/upgrade", uploadMiddleWare.fields([{ name: "profile", maxCount: 1 }, { name: "banner", maxCount: 1 }]), UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  console.log("decoded", decoded);
-  console.log("body", req.body);
-
-
-
   try {
     const updatedUser = await UserModel.findOne({ _id: decoded._id });
 
@@ -2358,11 +2355,6 @@ UserRouter.get("/otp/send/phoneno", UserAuthentication, async (req, res) => {
         redirect: "/user/register",
       });
     } else {
-      let newotp = otpGenerator.generate(6, {
-        upperCaseAlphabets: false,
-        specialChars: false,
-        lowerCaseAlphabets: false,
-      });
       const existsotp = await OtpModel.find({
         userId: userExists[0]._id,
       });
@@ -2373,39 +2365,23 @@ UserRouter.get("/otp/send/phoneno", UserAuthentication, async (req, res) => {
             "Check Your mailbox You can still use your old otp to reset the password ",
         });
       }
-      const VerifyAccount = new OtpModel({
-        userId: userExists[0]._id,
-        otp: newotp,
-        expireAt: Date.now() + 60 * 1000,
-      });
-      await VerifyAccount.save();
+      const phoneno = `+${userExists[0].phoneno}`
+      const optprocess = await SendOtp({ phoneno: phoneno });
 
-      // Send Otp To Phone 
-      // fetch(`https://2factor.in/API/V1/${process.env.twofactorkey}/SMS/${userExists[0].phoneno}/${VerifyAccount.otp}/Airpax`)
-      //   .then((response) => response.json())
-      //   .then((data) => {
-      //     if (data.status === 'Success') {
-      //       return res.json({ status: "success", message: "Otp Sent to User Successfully", })
-      //     } else {
-      //       return res.json({ status: "error", message: "Failed to Send OTP. PLease Try again Aftersome Time", })
-      //     }
-      //   });
+      if (optprocess?.status === 'success') {
+        const optCreate = await saveOtp({ userId: decoded._id, requestId: optprocess?.requestId });
+        console.log("topcreate ", optCreate);
 
-      const options = {
-        method: 'POST',
-        headers: {
-          clientId:process.env.clientId,
-          clientSecret:process.env.clientSecret,
-          'Content-Type': 'application/json'
-        },
-        body: '{"phoneNumber":"+919091390251","expiry":30,"otpLength":6,"channels":["SMS"]}'
-      };
-      // metadata":{"key1":"Data1","key2":"Data2"}
+        if (optCreate?.status === 'success') {
+          return res.json({ status: 'success', message: 'Message Sent Successfully!' })
+        } else {
+          return res.json({ status: 'error', message: `Failed To Save Otp ${optCreate.message}` })
+        }
 
-      fetch('https://auth.otpless.app/auth/v1/initiate/otp', options)
-        .then(response => response.json())
-        .then(response => console.log(response))
-        .catch(err => console.error(err));
+      } else {
+        return res.json({ status: 'error', message: `Failed To Save Otp ${optprocess.message}` })
+
+      }
     }
   } catch (error) {
     return res.json({
@@ -2418,30 +2394,36 @@ UserRouter.get("/otp/send/phoneno", UserAuthentication, async (req, res) => {
 // Send Otp To Backend To Verify User MobileNo
 UserRouter.post("/otp/verify/phoneno", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
-  const decoded = jwt.verify(token, "Authentication")
+  const decoded = jwt.verify(token, "Authentication");
+  
   const { otp } = req.body;
   if (!otp) {
     return res.json({ status: 'error', message: 'Otp Is Required To Verify Email Id' })
   }
   try {
     const otpExists = await OtpModel.find({
-      otp: otp,
       userId: decoded._id
     })
     if (otpExists.length === 0) {
-      return res.json({ status: 'error', message: `Email Verification Failed. Unable To Verifiy Otp` })
+      return res.json({ status: 'error', message: `Phone Verification Failed. Unable To Find OTP Value & RequestID.` })
     } else {
-
-      const updateuser = await UserModel.findByIdAndUpdate(decoded._id, { phonenoVerified: true }, { new: true } // Optional: Returns the updated document
-      )
-      if (updateuser !== null) {
-        return res.json({ status: 'success', message: 'User PhoneNo Verified Successfully' })
-      } else if (updateuser === null) {
-        return res.json({ status: 'error', message: 'User PhoneNo Verfication Failed' })
+      const otpVerification = await VerifyOtp({ otp: otp, requestId: otpExists[0]?.requestId });
+      console.log("otp verification", otpVerification);
+      if (otpVerification.status === 'success') {
+        const updateuser = await UserModel.findByIdAndUpdate(decoded._id, { phonenoVerified: true }, { new: true } // Optional: Returns the updated document
+        )
+        if (updateuser !== null) {
+          return res.json({ status: 'success', message: 'User PhoneNo Verified Successfully' })
+        } else if (updateuser === null) {
+          return res.json({ status: 'error', message: 'User PhoneNo Verfication Failed' })
+        }
+      } else {
+        return res.json({ status: 'error', message: `User PhoneNo Verfication Failed ${otpVerification?.message}` })
       }
+
     }
   } catch (error) {
-    return res.json({ status: 'error', message: `Failed To Verify Otp ${error.message}` })
+    return res.json({ status: 'error', message: `Failed To Verify Phone No ${error.message}` })
   }
 })
 
