@@ -15,7 +15,6 @@ const {
 const {
   ArtistAuthentication,
   WalletChecker,
-  AdminAuthentication,
   UserAuthentication,
 } = require("../middleware/MiddlewareExport");
 const { subAmountinWallet } = require("./wallet");
@@ -25,98 +24,93 @@ const TicketRouter = express.Router();
 // Api For Tickets
 
 // Api To Book Tickets In An Event
-TicketRouter.post(
-  "/booking/:id",
-  [UserAuthentication, WalletChecker],
-  async (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, "Authentication");
-    const { id } = req.params;
-    const { amount, tickets } = req.body;
+TicketRouter.post("/booking/:id", [UserAuthentication, WalletChecker], async (req, res) => {
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+  const { id } = req.params;
+  const { amount, tickets } = req.body;
 
-    let parsedTickets = [];
-    if (typeof tickets == "object") {
-      parsedTickets = tickets;
-    } else {
-      if (tickets) {
-        try {
-          parsedTickets = JSON.parse(tickets);
-          if (!Array.isArray(parsedTickets)) {
-            return res.json({
-              status: "error",
-              message: "Parsed tickets is not an array",
-            });
-          }
-        } catch (err) {
-          return res.json({
-            status: "error",
-            message: "Invalid tickets format. Tickets must be a JSON array.",
-          });
-        }
-      }
-    }
-    if (parsedTickets.length > 0) {
+  let parsedTickets = [];
+  if (typeof tickets == "object") {
+    parsedTickets = tickets;
+  } else {
+    if (tickets) {
       try {
-        const walletupdate = subAmountinWallet({
-          amount: amount,
-          userId: decoded._id,
-        });
-
-        if (walletupdate.status === "error") {
+        parsedTickets = JSON.parse(tickets);
+        if (!Array.isArray(parsedTickets)) {
           return res.json({
             status: "error",
-            message: `Failed To Purchase Ticket For Event ${walletupdate.message}`,
+            message: "Parsed tickets is not an array",
           });
         }
-
-        const transaction = new TransactionModel({
-          amount: amount,
-          type: "Debit",
-          userId: decoded._id,
-          message: "Amount Deduction From Wallet For Purchasing Event Tickets",
-          method: "Wallet",
-          eventId: id,
-        });
-
-        const transactionData = await transaction.save();
-
-        // Adding Booked Ticket Data
-        const ticketData = parsedTickets.map((ticket) => ({
-          eventId: id,
-          bookedBy: decoded._id,
-          ticketId: ticket._id,
-          price: ticket.price,
-          name: ticket.name,
-          quantity: ticket.quantity,
-          trasactionId: transactionData._id,
-        }));
-
-        await BookedTicketModel.insertMany(ticketData);
-
-        return   res.json({
-          status: "success",
-          message: `Ticket Purchased Successfully`,
-        });
-      } catch (error) {
+      } catch (err) {
         return res.json({
           status: "error",
-          message: `Failed To Purchase Ticket For Event ${error.message}`,
+          message: "Invalid tickets format. Tickets must be a JSON array.",
         });
       }
-    } else {
-      return  res.json({
+    }
+  }
+  if (parsedTickets.length > 0) {
+    try {
+      const walletupdate = subAmountinWallet({
+        amount: amount,
+        userId: decoded._id,
+      });
+
+      if (walletupdate.status === "error") {
+        return res.json({
+          status: "error",
+          message: `Failed To Purchase Ticket For Event ${walletupdate.message}`,
+        });
+      }
+
+      const transaction = new TransactionModel({
+        amount: amount,
+        type: "Debit",
+        userId: decoded._id,
+        message: "Amount Deduction From Wallet For Purchasing Event Tickets",
+        method: "Wallet",
+        eventId: id,
+        display:decoded._id
+      });
+
+      const transactionData = await transaction.save();
+
+      // Adding Booked Ticket Data
+      const ticketData = parsedTickets.map((ticket) => ({
+        eventId: id,
+        bookedBy: decoded._id,
+        ticketId: ticket._id,
+        price: ticket.price,
+        name: ticket.name,
+        quantity: ticket.quantity,
+        trasactionId: transactionData._id,
+      }));
+
+      await BookedTicketModel.insertMany(ticketData);
+
+      return res.json({
+        status: "success",
+        message: `Ticket Purchased Successfully`,
+      });
+    } catch (error) {
+      return res.json({
         status: "error",
-        message: `Failed To Book Tickets`,
+        message: `Failed To Purchase Ticket For Event ${error.message}`,
       });
     }
-  },
+  } else {
+    return res.json({
+      status: "error",
+      message: `Failed To Book Tickets`,
+    });
+  }
+},
 );
 
 // Get List of Different Tickets Booked Tickets By User in all the Events
-TicketRouter.get(
-  "/booked/event/list",
-  ArtistAuthentication,
-  async (req, res) => {
+TicketRouter.get("/booked/event/list",ArtistAuthentication,async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
 
@@ -156,9 +150,9 @@ TicketRouter.get(
         },
       ]);
       if (list.length == 0) {
-        return    res.json({ status: "error", message: "No Booked Ticket List Found" });
+        return res.json({ status: "error", message: "No Booked Ticket List Found" });
       } else {
-        return    res.json({ status: "success", data: list });
+        return res.json({ status: "success", data: list });
       }
     } catch (error) {
       return res.json({
@@ -170,10 +164,7 @@ TicketRouter.get(
 );
 
 // Get List of All the tickets booked in a particular Event Only Seen By Admin & Professional Who has created the Event
-TicketRouter.get(
-  "/booked/event/:id",
-  ArtistAuthentication,
-  async (req, res) => {
+TicketRouter.get("/booked/event/:id",ArtistAuthentication,async (req, res) => {
     const { id } = req.params;
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
@@ -188,7 +179,7 @@ TicketRouter.get(
       ]);
 
       if (me.length == 0 && decoded.accountType !== "admin") {
-        return   res.json({
+        return res.json({
           status: "error",
           message: "No Event Found Or You Don't have Required Permission",
         });
@@ -221,12 +212,12 @@ TicketRouter.get(
         },
       ]);
       if (list.length == 0) {
-        return   res.json({ status: "error", message: "No Booked Ticket List Found" });
+        return res.json({ status: "error", message: "No Booked Ticket List Found" });
       } else {
-        return    res.json({ status: "success", data: list });
+        return res.json({ status: "success", data: list });
       }
     } catch (error) {
-      return  res.json({
+      return res.json({
         status: "error",
         message: `Unable To Get Booked Ticket List ${error.message}`,
       });
@@ -235,9 +226,7 @@ TicketRouter.get(
 );
 
 // Api To Book Tickets In An Event
-TicketRouter.get(
-  "/booked/events/details",
-  UserAuthentication,
+TicketRouter.get("/booked/events/details",UserAuthentication,
   async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
@@ -285,9 +274,9 @@ TicketRouter.get(
       ]);
 
       if (list.length === 0) {
-        return   res.json({ status: "error", message: "No Booked Events Found" });
+        return res.json({ status: "error", message: "No Booked Events Found" });
       } else {
-        return   res.json({ status: "success", data: list });
+        return res.json({ status: "success", data: list });
       }
     } catch (error) {
       return res.json({

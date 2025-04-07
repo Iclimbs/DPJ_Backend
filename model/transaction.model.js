@@ -25,7 +25,11 @@ const transactionSchema = mongoose.Schema({
   paymentId: String,
   orderId: String,
   message: String,
-  declineReason:String,
+  declineReason: String,
+  display: {
+    type: ObjectId,
+    required: true
+  },
   from: {
     type: ObjectId,
   },

@@ -68,6 +68,7 @@ PaymentRouter.post("/verification", UserAuthentication, async (req, res) => {
         orderId: razorpay_order_id,
         message: "Plan Subscription With Wallet Balance",
         amount: Math.floor(Number(amount / 100)),
+        display:decoded._id
       });
       try {
         await payment.save();
@@ -103,6 +104,7 @@ PaymentRouter.post("/verification", UserAuthentication, async (req, res) => {
         message: "Failed To Deduct Balance From Wallet To Subscribe For a Plan",
         orderId: razorpay_order_id,
         amount: amount,
+        display:decoded._id
       });
 
       // Save Payment

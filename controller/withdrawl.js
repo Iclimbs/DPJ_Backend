@@ -92,6 +92,7 @@ WithDrawlRouter.post("/add/request", [UserAuthentication, WalletChecker], async 
             method: "Wallet",
             message: "Amount WithDrawal Request Created By User",
             from: decoded?._id,
+            display:decoded?._id
         });
 
         const transactionData = await amountDeductionTransaction.save();

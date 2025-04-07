@@ -1933,6 +1933,7 @@ UserRouter.post("/subscription/purchase/:id", UserAuthentication, async (req, re
       userId: decoded._id,
       status: "Success",
       paymentId: "Subscription Purchase",
+      display:decoded._id
     });
     await subscribetransaction.save();
     const walletupdate = await subAmountinWallet({

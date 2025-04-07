@@ -27,13 +27,7 @@ const {
 
 const CollabRouter = express.Router();
 
-CollabRouter.post(
-  "/add",
-  [
-    EventCollaborationChecker,
-    ArtistAuthentication,
-    uploadMiddleWare.single("banner"),
-  ],
+CollabRouter.post("/add", [EventCollaborationChecker, ArtistAuthentication, uploadMiddleWare.single("banner"),],
   async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication");
@@ -290,6 +284,7 @@ CollabRouter.post(
           status: "Success",
           method: "Wallet",
           eventId: id,
+          display:decoded._id
         });
 
         const transaction = await TransactionModel.insertMany(transactionData);
@@ -395,6 +390,7 @@ CollabRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
   try {
     const list = await EventModel.aggregate([
       { $match: { type: "Collaboration" } },
+      { $sort: { CreatedAt: -1 } },
       {
         $lookup: {
           from: "users",
