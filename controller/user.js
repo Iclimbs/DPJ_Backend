@@ -685,9 +685,11 @@ UserRouter.get("/me/wallet", UserAuthentication, async (req, res) => {
               $match: {
                 $expr: {
                   $or: [
-                    { $eq: ["$userId", "$$userId"] }, // Match username with author
-                    { $eq: ["$from", "$$userId"] }, // Match email with contact
-                    { $eq: ["$to", "$$userId"] }, // Match email with contact
+                    // { $eq: ["$userId", "$$userId"] }, // Match username with author
+                    // { $eq: ["$from", "$$userId"] }, // Match email with contact
+                    // { $eq: ["$to", "$$userId"] }, // Match email with contact
+                    { $eq: ["$display", "$$userId"] }, // Match username with author
+                    
                   ],
                 },
               },
