@@ -1511,7 +1511,7 @@ UserRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => 
           as: "documentdetails",
         },
       },
-    ]);
+    ]);    
     if (results.length === 0) {
       return res.json({ status: "error", message: "No Artist found" });
     }

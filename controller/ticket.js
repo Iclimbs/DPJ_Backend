@@ -237,6 +237,10 @@ TicketRouter.get("/booked/events/details",UserAuthentication,
           $match: {
             bookedBy: new mongoose.Types.ObjectId(decoded._id), // Convert id to ObjectId using 'new'
           },
+          
+        },
+        {
+          $sort:{CreatedAt:-1}
         },
         {
           $lookup: {

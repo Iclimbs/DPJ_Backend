@@ -371,7 +371,7 @@ CollabRouter.get("/list", ArtistAuthentication, async (req, res) => {
     const list = await EventModel.find({
       createdBy: decoded._id,
       type: "Collaboration",
-    }).sort({ createdBy: -1 })
+    }).sort({ CreatedBy: -1 })
     if (list.length == 0) {
       return res.json({
         status: "error",
