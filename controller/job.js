@@ -220,6 +220,27 @@ JobRouter.patch("/disable/admin/:id", AdminAuthentication, async (req, res) => {
     });
   }
 });
+
+
+// Enable Job By Admin
+
+JobRouter.patch("/enable/admin/:id", AdminAuthentication, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const JobDetails = await JobModel.findByIdAndUpdate(id, { status: "Active" });
+    return res.json({
+      status: "success",
+      message: `Job Post Active Successfully !!`,
+    });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Activate Job Details ${error.message}`,
+    });
+  }
+});
+
+
 // Get All Job List Which are Currently Active
 
 JobRouter.get("/listall/active", UserAuthentication, async (req, res) => {
