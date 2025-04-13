@@ -8,10 +8,11 @@ const SendOtp = async (props) => {
             clientSecret: process.env.clientSecret,
             'Content-Type': 'application/json'
         },
-        body: `{"phoneNumber":"${props?.phoneno}","expiry":900,"otpLength":6,"channels":["SMS"]}`
+        body: `{"phoneNumber":"${props?.phoneno}","expiry":9000,"otpLength":6,"channels":["SMS"]}`
     };
     try {
         const response = await fetch('https://auth.otpless.app/auth/v1/initiate/otp', options)
+        
         if (!response.ok) {
             return { status: 'error', message: 'Failed To Send SMS' }
         }
@@ -31,7 +32,7 @@ const SendOtp = async (props) => {
 
 
 
-const VerifyOtp = async (props) => {    
+const VerifyOtp = async (props) => {
     const options = {
         method: 'POST',
         headers: {
@@ -44,11 +45,11 @@ const VerifyOtp = async (props) => {
 
     try {
         const response = await fetch('https://auth.otpless.app/auth/v1/verify/otp', options)
-       
+
         if (!response.ok) {
             return { status: 'error', message: 'Failed To Verify Otp' }
         }
-        const result = await response.json();        
+        const result = await response.json();
 
         if (result?.isOTPVerified) {
             return { status: 'success' }

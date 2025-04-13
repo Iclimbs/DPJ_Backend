@@ -15,6 +15,8 @@ const { CompanyOwnerDetailsModel } = require("../model/companyOwner.model");
 const { uploadMiddleWare } = require("../middleware/FileUpload");
 const { ProfessionalAuthentication } = require("../middleware/Authentication");
 const { gmailtransporter } = require("../service/transporter");
+const { SendOtp, VerifyOtp } = require("../service/otpService");
+const { saveOtp } = require("./user");
 
 const ProfessionalDetailsRouter = express.Router();
 
@@ -232,8 +234,8 @@ ProfessionalDetailsRouter.post("/email/send", ProfessionalAuthentication, async 
 ProfessionalDetailsRouter.post("/email/verify/", ProfessionalAuthentication, async (req, res) => {
     const token = req.headers.authorization.split(" ")[1];
     const decoded = jwt.verify(token, "Authentication")
-    console.log("req",req.body);
-    
+    console.log("req", req.body);
+
     const { otp } = req.body;
     if (!otp) {
         return res.json({ status: 'error', message: 'Otp Is Required To Verify Email Id' })
@@ -244,7 +246,7 @@ ProfessionalDetailsRouter.post("/email/verify/", ProfessionalAuthentication, asy
             userId: decoded._id
         })
         console.log(otpExists);
-        
+
         if (otpExists.length === 0) {
             return res.json({ status: 'error', message: `Email Verification Failed. Unable To Verifiy Otp` })
         } else {
@@ -263,5 +265,93 @@ ProfessionalDetailsRouter.post("/email/verify/", ProfessionalAuthentication, asy
     }
 },
 );
+
+// Send Otp To User Account For Mobile Verification
+ProfessionalDetailsRouter.get("/otp/send/phoneno", ProfessionalAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+    try {
+        const userExists = await CompanyOwnerDetailsModel.find({ userId: decoded._id });
+        if (userExists.length === 0) {
+            return res.json({
+                status: "error",
+                message: "No User Exists With This Email, Please SignUp First",
+                redirect: "/user/register",
+            });
+        } else {
+            const existsotp = await OtpModel.find({
+                userId: userExists[0].userId,
+            });
+            if (existsotp.length !== 0) {
+                return res.json({
+                    status: "error",
+                    message:
+                        "Check Your mailbox You can still use your old otp to reset the password ",
+                });
+            }
+            const phoneno = `+${userExists[0].phoneno}`
+            const optprocess = await SendOtp({ phoneno: phoneno });
+
+            if (optprocess?.status === 'success') {
+                const optCreate = await saveOtp({ userId: decoded._id, requestId: optprocess?.requestId });
+
+                if (optCreate?.status === 'success') {
+                    return res.json({ status: 'success', message: 'Message Sent Successfully!' })
+                } else {
+                    return res.json({ status: 'error', message: `Failed To Save Otp ${optCreate.message}` })
+                }
+
+            } else {
+                return res.json({ status: 'error', message: `Failed To Save Otp ${optprocess.message}` })
+
+            }
+        }
+    } catch (error) {
+        return res.json({
+            status: "error",
+            message: `Error Found While Sending Otp ${error.message}`,
+        });
+    }
+})
+
+// Send Otp To Backend To Verify User MobileNo
+ProfessionalDetailsRouter.post("/otp/verify/phoneno", ProfessionalAuthentication, async (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, "Authentication");
+
+    const { otp } = req.body;
+    if (!otp) {
+        return res.json({ status: 'error', message: 'Otp Is Required To Verify Email Id' })
+    }
+    try {
+        const otpExists = await OtpModel.find({
+            userId: decoded._id
+        })
+        if (otpExists.length === 0) {
+            return res.json({ status: 'error', message: `Phone Verification Failed. Unable To Find OTP Value & RequestID.` })
+        } else {
+            const otpVerification = await VerifyOtp({ otp: otp, requestId: otpExists[0]?.requestId });            
+            if (otpVerification.status === 'success') {
+                const userdetails = await CompanyOwnerDetailsModel.find({userId:decoded._id});
+                if (userdetails.length==0) {
+                  return res.json({status:'error',message:'No Company Owner Details Found For Phone No Verification!'})  
+                } 
+                const updateuser = await CompanyOwnerDetailsModel.findByIdAndUpdate(userdetails[0]._id, { phonenoverification: true }, { new: true })
+                console.log("user",updateuser);
+                
+                if (updateuser !== null) {
+                    return res.json({ status: 'success', message: 'User PhoneNo Verified Successfully' })
+                } else if (updateuser === null) {
+                    return res.json({ status: 'error', message: 'User PhoneNo Verfication Failed' })
+                }
+            } else {
+                return res.json({ status: 'error', message: `User PhoneNo Verfication Failed ${otpVerification?.message}` })
+            }
+
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Verify Phone No ${error.message}` })
+    }
+})
 
 module.exports = { ProfessionalDetailsRouter };

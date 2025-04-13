@@ -177,7 +177,7 @@ const saveOtp = async (props) => {
     userId: props?.userId,
     otp: props?.newotp,
     requestId: props?.requestId,
-    expireAt: Date.now() + 2 * 60 * 1000,
+    expireAt: Date.now() + 15 * 60 * 1000,
   });
   try {
     await VerifyAccount.save();
@@ -2433,4 +2433,4 @@ UserRouter.post("/otp/verify/phoneno", UserAuthentication, async (req, res) => {
 
 
 
-module.exports = { UserRouter };
+module.exports = { UserRouter,saveOtp };
