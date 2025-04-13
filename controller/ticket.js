@@ -5,7 +5,6 @@ const mongoose = require("mongoose");
 
 // Importing Required Models
 const {
-  TicketModel,
   TransactionModel,
   BookedTicketModel,
   EventModel,
@@ -28,7 +27,7 @@ TicketRouter.post("/booking/:id", [UserAuthentication, WalletChecker], async (re
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
   const { id } = req.params;
-  const { amount, tickets } = req.body;
+  const { amount, tickets,platformfees } = req.body;
 
   let parsedTickets = [];
   if (typeof tickets == "object") {
@@ -86,6 +85,7 @@ TicketRouter.post("/booking/:id", [UserAuthentication, WalletChecker], async (re
         name: ticket.name,
         quantity: ticket.quantity,
         trasactionId: transactionData._id,
+        platformFees:platformfees
       }));
 
       await BookedTicketModel.insertMany(ticketData);

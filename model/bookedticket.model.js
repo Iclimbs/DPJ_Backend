@@ -22,6 +22,10 @@ const bookedTicketSchema = mongoose.Schema({
     type: Number,
     required: true,
   },
+  platformFees: {
+    type: Number,
+    required: true
+  },
   quantity: {
     type: Number,
     required: true,
