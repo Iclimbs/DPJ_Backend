@@ -24,7 +24,8 @@ const { WithDrawalModel } = require("./withdrawl.model")
 const { CategoryModel } = require("./category.model")
 const { OtpModel } = require("./otp.model")
 const { EnquiryModel } = require("./enquiry.model")
-const {GroupModel} = require("./group.model")
+const {GroupModel} = require("./group.model");
+const { PlatformCostModel } = require("./platformcost.model");
 
 module.exports = {
   GroupModel,
@@ -54,5 +55,6 @@ module.exports = {
   ReferModel,
   BankAccountModel,
   WithDrawalModel,
-  CategoryModel
+  CategoryModel,
+  PlatformCostModel
 };
