@@ -21,7 +21,7 @@ const PlatformCostRouter = express.Router();
 
 // Add Platform Fees
 
-PlatformCostRouter.post("/add", async (req, res) => {
+PlatformCostRouter.post("/add",AdminAuthentication, async (req, res) => {
     try {
         const { amount } = req.body;
         if (!amount) {
@@ -39,7 +39,23 @@ PlatformCostRouter.post("/add", async (req, res) => {
 
 // Get platform Fees
 
-PlatformCostRouter.get("/list", async (req, res) => {
+PlatformCostRouter.get("/list",ProfessionalAuthentication, async (req, res) => {
+    try {
+        const list = await PlatformCostModel.find()
+        if (list.length !== 0) {
+            return res.json({ status: 'success', data: list })
+        } else {
+            return res.json({ status: 'error', message: 'No Platform Fees Found!' })
+        }
+    } catch (error) {
+        return res.json({ status: 'error', message: `Failed To Fetch Platform Fees Detail's :- ${error.message}` })
+    }
+})
+
+
+// Get platform Fees
+
+PlatformCostRouter.get("/list/admin",AdminAuthentication, async (req, res) => {
     try {
         const list = await PlatformCostModel.find()
         if (list.length !== 0) {
@@ -54,7 +70,7 @@ PlatformCostRouter.get("/list", async (req, res) => {
 
 // Update platform Fees
 
-PlatformCostRouter.patch("/edit/:id", async (req, res) => {
+PlatformCostRouter.patch("/edit/:id",AdminAuthentication, async (req, res) => {
     try {
         const { id } = req.params;
         const { amount } = req.body
@@ -76,4 +92,4 @@ PlatformCostRouter.patch("/edit/:id", async (req, res) => {
 })
 
 
-module.exports = { PlatformCostModel }
+module.exports = { PlatformCostRouter }

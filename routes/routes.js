@@ -17,6 +17,7 @@ const { WithDrawlRouter } = require("../controller/withdrawl");
 const { CategoryRouter } = require("../controller/category");
 const { GroupRouter } = require("../controller/group");
 const { ProfessionalDetailsRouter } = require("../controller/professional");
+const { PlatformCostRouter } = require("../controller/platformcost");
 
 router
   .use("/user", UserRouter)
@@ -37,6 +38,7 @@ router
   .use("/category", CategoryRouter)
   .use("/group", GroupRouter)
   .use("/professional", ProfessionalDetailsRouter)
+  .use("/ticketcost",PlatformCostRouter)
 
 
 module.exports = router;
