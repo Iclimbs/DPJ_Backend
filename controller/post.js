@@ -308,6 +308,31 @@ PostRouter.patch("/edit/:id", [PostCreationChecker, UserAuthentication, uploadMi
 },
 );
 
+// Api To Delete A Particular Post Created By User
+
+PostRouter.patch("/delete/:id", [PostCreationChecker, UserAuthentication,], async (req, res) => {
+  const { id } = req.params;
+  const token = req.headers.authorization.split(" ")[1];
+  const decoded = jwt.verify(token, "Authentication");
+
+  try {
+    const post = await PostModel.findOneAndDelete({ 
+      _id: id, 
+      createdBy: decoded._id 
+    });
+      return res.json({
+        status: "success",
+        message: "Post Deleted Successfully",
+      });
+  } catch (error) {
+    return res.json({
+      status: "error",
+      message: `Failed To Delete Post ${error.message}`,
+    });
+  }
+},
+);
+
 // Api To Get All Post List For Admin
 
 PostRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
