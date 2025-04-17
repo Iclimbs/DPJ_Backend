@@ -1284,26 +1284,71 @@ UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
     const decoded = jwt.verify(token, "Authentication");
     const { search } = req.query;
 
-    let filter = {
-      email: { $ne: decoded.email }, // Exclude logged-in user's profile
+    // let filter = {
+    //   email: { $ne: decoded.email }, // Exclude logged-in user's profile
+    //   accountType: "professional",
+    //   disabled: false,
+    //   verified: true,
+    // };
+
+    // // If search query is provided, apply regex filtering
+    // if (search) {
+    //   const regex = new RegExp(search, "i");
+    //   filter.$or = [
+    //     { email: { $regex: regex } },
+    //     { category: { $regex: regex } },
+    //   ];
+    // }
+
+    // const results = await UserModel.find(filter, {
+    //   password: 0,
+    //   CreatedAt: 0,
+    // });
+
+    let matchStage = {
+      email: { $ne: decoded.email },
       accountType: "professional",
       disabled: false,
       verified: true,
     };
 
-    // If search query is provided, apply regex filtering
+    // If search query is provided, add regex filters
     if (search) {
       const regex = new RegExp(search, "i");
-      filter.$or = [
+      matchStage.$or = [
         { email: { $regex: regex } },
         { category: { $regex: regex } },
       ];
     }
 
-    const results = await UserModel.find(filter, {
-      password: 0,
-      CreatedAt: 0,
-    });
+    const results = await UserModel.aggregate([
+      {
+        $match: matchStage,
+      },
+      {
+        $project: {
+          password: 0,
+          CreatedAt: 0,
+        },
+      },
+      {
+        $lookup: {
+          from: "reviews",
+          localField: "_id",
+          foreignField: "userId",
+          as: "reviews",
+        },
+      },
+      {
+        $addFields: {
+          reviewCount: { $size: { $ifNull: ["$reviews", []] } },
+          totalRating: { $sum: { $ifNull: ["$reviews.rating", []] } },
+        },
+      },
+
+    ]);
+
+
 
     if (results.length === 0) {
       return res.json({
