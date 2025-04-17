@@ -689,7 +689,7 @@ UserRouter.get("/me/wallet", UserAuthentication, async (req, res) => {
                     // { $eq: ["$from", "$$userId"] }, // Match email with contact
                     // { $eq: ["$to", "$$userId"] }, // Match email with contact
                     { $eq: ["$display", "$$userId"] }, // Match username with author
-                    
+
                   ],
                 },
               },
@@ -1161,26 +1161,69 @@ UserRouter.get("/find/artist", UserAuthentication, async (req, res) => {
     const decoded = jwt.verify(token, "Authentication");
     const { search } = req.query;
 
-    let filter = {
-      email: { $ne: decoded.email }, // Exclude logged-in user's profile
+    // let filter = {
+    //   email: { $ne: decoded.email }, // Exclude logged-in user's profile
+    //   accountType: "artist",
+    //   disabled: false,
+    //   verified: true,
+    // };
+
+    // // If search query is provided, apply regex filtering
+    // if (search) {
+    //   const regex = new RegExp(search, "i");
+    //   filter.$or = [
+    //     { email: { $regex: regex } },
+    //     { category: { $regex: regex } },
+    //   ];
+    // }
+
+    // const results = await UserModel.find(filter, {
+    //   password: 0,
+    //   CreatedAt: 0,
+    // });
+
+    let matchStage = {
+      email: { $ne: decoded.email },
       accountType: "artist",
       disabled: false,
       verified: true,
     };
 
-    // If search query is provided, apply regex filtering
+    // If search query is provided, add regex filters
     if (search) {
       const regex = new RegExp(search, "i");
-      filter.$or = [
+      matchStage.$or = [
         { email: { $regex: regex } },
         { category: { $regex: regex } },
       ];
     }
 
-    const results = await UserModel.find(filter, {
-      password: 0,
-      CreatedAt: 0,
-    });
+    const results = await UserModel.aggregate([
+      {
+        $match: matchStage,
+      },
+      {
+        $project: {
+          password: 0,
+          CreatedAt: 0,
+        },
+      },
+      {
+        $lookup: {
+          from: "reviews",
+          localField: "_id",
+          foreignField: "userId",
+          as: "reviews",
+        },
+      },
+      {
+        $addFields: {
+          reviewCount: { $size: { $ifNull: ["$reviews", []] } },
+          totalRating: { $sum: { $ifNull: ["$reviews.rating", []] } },
+        },
+      },
+
+    ]);
 
     if (results.length === 0) {
       return res.json({
@@ -1318,7 +1361,7 @@ UserRouter.get("/listall/admin", AdminAuthentication, async (req, res) => {
         email: { $ne: decoded.email },
       },
       { password: 0, CreatedAt: 0 },
-    ).sort({CreatedAt:-1})
+    ).sort({ CreatedAt: -1 })
 
     if (results.length === 0) {
       return res.json({ status: "error", message: "No Professional found" });
@@ -1513,7 +1556,7 @@ UserRouter.get("/detailone/admin/:id", AdminAuthentication, async (req, res) => 
           as: "documentdetails",
         },
       },
-    ]);    
+    ]);
     if (results.length === 0) {
       return res.json({ status: "error", message: "No Artist found" });
     }
@@ -1935,7 +1978,7 @@ UserRouter.post("/subscription/purchase/:id", UserAuthentication, async (req, re
       userId: decoded._id,
       status: "Success",
       paymentId: "Subscription Purchase",
-      display:decoded._id
+      display: decoded._id
     });
     await subscribetransaction.save();
     const walletupdate = await subAmountinWallet({
@@ -2398,7 +2441,7 @@ UserRouter.get("/otp/send/phoneno", UserAuthentication, async (req, res) => {
 UserRouter.post("/otp/verify/phoneno", UserAuthentication, async (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, "Authentication");
-  
+
   const { otp } = req.body;
   if (!otp) {
     return res.json({ status: 'error', message: 'Otp Is Required To Verify Email Id' })
@@ -2433,4 +2476,4 @@ UserRouter.post("/otp/verify/phoneno", UserAuthentication, async (req, res) => {
 
 
 
-module.exports = { UserRouter,saveOtp };
+module.exports = { UserRouter, saveOtp };

@@ -4,6 +4,7 @@ const { ObjectId } = mongoose.Schema.Types;
 const ticketSchema = mongoose.Schema({
     eventId: {
         type: ObjectId,
+        
         required: true
     },
     createdBy: {
