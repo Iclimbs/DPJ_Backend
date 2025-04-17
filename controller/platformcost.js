@@ -39,7 +39,7 @@ PlatformCostRouter.post("/add",AdminAuthentication, async (req, res) => {
 
 // Get platform Fees
 
-PlatformCostRouter.get("/list",ProfessionalAuthentication, async (req, res) => {
+PlatformCostRouter.get("/list",UserAuthentication, async (req, res) => {
     try {
         const list = await PlatformCostModel.find()
         if (list.length !== 0) {
