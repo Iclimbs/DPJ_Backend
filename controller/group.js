@@ -347,6 +347,20 @@ GroupRouter.get("/filter", UserAuthentication, async (req, res) => {
                     disabled: false
                 },
             },
+            {
+                $lookup: {
+                  from: "reviews",
+                  localField: "_id",
+                  foreignField: "userId",
+                  as: "reviews",
+                },
+              },
+              {
+                $addFields: {
+                  reviewCount: { $size: { $ifNull: ["$reviews", []] } },
+                  totalRating: { $sum: { $ifNull: ["$reviews.rating", []] } },
+                },
+              },        
             { $lookup: { from: 'users', localField: "ownerId", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "OwnerDetails" } },
             { $lookup: { from: 'users', localField: "memebers", foreignField: "_id", pipeline: [{ $project: { _id: 1, name: 1, email: 1, profile: 1, verified: 1, category: 1 } }], as: "MemberDetails" } },
             { $project: { disabled: 0 } }])

@@ -1345,7 +1345,6 @@ UserRouter.get("/find/professional", UserAuthentication, async (req, res) => {
           totalRating: { $sum: { $ifNull: ["$reviews.rating", []] } },
         },
       },
-
     ]);
 
 
