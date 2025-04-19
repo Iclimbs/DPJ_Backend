@@ -13,6 +13,7 @@ const authRoute = require("./controller/googlelogin");
 const serveIndex = require('serve-index');
 
 const app = express();
+app.use(express.json());
 const allowedOrigins = [
   `${process.env.domainurl}`,
   `${process.env.adminurl}`,
@@ -27,7 +28,6 @@ app.use(
 );
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
-app.use(express.json());
 app.use(session({ secret: 'cats', resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
