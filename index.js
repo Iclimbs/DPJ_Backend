@@ -20,10 +20,10 @@ app.use(express.json());
 app.use(session({ secret: 'cats', resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
-// const allowedOrigins = [
-//  `${process.env.domainurl}`,
-//  `${process.env.adminurl}`,
-// ];
+const allowedOrigins = [
+ `${process.env.domainurl}`,
+ `${process.env.adminurl}`,
+];
 
 app.use(
   cors({
