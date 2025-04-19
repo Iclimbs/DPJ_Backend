@@ -49,7 +49,7 @@ app.use(passport.session());
 //     credentials: true,
 //   })
 // );
-app.use(cors());
+// app.use(cors());
 
 const options = {
   definition: {
